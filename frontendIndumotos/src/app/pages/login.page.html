@@ -27,6 +27,7 @@
         <input id="clave" name="clave" type="password" autocomplete="current-password"
           [(ngModel)]="clave" required placeholder="Ingresa tu contraseña" />
 
+        @if (sessionNotice()) { <p class="form-error" role="alert">{{ sessionNotice() }}</p> }
         @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
 
         <button class="primary-button" type="submit" [disabled]="busy() || !loginForm.valid">

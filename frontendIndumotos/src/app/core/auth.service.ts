@@ -20,13 +20,14 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly tokenState = signal(sessionStorage.getItem('indumotos_token') ?? '');
   readonly access = signal<AccessProfile | null>(null);
+  readonly sessionNotice = signal('');
   readonly authenticated = computed(() => Boolean(this.tokenState()) &&
     Date.now() < Number(sessionStorage.getItem('indumotos_expires_at') ?? 0));
 
   token(): string {
     const expiresAt = Number(sessionStorage.getItem('indumotos_expires_at') ?? 0);
     if (!this.tokenState() || Date.now() >= expiresAt) {
-      this.logout();
+      this.logout(this.tokenState() ? 'Tu sesión venció. Ingresa de nuevo.' : '');
       return '';
     }
     return this.tokenState();
@@ -35,6 +36,7 @@ export class AuthService {
   login(nombreUsuario: string, clave: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>('/api/v1/auth/login', { nombreUsuario, clave }).pipe(
       tap(response => {
+        this.sessionNotice.set('');
         const expiresAt = Date.now() + response.expiresIn * 1000;
         sessionStorage.setItem('indumotos_token', response.accessToken);
         sessionStorage.setItem('indumotos_expires_at', String(expiresAt));
@@ -59,11 +61,12 @@ export class AuthService {
     return sessionStorage.getItem('indumotos_usuario') ?? '';
   }
 
-  logout(): void {
+  logout(notice = ''): void {
     sessionStorage.removeItem('indumotos_token');
     sessionStorage.removeItem('indumotos_expires_at');
     sessionStorage.removeItem('indumotos_usuario');
     this.tokenState.set('');
     this.access.set(null);
+    this.sessionNotice.set(notice);
   }
 }

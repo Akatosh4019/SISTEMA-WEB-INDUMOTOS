@@ -13,7 +13,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
   return next(authorized).pipe(catchError((error: unknown) => {
     if (!login && error instanceof HttpErrorResponse && error.status === 401) {
-      auth.logout();
+      auth.logout('Tu sesión ya no es válida. Ingresa de nuevo.');
       void router.navigateByUrl('/login');
     }
     return throwError(() => error);

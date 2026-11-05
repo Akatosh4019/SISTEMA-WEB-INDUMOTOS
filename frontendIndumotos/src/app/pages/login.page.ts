@@ -15,6 +15,7 @@ export class LoginPage {
   private readonly router = inject(Router);
   readonly busy = signal(false);
   readonly error = signal('');
+  readonly sessionNotice = this.auth.sessionNotice;
   nombreUsuario = '';
   clave = '';
 
