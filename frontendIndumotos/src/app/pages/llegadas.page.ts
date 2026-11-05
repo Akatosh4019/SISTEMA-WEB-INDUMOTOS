@@ -41,18 +41,24 @@ export class LlegadasPage {
   readonly busy = signal(false);
   readonly searchBusy = signal(false);
   readonly error = signal('');
+  readonly fieldErrors = signal<Partial<Record<'numeroGuia' | 'cantidadDeclarada' | 'cantidadRecibida', string>>>({});
   readonly searchError = signal('');
   readonly result = signal<Llegada | null>(null);
   readonly detail = signal<DetalleLlegada | null>(null);
-  form = { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
+  form: { numeroGuia: string; cantidadDeclarada: number | null; cantidadRecibida: number | null; observacion: string } =
+    { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
   searchId: number | null = null;
 
   registrar(): void {
     this.error.set('');
-    if (!this.form.numeroGuia.trim() || this.form.cantidadDeclarada < 1 || this.form.cantidadRecibida < 1) {
-      this.error.set('Completa la guía y las cantidades con valores mayores que cero.');
-      return;
-    }
+    this.fieldErrors.set({});
+    const errores: Partial<Record<'numeroGuia' | 'cantidadDeclarada' | 'cantidadRecibida', string>> = {};
+    if (!this.form.numeroGuia.trim()) errores.numeroGuia = 'Ingresa el número de guía.';
+    if (!Number.isSafeInteger(this.form.cantidadDeclarada) || (this.form.cantidadDeclarada ?? 0) <= 0)
+      errores.cantidadDeclarada = 'Ingresa una cantidad declarada entera mayor que cero.';
+    if (!Number.isSafeInteger(this.form.cantidadRecibida) || (this.form.cantidadRecibida ?? 0) <= 0)
+      errores.cantidadRecibida = 'Ingresa una cantidad recibida entera mayor que cero.';
+    if (Object.keys(errores).length) { this.fieldErrors.set(errores); this.error.set('Corrige los campos marcados.'); return; }
     this.busy.set(true);
     this.http.post<Llegada>('/api/v1/llegadas', {
       numeroGuia: this.form.numeroGuia.trim(),
@@ -61,7 +67,16 @@ export class LlegadasPage {
       observacion: this.form.observacion.trim()
     }).subscribe({
       next: llegada => { this.result.set(llegada); this.busy.set(false); },
-      error: (error: unknown) => { this.error.set(this.message(error)); this.busy.set(false); }
+      error: (error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status === 400) {
+          const details = error.error as { errores?: Record<string, string> } | null;
+          const fields = details?.errores ?? {};
+          this.fieldErrors.set({ numeroGuia: fields['numeroGuia'],
+            cantidadDeclarada: fields['cantidadDeclarada'], cantidadRecibida: fields['cantidadRecibida'] });
+          this.error.set(Object.keys(fields).length ? 'Corrige los campos marcados.' : 'Revisa el formato de la llegada.');
+        } else this.error.set(this.message(error));
+        this.busy.set(false);
+      }
     });
   }
 

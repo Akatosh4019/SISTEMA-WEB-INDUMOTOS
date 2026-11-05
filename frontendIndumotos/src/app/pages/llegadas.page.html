@@ -7,15 +7,18 @@
     <div class="panel-heading"><span class="panel-icon">＋</span><div><h2>Nueva llegada</h2><p>Datos de la guía de remisión</p></div></div>
     <form (ngSubmit)="registrar()" #llegadaForm="ngForm">
       <label for="numeroGuia">Número de guía <span>*</span></label>
-      <input id="numeroGuia" name="numeroGuia" type="text" maxlength="120" required [(ngModel)]="form.numeroGuia" placeholder="Ej. GR-2026-001" />
+      <input id="numeroGuia" name="numeroGuia" type="text" maxlength="120" required [(ngModel)]="form.numeroGuia" [attr.aria-invalid]="fieldErrors().numeroGuia ? true : null" placeholder="Ej. GR-2026-001" />
+      @if (fieldErrors().numeroGuia) { <small class="field-error">{{ fieldErrors().numeroGuia }}</small> }
       <div class="fields-row">
-        <div><label for="declarada">Cantidad declarada <span>*</span></label><input id="declarada" name="declarada" type="number" min="1" required [(ngModel)]="form.cantidadDeclarada" /></div>
-        <div><label for="recibida">Cantidad recibida <span>*</span></label><input id="recibida" name="recibida" type="number" min="1" required [(ngModel)]="form.cantidadRecibida" /></div>
+        <div><label for="declarada">Cantidad declarada <span>*</span></label><input id="declarada" name="declarada" type="number" min="1" step="1" required [(ngModel)]="form.cantidadDeclarada" [attr.aria-invalid]="fieldErrors().cantidadDeclarada ? true : null" />
+          @if (fieldErrors().cantidadDeclarada) { <small class="field-error">{{ fieldErrors().cantidadDeclarada }}</small> }</div>
+        <div><label for="recibida">Cantidad recibida <span>*</span></label><input id="recibida" name="recibida" type="number" min="1" step="1" required [(ngModel)]="form.cantidadRecibida" [attr.aria-invalid]="fieldErrors().cantidadRecibida ? true : null" />
+          @if (fieldErrors().cantidadRecibida) { <small class="field-error">{{ fieldErrors().cantidadRecibida }}</small> }</div>
       </div>
       <label for="observacion">Observación</label>
       <textarea id="observacion" name="observacion" rows="4" maxlength="1000" [(ngModel)]="form.observacion" placeholder="Información adicional de la recepción"></textarea>
       @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
-      <button type="submit" class="primary-button" [disabled]="busy() || !llegadaForm.valid">{{ busy() ? 'Guardando…' : 'Registrar llegada' }}</button>
+      <button type="submit" class="primary-button" [disabled]="busy()">{{ busy() ? 'Guardando…' : 'Registrar llegada' }}</button>
     </form>
     @if (result(); as llegada) {
       <div class="result success" role="status"><strong>Llegada registrada · #{{ llegada.id }}</strong><span>Guía {{ llegada.numeroGuia }} · {{ llegada.cantidadRecibida }} recibidas</span>
