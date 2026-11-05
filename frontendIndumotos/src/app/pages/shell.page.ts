@@ -12,6 +12,11 @@ export class ShellPage {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly username = this.auth.username();
+  readonly access = this.auth;
+
+  constructor() {
+    this.auth.loadAccess().subscribe({ error: () => { /* El interceptor gestiona 401. */ } });
+  }
 
   salir(): void {
     this.auth.logout();

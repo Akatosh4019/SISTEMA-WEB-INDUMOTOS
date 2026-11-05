@@ -60,16 +60,22 @@ export class PermisosPage {
 
   cambiarRol(): void {
     if (!this.accesos()) return;
+    if (this.nuevoRol === this.accesos()?.rolCodigo) { this.error.set('Selecciona un rol distinto.'); return; }
+    if (!window.confirm(`¿Cambiar el rol de ${this.accesos()?.nombreUsuario} a ${this.nuevoRol}?`)) return;
     this.request(this.http.put<Accesos>(this.url('rol'), { rolCodigo: this.nuevoRol }), 'Rol actualizado.');
   }
 
   guardarExcepcion(): void {
     if (!this.accesos()) return;
+    if (!window.confirm(`¿Aplicar ${this.decision} al permiso ${this.codigo} de ${this.accesos()?.nombreUsuario}?`)) return;
     this.request(this.http.put<Accesos>(this.url(`permisos/${this.codigo}`), { decision: this.decision }), 'Excepción guardada.');
   }
 
   retirarExcepcion(): void {
     if (!this.accesos()) return;
+    const actual = this.accesos()?.permisos.find(p => p.codigo === this.codigo);
+    if (!actual?.excepcion) { this.error.set('Este permiso no tiene excepción individual.'); return; }
+    if (!window.confirm(`¿Retirar la excepción de ${this.codigo} para ${this.accesos()?.nombreUsuario}?`)) return;
     this.request(this.http.delete<Accesos>(this.url(`permisos/${this.codigo}`)), 'Excepción retirada.');
   }
 

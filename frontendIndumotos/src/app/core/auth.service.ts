@@ -1,6 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, switchMap, tap } from 'rxjs';
+
+export interface AccessProfile {
+  usuarioId: number;
+  nombreUsuario: string;
+  rolCodigo: string;
+  permisos: { codigo: string; permitido: boolean }[];
+}
 
 interface LoginResponse {
   accessToken: string;
@@ -12,6 +19,7 @@ interface LoginResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly tokenState = signal(sessionStorage.getItem('indumotos_token') ?? '');
+  readonly access = signal<AccessProfile | null>(null);
   readonly authenticated = computed(() => Boolean(this.tokenState()) &&
     Date.now() < Number(sessionStorage.getItem('indumotos_expires_at') ?? 0));
 
@@ -32,8 +40,19 @@ export class AuthService {
         sessionStorage.setItem('indumotos_expires_at', String(expiresAt));
         sessionStorage.setItem('indumotos_usuario', nombreUsuario.trim().toLowerCase());
         this.tokenState.set(response.accessToken);
-      })
+      }),
+      switchMap(response => this.loadAccess().pipe(map(() => response)))
     );
+  }
+
+  loadAccess(): Observable<AccessProfile> {
+    return this.http.get<AccessProfile>('/api/v1/auth/me').pipe(
+      tap(profile => this.access.set(profile))
+    );
+  }
+
+  can(codigo: string): boolean {
+    return this.access()?.permisos.some(p => p.codigo === codigo && p.permitido) ?? false;
   }
 
   username(): string {
@@ -45,5 +64,6 @@ export class AuthService {
     sessionStorage.removeItem('indumotos_expires_at');
     sessionStorage.removeItem('indumotos_usuario');
     this.tokenState.set('');
+    this.access.set(null);
   }
 }

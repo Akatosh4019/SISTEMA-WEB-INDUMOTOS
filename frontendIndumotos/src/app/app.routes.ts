@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
+import { permissionGuard } from './core/permission.guard';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login.page').then(m => m.LoginPage) },
@@ -12,7 +13,7 @@ export const routes: Routes = [
       { path: 'llegadas', loadComponent: () => import('./pages/llegadas.page').then(m => m.LlegadasPage) },
       { path: 'fichas', loadComponent: () => import('./pages/fichas.page').then(m => m.FichasPage) },
       { path: 'usuarios', loadComponent: () => import('./pages/usuarios.page').then(m => m.UsuariosPage) },
-      { path: 'permisos', loadComponent: () => import('./pages/permisos.page').then(m => m.PermisosPage) }
+      { path: 'permisos', canActivate: [permissionGuard], loadComponent: () => import('./pages/permisos.page').then(m => m.PermisosPage) }
     ]
   },
   { path: '', pathMatch: 'full', redirectTo: 'app' },
