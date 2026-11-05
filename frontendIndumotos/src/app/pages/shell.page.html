@@ -4,6 +4,7 @@
     <div class="nav-label">ESPACIO DE TRABAJO</div>
     <nav aria-label="Navegación principal">
       <a routerLink="/app" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active"><span class="nav-icon">▦</span> Resumen</a>
+      @if (access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/buscar" routerLinkActive="active"><span class="nav-icon">⌕</span> Buscar motocicleta</a> }
       @if (access.can('LLEGADAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/llegadas" routerLinkActive="active"><span class="nav-icon">⇥</span> Llegadas</a> }
       @if (access.can('FICHAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/fichas" routerLinkActive="active"><span class="nav-icon">▤</span> Fichas</a> }
       @if (access.can('USUARIOS_CREAR')) { <a routerLink="/app/usuarios" routerLinkActive="active"><span class="nav-icon">♙</span> Cuentas</a> }
