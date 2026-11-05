@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 interface Llegada {
   id: number;
@@ -13,9 +14,25 @@ interface Llegada {
   observacion: string | null;
 }
 
+interface FichaVinculada {
+  id: number;
+  llegadaId: number;
+  marca: string;
+  modelo: string;
+  color: string;
+  chasisCompleto: string;
+}
+
+interface DetalleLlegada {
+  llegada: Llegada;
+  fichas: FichaVinculada[];
+  cantidadFichas: number;
+  diferenciaInformativa: number;
+}
+
 @Component({
   selector: 'app-llegadas-page',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './llegadas.page.html',
   styleUrl: './llegadas.page.css'
 })
@@ -26,7 +43,7 @@ export class LlegadasPage {
   readonly error = signal('');
   readonly searchError = signal('');
   readonly result = signal<Llegada | null>(null);
-  readonly searched = signal<Llegada | null>(null);
+  readonly detail = signal<DetalleLlegada | null>(null);
   form = { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
   searchId: number | null = null;
 
@@ -50,14 +67,14 @@ export class LlegadasPage {
 
   buscar(): void {
     this.searchError.set('');
-    this.searched.set(null);
+    this.detail.set(null);
     if (!this.searchId || this.searchId < 1) {
       this.searchError.set('Ingresa un ID válido.');
       return;
     }
     this.searchBusy.set(true);
-    this.http.get<Llegada>(`/api/v1/llegadas/${this.searchId}`).subscribe({
-      next: llegada => { this.searched.set(llegada); this.searchBusy.set(false); },
+    this.http.get<DetalleLlegada>(`/api/v1/llegadas/${this.searchId}/detalle`).subscribe({
+      next: detalle => { this.detail.set(detalle); this.searchBusy.set(false); },
       error: (error: unknown) => { this.searchError.set(this.message(error)); this.searchBusy.set(false); }
     });
   }

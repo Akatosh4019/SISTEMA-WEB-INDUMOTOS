@@ -25,6 +25,7 @@ Requiere Node.js compatible con Angular 21, npm, Java 21 o posterior y Maven. El
 - Interceptor que envía `Authorization: Bearer ...` a la API.
 - Rutas protegidas y redirección al login al vencer el token o recibir 401.
 - Registro y consulta por ID de llegadas; muestra 403 si la cuenta no tiene permiso.
+- Detalle de llegada con fichas vinculadas, conteo y enlaces por ID a cada ficha; el formulario de ficha recibe el ID de llegada precargado.
 - Botón de salida que borra el token del navegador.
 
 El token se guarda en `sessionStorage` y expira en el cliente según `expiresIn`. El botón de salida todavía **no revoca** un JWT en el servidor; HU-26-T05 requiere soporte de backend. La API de login aún no devuelve el rol o los permisos del usuario, por lo que la navegación no debe asumirlos. La autorización efectiva siempre la decide el backend.

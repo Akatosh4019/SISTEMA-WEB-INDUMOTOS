@@ -18,7 +18,8 @@
       <button type="submit" class="primary-button" [disabled]="busy() || !llegadaForm.valid">{{ busy() ? 'Guardando…' : 'Registrar llegada' }}</button>
     </form>
     @if (result(); as llegada) {
-      <div class="result success" role="status"><strong>Llegada registrada · #{{ llegada.id }}</strong><span>Guía {{ llegada.numeroGuia }} · {{ llegada.cantidadRecibida }} recibidas</span></div>
+      <div class="result success" role="status"><strong>Llegada registrada · #{{ llegada.id }}</strong><span>Guía {{ llegada.numeroGuia }} · {{ llegada.cantidadRecibida }} recibidas</span>
+        <button type="button" class="detail-button" (click)="searchId = llegada.id; buscar()">Ver detalle y fichas vinculadas</button></div>
     }
   </section>
 
@@ -29,7 +30,8 @@
       <button type="submit" [disabled]="searchBusy()">{{ searchBusy() ? 'Buscando…' : 'Buscar' }}</button>
     </form>
     @if (searchError()) { <p class="message error" role="alert">{{ searchError() }}</p> }
-    @if (searched(); as llegada) {
+    @if (detail(); as detalle) {
+      @let llegada = detalle.llegada;
       <div class="detail">
         <div class="detail-top"><span>REGISTRO #{{ llegada.id }}</span><span class="badge">Encontrado</span></div>
         <div class="detail-row"><span>Guía</span><strong>{{ llegada.numeroGuia }}</strong></div>
@@ -37,6 +39,16 @@
         <div class="detail-row"><span>Recibió</span><strong>{{ llegada.receptorUsuario }}</strong></div>
         <div class="detail-row"><span>Cantidades</span><strong>{{ llegada.cantidadRecibida }} / {{ llegada.cantidadDeclarada }}</strong></div>
         @if (llegada.observacion) { <div class="detail-note">{{ llegada.observacion }}</div> }
+        <div class="detail-row"><span>Fichas vinculadas</span><strong>{{ detalle.cantidadFichas }}</strong></div>
+        <div class="detail-row"><span>Recibidas sin ficha</span><strong>{{ detalle.diferenciaInformativa }}</strong></div>
+        <p class="detail-hint">Diferencia informativa; no confirma conformidad ni cambia el inventario.</p>
+        <h3>Motocicletas de esta llegada</h3>
+        @for (ficha of detalle.fichas; track ficha.id) {
+          <a class="ficha-link" routerLink="/app/fichas" [queryParams]="{id: ficha.id}">
+            <span><strong>#{{ ficha.id }} · {{ ficha.marca }} {{ ficha.modelo }}</strong><small>{{ ficha.color }} · {{ ficha.chasisCompleto }}</small></span><span>Abrir ficha →</span>
+          </a>
+        } @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
+        <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId: llegada.id}">Registrar ficha para esta llegada →</a>
       </div>
     } @else {
       <div class="empty-state"><span>⌕</span><p>Ingresa un ID para ver los datos de una llegada.</p></div>

@@ -1,7 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { apiError } from '../core/api-error';
 
 interface Ficha {
@@ -49,8 +50,9 @@ interface Ficha {
       </section>
     </div></div>`
 })
-export class FichasPage {
+export class FichasPage implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute);
   readonly busy = signal(false);
   readonly searchBusy = signal(false);
   readonly error = signal('');
@@ -59,6 +61,16 @@ export class FichasPage {
   readonly found = signal<Ficha | null>(null);
   form = { llegadaId: null as number | null, marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   searchId: number | null = null;
+
+  ngOnInit(): void {
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
+    const llegadaId = Number(this.route.snapshot.queryParamMap.get('llegadaId'));
+    if (Number.isSafeInteger(llegadaId) && llegadaId > 0) this.form.llegadaId = llegadaId;
+    if (Number.isSafeInteger(id) && id > 0) {
+      this.searchId = id;
+      this.buscar();
+    }
+  }
 
   guardar(): void {
     this.created.set(null); this.error.set('');
