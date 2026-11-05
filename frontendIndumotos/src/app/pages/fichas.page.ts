@@ -37,6 +37,7 @@ interface Ficha {
           <div><label for="itemDua">Ítem DUA</label><input id="itemDua" name="itemDua" required maxlength="120" [(ngModel)]="form.itemDua" [attr.aria-invalid]="fieldErrors()['itemDua'] ? true : null" />
             @if (fieldErrors()['itemDua']) { <small class="field-error">{{fieldErrors()['itemDua']}}</small> }</div></div>
           @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
+          @if (existingId(); as id) { <button class="secondary" type="button" (click)="verExistente(id)">Ver ficha existente #{{id}}</button> }
           <button [disabled]="busy()" type="submit">{{busy() ? 'Guardando…' : 'Registrar ficha'}}</button>
         </form>
         @if (created(); as ficha) { <p class="message success" role="status">Ficha #{{ficha.id}} registrada para el chasis {{ficha.chasisCompleto}}.</p> }
@@ -69,6 +70,7 @@ export class FichasPage implements OnInit {
   readonly fieldErrors = signal<Record<string, string>>({});
   readonly searchError = signal('');
   readonly created = signal<Ficha | null>(null);
+  readonly existingId = signal<number | null>(null);
   readonly found = signal<Ficha | null>(null);
   form = { llegadaId: null as number | null, marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   searchId: number | null = null;
@@ -85,6 +87,7 @@ export class FichasPage implements OnInit {
 
   guardar(): void {
     this.created.set(null); this.error.set('');
+    this.existingId.set(null);
     this.fieldErrors.set({});
     const mensajes: Record<string, string> = {
       marca: 'Ingresa la marca.', modelo: 'Ingresa el modelo.', color: 'Ingresa el color.',
@@ -104,7 +107,11 @@ export class FichasPage implements OnInit {
     this.http.post<Ficha>('/api/v1/motocicletas', this.form).subscribe({
       next: value => { this.created.set(value); this.busy.set(false); },
       error: err => {
-        if (err instanceof HttpErrorResponse && err.status === 400) {
+        if (err instanceof HttpErrorResponse && err.status === 409) {
+          const body = err.error as { fichaExistenteId?: number } | null;
+          this.existingId.set(body?.fichaExistenteId ?? null);
+          this.error.set('El chasis completo ya está registrado.');
+        } else if (err instanceof HttpErrorResponse && err.status === 400) {
           const body = err.error as { errores?: Record<string, string> } | null;
           this.fieldErrors.set(body?.errores ?? {});
           this.error.set(body?.errores && Object.keys(body.errores).length
@@ -113,6 +120,11 @@ export class FichasPage implements OnInit {
         this.busy.set(false);
       }
     });
+  }
+
+  verExistente(id: number): void {
+    this.searchId = id;
+    this.buscar();
   }
 
   buscar(): void {

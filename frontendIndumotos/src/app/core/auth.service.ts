@@ -61,6 +61,10 @@ export class AuthService {
     return sessionStorage.getItem('indumotos_usuario') ?? '';
   }
 
+  closeSession(): Observable<void> {
+    return this.http.post<void>('/api/v1/auth/logout', {}).pipe(tap(() => this.logout()));
+  }
+
   logout(notice = ''): void {
     sessionStorage.removeItem('indumotos_token');
     sessionStorage.removeItem('indumotos_expires_at');

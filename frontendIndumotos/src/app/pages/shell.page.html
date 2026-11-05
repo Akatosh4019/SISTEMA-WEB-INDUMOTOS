@@ -14,8 +14,8 @@
   <div class="main-column">
     <header class="topbar">
       <div class="topbar-title">Gestión de inventario <span>/ Sprint 1</span></div>
-      <div class="topbar-actions"><span class="user-pill">{{ username || 'Usuario' }}</span><button type="button" (click)="salir()">Salir</button></div>
+      <div class="topbar-actions"><span class="user-pill">{{ username || 'Usuario' }}</span><button type="button" (click)="salir()" [disabled]="logoutBusy()">{{logoutBusy() ? 'Saliendo…' : 'Salir'}}</button></div>
     </header>
-    <main class="content"><router-outlet /></main>
+    <main class="content">@if (logoutError()) { <p role="alert">{{logoutError()}}</p> }<router-outlet /></main>
   </div>
 </div>
