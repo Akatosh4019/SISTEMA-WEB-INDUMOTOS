@@ -1,0 +1,45 @@
+<div class="eyebrow">RECEPCIÓN DE MOTOCICLETAS</div>
+<h1>Llegadas</h1>
+<p class="lead">Registra una recepción vinculada a su guía y consulta el detalle por ID.</p>
+
+<div class="page-grid">
+  <section class="panel">
+    <div class="panel-heading"><span class="panel-icon">＋</span><div><h2>Nueva llegada</h2><p>Datos de la guía de remisión</p></div></div>
+    <form (ngSubmit)="registrar()" #llegadaForm="ngForm">
+      <label for="numeroGuia">Número de guía <span>*</span></label>
+      <input id="numeroGuia" name="numeroGuia" type="text" maxlength="120" required [(ngModel)]="form.numeroGuia" placeholder="Ej. GR-2026-001" />
+      <div class="fields-row">
+        <div><label for="declarada">Cantidad declarada <span>*</span></label><input id="declarada" name="declarada" type="number" min="1" required [(ngModel)]="form.cantidadDeclarada" /></div>
+        <div><label for="recibida">Cantidad recibida <span>*</span></label><input id="recibida" name="recibida" type="number" min="1" required [(ngModel)]="form.cantidadRecibida" /></div>
+      </div>
+      <label for="observacion">Observación</label>
+      <textarea id="observacion" name="observacion" rows="4" maxlength="1000" [(ngModel)]="form.observacion" placeholder="Información adicional de la recepción"></textarea>
+      @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+      <button type="submit" class="primary-button" [disabled]="busy() || !llegadaForm.valid">{{ busy() ? 'Guardando…' : 'Registrar llegada' }}</button>
+    </form>
+    @if (result(); as llegada) {
+      <div class="result success" role="status"><strong>Llegada registrada · #{{ llegada.id }}</strong><span>Guía {{ llegada.numeroGuia }} · {{ llegada.cantidadRecibida }} recibidas</span></div>
+    }
+  </section>
+
+  <section class="panel search-panel">
+    <div class="panel-heading"><span class="panel-icon blue">⌕</span><div><h2>Consultar llegada</h2><p>Busca un registro por su ID</p></div></div>
+    <form class="search-form" (ngSubmit)="buscar()">
+      <div><label for="searchId">ID de llegada</label><input id="searchId" name="searchId" type="number" min="1" [(ngModel)]="searchId" placeholder="Ej. 12" /></div>
+      <button type="submit" [disabled]="searchBusy()">{{ searchBusy() ? 'Buscando…' : 'Buscar' }}</button>
+    </form>
+    @if (searchError()) { <p class="message error" role="alert">{{ searchError() }}</p> }
+    @if (searched(); as llegada) {
+      <div class="detail">
+        <div class="detail-top"><span>REGISTRO #{{ llegada.id }}</span><span class="badge">Encontrado</span></div>
+        <div class="detail-row"><span>Guía</span><strong>{{ llegada.numeroGuia }}</strong></div>
+        <div class="detail-row"><span>Fecha</span><strong>{{ llegada.fechaLlegada | date:'dd/MM/yyyy, HH:mm' }}</strong></div>
+        <div class="detail-row"><span>Recibió</span><strong>{{ llegada.receptorUsuario }}</strong></div>
+        <div class="detail-row"><span>Cantidades</span><strong>{{ llegada.cantidadRecibida }} / {{ llegada.cantidadDeclarada }}</strong></div>
+        @if (llegada.observacion) { <div class="detail-note">{{ llegada.observacion }}</div> }
+      </div>
+    } @else {
+      <div class="empty-state"><span>⌕</span><p>Ingresa un ID para ver los datos de una llegada.</p></div>
+    }
+  </section>
+</div>

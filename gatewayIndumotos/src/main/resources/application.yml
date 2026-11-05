@@ -1,0 +1,15 @@
+server:
+  address: 127.0.0.1
+  port: 8030
+spring:
+  application:
+    name: gateway-indumotos
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: indumotos-api
+              uri: ${INDUMOTOS_API_URL:http://127.0.0.1:8080}
+              predicates:
+                - Path=/api/**

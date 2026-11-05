@@ -1,0 +1,49 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
+
+interface LoginResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private readonly http = inject(HttpClient);
+  private readonly tokenState = signal(sessionStorage.getItem('indumotos_token') ?? '');
+  readonly authenticated = computed(() => Boolean(this.tokenState()) &&
+    Date.now() < Number(sessionStorage.getItem('indumotos_expires_at') ?? 0));
+
+  token(): string {
+    const expiresAt = Number(sessionStorage.getItem('indumotos_expires_at') ?? 0);
+    if (!this.tokenState() || Date.now() >= expiresAt) {
+      this.logout();
+      return '';
+    }
+    return this.tokenState();
+  }
+
+  login(nombreUsuario: string, clave: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>('/api/v1/auth/login', { nombreUsuario, clave }).pipe(
+      tap(response => {
+        const expiresAt = Date.now() + response.expiresIn * 1000;
+        sessionStorage.setItem('indumotos_token', response.accessToken);
+        sessionStorage.setItem('indumotos_expires_at', String(expiresAt));
+        sessionStorage.setItem('indumotos_usuario', nombreUsuario.trim().toLowerCase());
+        this.tokenState.set(response.accessToken);
+      })
+    );
+  }
+
+  username(): string {
+    return sessionStorage.getItem('indumotos_usuario') ?? '';
+  }
+
+  logout(): void {
+    sessionStorage.removeItem('indumotos_token');
+    sessionStorage.removeItem('indumotos_expires_at');
+    sessionStorage.removeItem('indumotos_usuario');
+    this.tokenState.set('');
+  }
+}

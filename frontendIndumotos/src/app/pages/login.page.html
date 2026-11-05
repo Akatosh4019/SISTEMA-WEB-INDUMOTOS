@@ -1,0 +1,40 @@
+<main class="login-layout">
+  <section class="brand-panel" aria-label="Indumotos">
+    <div class="brand-lockup"><span class="brand-mark">IM</span><span>INDUMOTOS</span></div>
+    <div class="brand-story">
+      <div class="eyebrow">OPERACIÓN DE INVENTARIO</div>
+      <h1>El control empieza<br>con cada unidad.</h1>
+      <p>Registra y consulta la información de motocicletas desde un solo espacio de trabajo.</p>
+      <div class="brand-rule"></div>
+      <div class="brand-caption">Gestión interna · Acceso para personal autorizado</div>
+    </div>
+    <div class="brand-footer">INDUMOTOS / SISTEMA DE GESTIÓN</div>
+  </section>
+
+  <section class="form-panel">
+    <div class="form-wrap">
+      <div class="mobile-brand"><span class="brand-mark">IM</span> INDUMOTOS</div>
+      <div class="step-label"><span class="step-dot"></span> ACCESO AL SISTEMA</div>
+      <h2>Bienvenido de nuevo</h2>
+      <p class="intro">Ingresa tus credenciales para continuar con tu jornada.</p>
+
+      <form (ngSubmit)="entrar()" #loginForm="ngForm">
+        <label for="nombreUsuario">Usuario</label>
+        <input id="nombreUsuario" name="nombreUsuario" type="text" autocomplete="username"
+          [(ngModel)]="nombreUsuario" required placeholder="Tu nombre de usuario" />
+
+        <label for="clave">Contraseña</label>
+        <input id="clave" name="clave" type="password" autocomplete="current-password"
+          [(ngModel)]="clave" required placeholder="Ingresa tu contraseña" />
+
+        @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+
+        <button class="primary-button" type="submit" [disabled]="busy() || !loginForm.valid">
+          {{ busy() ? 'Ingresando…' : 'Ingresar al sistema' }} <span aria-hidden="true">→</span>
+        </button>
+      </form>
+      <p class="help-text">Si no tienes acceso, comunícate con el administrador de Indumotos.</p>
+    </div>
+    <div class="form-footer">© 2026 Indumotos</div>
+  </section>
+</main>
