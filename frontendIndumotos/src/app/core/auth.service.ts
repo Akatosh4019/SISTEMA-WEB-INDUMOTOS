@@ -69,6 +69,7 @@ export class AuthService {
     sessionStorage.removeItem('indumotos_token');
     sessionStorage.removeItem('indumotos_expires_at');
     sessionStorage.removeItem('indumotos_usuario');
+    sessionStorage.removeItem('indumotos.inventario.filtros');
     this.tokenState.set('');
     this.access.set(null);
     this.sessionNotice.set(notice);

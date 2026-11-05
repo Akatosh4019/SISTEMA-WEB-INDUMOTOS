@@ -21,6 +21,7 @@ interface PaginaMotocicletas {
 }
 
 type Filtros = { chasis: string; marca: string; modelo: string; color: string };
+const FILTROS_GUARDADOS = 'indumotos.inventario.filtros';
 
 @Component({
   selector: 'app-inventario-page',
@@ -36,7 +37,21 @@ export class InventarioPage implements OnInit {
   filtros: Filtros = { chasis: '', marca: '', modelo: '', color: '' };
   private aplicados: Filtros = { ...this.filtros };
 
-  ngOnInit(): void { this.cargar(0); }
+  ngOnInit(): void {
+    const guardados = sessionStorage.getItem(FILTROS_GUARDADOS);
+    if (guardados) {
+      try {
+        const datos: unknown = JSON.parse(guardados);
+        if (this.sonFiltros(datos)) {
+          this.filtros = { ...datos };
+          this.aplicados = { ...datos };
+        }
+      } catch {
+        sessionStorage.removeItem(FILTROS_GUARDADOS);
+      }
+    }
+    this.cargar(0);
+  }
 
   buscar(): void {
     const chasis = this.filtros.chasis.trim();
@@ -50,13 +65,23 @@ export class InventarioPage implements OnInit {
       modelo: this.filtros.modelo.trim(),
       color: this.filtros.color.trim()
     };
+    sessionStorage.setItem(FILTROS_GUARDADOS, JSON.stringify(this.aplicados));
     this.cargar(0);
   }
 
   limpiar(): void {
     this.filtros = { chasis: '', marca: '', modelo: '', color: '' };
     this.aplicados = { ...this.filtros };
+    sessionStorage.removeItem(FILTROS_GUARDADOS);
     this.cargar(0);
+  }
+
+  private sonFiltros(datos: unknown): datos is Filtros {
+    if (typeof datos !== 'object' || datos === null) return false;
+    const valores = datos as Record<string, unknown>;
+    return ['chasis', 'marca', 'modelo', 'color'].every(
+      campo => typeof valores[campo] === 'string' && valores[campo].length <= 120
+    );
   }
 
   irPagina(pagina: number): void {

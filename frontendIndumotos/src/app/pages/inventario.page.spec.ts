@@ -10,6 +10,7 @@ describe('InventarioPage', () => {
   let fixture: ComponentFixture<InventarioPage>;
 
   beforeEach(() => {
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       imports: [InventarioPage],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])]
@@ -56,5 +57,44 @@ describe('InventarioPage', () => {
     });
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No hay coincidencias');
+  });
+
+  it('muestra el indicador de carga mientras espera la respuesta', () => {
+    page.filtros.marca = 'RONCO';
+    page.buscar();
+    const pendiente = http.expectOne(req => req.params.get('marca') === 'RONCO');
+    fixture.detectChanges();
+    const boton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(boton.textContent).toContain('Buscando');
+    expect(boton.disabled).toBe(true);
+    pendiente.flush({ items: [], pagina: 0, tamano: 10, totalElementos: 0, totalPaginas: 0 });
+    fixture.detectChanges();
+    expect(boton.textContent).toContain('Buscar motocicletas');
+    expect(boton.disabled).toBe(false);
+  });
+
+  it('restaura los filtros aplicados al volver desde una ficha y los borra al limpiar', () => {
+    page.filtros = { chasis: '', marca: ' RONCO ', modelo: '', color: ' ROJO ' };
+    page.buscar();
+    http.expectOne(req => req.params.get('marca') === 'RONCO' &&
+      req.params.get('color') === 'ROJO').flush({
+      items: [], pagina: 0, tamano: 10, totalElementos: 0, totalPaginas: 0
+    });
+
+    fixture.destroy();
+    fixture = TestBed.createComponent(InventarioPage);
+    page = fixture.componentInstance;
+    fixture.detectChanges();
+    http.expectOne(req => req.params.get('marca') === 'RONCO' &&
+      req.params.get('color') === 'ROJO').flush({
+      items: [], pagina: 0, tamano: 10, totalElementos: 0, totalPaginas: 0
+    });
+    expect(page.filtros).toEqual({ chasis: '', marca: 'RONCO', modelo: '', color: 'ROJO' });
+
+    page.limpiar();
+    http.expectOne('/api/v1/motocicletas?pagina=0&tamano=10').flush({
+      items: [], pagina: 0, tamano: 10, totalElementos: 0, totalPaginas: 0
+    });
+    expect(sessionStorage.getItem('indumotos.inventario.filtros')).toBeNull();
   });
 });
