@@ -3,6 +3,7 @@
 <p class="lead">Registra una recepción vinculada a su guía y consulta el detalle por ID.</p>
 
 <div class="page-grid">
+  @if (auth.can('LLEGADAS_REGISTRAR')) {
   <section class="panel">
     <div class="panel-heading"><span class="panel-icon">＋</span><div><h2>Nueva llegada</h2><p>Datos de la guía de remisión</p></div></div>
     <form (ngSubmit)="registrar()" #llegadaForm="ngForm">
@@ -25,7 +26,9 @@
         <button type="button" class="detail-button" (click)="searchId = llegada.id; buscar()">Ver detalle y fichas vinculadas</button></div>
     }
   </section>
+  }
 
+  @if (auth.can('INVENTARIO_CONSULTAR')) {
   <section class="panel search-panel">
     <div class="panel-heading"><span class="panel-icon blue">⌕</span><div><h2>Consultar llegada</h2><p>Busca un registro por su ID</p></div></div>
     <form class="search-form" (ngSubmit)="buscar()">
@@ -51,10 +54,11 @@
             <span><strong>#{{ ficha.id }} · {{ ficha.marca }} {{ ficha.modelo }}</strong><small>{{ ficha.color }} · {{ ficha.chasisCompleto }}</small></span><span>Abrir ficha →</span>
           </a>
         } @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
-        <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId: llegada.id}">Registrar ficha para esta llegada →</a>
+        @if (auth.can('FICHAS_REGISTRAR')) { <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId: llegada.id}">Registrar ficha para esta llegada →</a> }
       </div>
     } @else {
       <div class="empty-state"><span>⌕</span><p>Ingresa un ID para ver los datos de una llegada.</p></div>
     }
   </section>
+  }
 </div>

@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../core/auth.service';
 
 interface Llegada {
   id: number;
@@ -37,6 +38,7 @@ interface DetalleLlegada {
   styleUrl: './llegadas.page.css'
 })
 export class LlegadasPage {
+  readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   readonly busy = signal(false);
   readonly searchBusy = signal(false);

@@ -4,6 +4,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { apiError } from '../core/api-error';
+import { AuthService } from '../core/auth.service';
 
 interface Ficha {
   id: number; llegadaId: number; marca: string; modelo: string; color: string;
@@ -18,6 +19,7 @@ interface Ficha {
     <div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div><h1>Fichas</h1>
     <p class="lead">Registra cada unidad vinculada a una llegada y consulta su ficha por ID.</p>
     <div class="grid">
+      @if (auth.can('FICHAS_REGISTRAR')) {
       <section class="panel"><h2>Nueva ficha</h2><p class="hint">Datos contrastados con la guía y la DUA</p>
         <form (ngSubmit)="guardar()">
           <label for="llegadaId">ID de llegada</label><input id="llegadaId" name="llegadaId" type="number" min="1" step="1" required [(ngModel)]="form.llegadaId" [attr.aria-invalid]="fieldErrors()['llegadaId'] ? true : null" />
@@ -42,6 +44,8 @@ interface Ficha {
         </form>
         @if (created(); as ficha) { <p class="message success" role="status">Ficha #{{ficha.id}} registrada para el chasis {{ficha.chasisCompleto}}.</p> }
       </section>
+      }
+      @if (auth.can('INVENTARIO_CONSULTAR')) {
       <section class="panel"><h2>Consultar ficha</h2><p class="hint">Busca una unidad por el ID de su ficha</p>
         <form (ngSubmit)="buscar()"><label for="fichaId">ID de ficha</label><input id="fichaId" name="fichaId" type="number" min="1" [(ngModel)]="searchId" />
           <button class="secondary" type="submit" [disabled]="searchBusy()">{{searchBusy() ? 'Buscando…' : 'Buscar ficha'}}</button></form>
@@ -57,11 +61,13 @@ interface Ficha {
           <div class="detail-row"><span>Fecha</span><strong>{{ficha.creadoEn | date:'dd/MM/yyyy, HH:mm'}}</strong></div>
         </div> } @else { <div class="empty">Ingresa un ID para consultar la ficha.</div> }
       </section>
+      }
     </div></div>`,
   styles: [`.field-error{display:block;color:#aa3721;font-size:12px;margin:-12px 0 16px}
     input[aria-invalid="true"]{border-color:#ca4b32}`]
 })
 export class FichasPage implements OnInit {
+  readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   readonly busy = signal(false);

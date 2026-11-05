@@ -6,6 +6,7 @@
       <a routerLink="/app" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active"><span class="nav-icon">▦</span> Resumen</a>
       @if (access.can('LLEGADAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/llegadas" routerLinkActive="active"><span class="nav-icon">⇥</span> Llegadas</a> }
       @if (access.can('FICHAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/fichas" routerLinkActive="active"><span class="nav-icon">▤</span> Fichas</a> }
+      @if (access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/inventario" routerLinkActive="active"><span class="nav-icon">⌕</span> Inventario</a> }
       @if (access.can('USUARIOS_CREAR')) { <a routerLink="/app/usuarios" routerLinkActive="active"><span class="nav-icon">♙</span> Cuentas</a> }
       @if (access.can('PERMISOS_ASIGNAR')) { <a routerLink="/app/permisos" routerLinkActive="active"><span class="nav-icon">◇</span> Permisos</a> }
     </nav>

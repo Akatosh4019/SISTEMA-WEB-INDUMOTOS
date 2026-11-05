@@ -19,19 +19,22 @@ El proxy de Angular y el gateway son piezas distintas. El primero evita llamadas
 
 Requiere Node.js compatible con Angular 21, npm, Java 21 o posterior y Maven. El backend usa una configuración `.env` local que no se incluye en el repositorio.
 
-## Primer incremento
+## Alcance web del Sprint 1
 
 - Login real con `POST /api/v1/auth/login`.
 - Interceptor que envía `Authorization: Bearer ...` a la API.
 - Rutas protegidas y redirección al login al vencer el token o recibir 401.
 - Registro y consulta por ID de llegadas; muestra 403 si la cuenta no tiene permiso.
 - Detalle de llegada con fichas vinculadas, conteo y enlaces por ID a cada ficha; el formulario de ficha recibe el ID de llegada precargado.
-- Botón de salida que borra el token del navegador.
+- Registro de fichas y consulta por ID, con mensaje de chasis duplicado.
+- Búsqueda de inventario por chasis completo o últimos cuatro dígitos; filtros combinados de marca, modelo y color, paginación y enlace a la ficha.
+- Creación de cuentas y asignación de roles y excepciones de permisos.
+- Botón de salida que revoca el JWT en la API y después borra la sesión local.
 
-El token se guarda en `sessionStorage` y expira en el cliente según `expiresIn`. El botón de salida todavía **no revoca** un JWT en el servidor; HU-26-T05 requiere soporte de backend. La API de login aún no devuelve el rol o los permisos del usuario, por lo que la navegación no debe asumirlos. La autorización efectiva siempre la decide el backend.
+El token se guarda en `sessionStorage` y expira en el cliente según `expiresIn`. La navegación consulta `/api/v1/auth/me` para mostrar acciones según los permisos efectivos. La autorización final siempre la decide el backend.
 
-También se incorporaron pantallas de cuentas, fichas y permisos contra las rutas existentes de la API. La búsqueda y los filtros se incorporarán después de crear sus endpoints en el backend.
+La consulta de inventario requiere `INVENTARIO_CONSULTAR`; quien no tiene ese permiso no ve el acceso al módulo y la API rechaza el GET con 403. El listado muestra un resumen con chasis oculto; la ficha completa se abre por ID. La búsqueda de cuatro dígitos puede devolver varias coincidencias.
 
 ## Verificar
 
-`npm run build` compila la aplicación. Para una prueba funcional, iniciar sesión con una cuenta de prueba, registrar una llegada con rol ALMACEN y comprobar que una cuenta sin `LLEGADAS_REGISTRAR` recibe 403.
+`npm run build` compila la aplicación y `npm test -- --watch=false` ejecuta sus pruebas. Para presentar el inventario: iniciar sesión con una cuenta que tenga `INVENTARIO_CONSULTAR`, abrir **Inventario**, buscar un chasis completo o sus últimos cuatro dígitos, combinar filtros y abrir una ficha. Ejecutar también una búsqueda sin coincidencias y probar acceso con un rol sin permiso.
