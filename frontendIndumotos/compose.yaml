@@ -1,0 +1,19 @@
+services:
+  gateway:
+    build: ../gatewayIndumotos
+    environment:
+      SERVER_ADDRESS: 0.0.0.0
+      INDUMOTOS_API_URL: http://api:8080
+    networks:
+      - indumotos_shared
+  web:
+    build: .
+    depends_on:
+      - gateway
+    ports:
+      - "127.0.0.1:4200:80"
+    networks:
+      - indumotos_shared
+networks:
+  indumotos_shared:
+    external: true
