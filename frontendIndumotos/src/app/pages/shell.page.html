@@ -9,6 +9,7 @@
       @if (access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/inventario" routerLinkActive="active"><span class="nav-icon">⌕</span> Inventario</a> }
       @if (access.can('USUARIOS_CREAR')) { <a routerLink="/app/usuarios" routerLinkActive="active"><span class="nav-icon">♙</span> Cuentas</a> }
       @if (access.can('PERMISOS_ASIGNAR')) { <a routerLink="/app/permisos" routerLinkActive="active"><span class="nav-icon">◇</span> Permisos</a> }
+      @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/solicitudes" routerLinkActive="active"><span class="nav-icon">•</span> Solicitudes</a> }
     </nav>
     <div class="sidebar-bottom"><span class="status-dot"></span> Sistema Indumotos</div>
   </aside>
