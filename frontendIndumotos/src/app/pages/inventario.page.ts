@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { apiError } from '../core/api-error';
+import { AuthService } from '../core/auth.service';
 
 interface ResumenMotocicleta {
   id: number;
@@ -30,6 +31,7 @@ type Filtros = { chasis: string; marca: string; modelo: string; color: string };
 })
 export class InventarioPage implements OnInit {
   private readonly http = inject(HttpClient);
+  readonly auth = inject(AuthService);
   readonly loading = signal(false);
   readonly error = signal('');
   readonly page = signal<PaginaMotocicletas | null>(null);

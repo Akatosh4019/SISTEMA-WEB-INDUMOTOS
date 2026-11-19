@@ -1,6 +1,7 @@
 <div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div>
 <h1>Buscar y filtrar</h1>
 <p class="lead">Encuentra una unidad por chasis o combina marca, modelo y color. Abre su ficha para ver todos los datos.</p>
+@if (auth.can('FICHAS_REGISTRAR')) { <a class="new-record" routerLink="/app/fichas" [queryParams]="{nuevo: 1}">+ Agregar motocicleta</a> }
 
 <section class="panel" aria-labelledby="filtros-titulo">
   <div class="panel-heading"><span class="panel-icon">⌕</span><div><h2 id="filtros-titulo">Consulta de inventario</h2><p>Los filtros se combinan entre sí.</p></div></div>
