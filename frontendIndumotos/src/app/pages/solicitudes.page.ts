@@ -5,7 +5,7 @@ import { apiError } from '../core/api-error';
 import { AuthService } from '../core/auth.service';
 
 interface Linea { id?: number; marca: string; modelo: string; color: string; cantidad: number }
-interface Solicitud { id: number; estado: string; solicitante: string; destinoId: number; lineas: Linea[] }
+interface Solicitud { id: number; estado: string; solicitante: string; destinoId: number; destinoNombre: string; lineas: Linea[] }
 
 @Component({
   selector: 'app-solicitudes',
@@ -37,7 +37,7 @@ interface Solicitud { id: number; estado: string; solicitante: string; destinoId
       @if (cargando()) { <p>Cargando solicitudes...</p> }
       @for (solicitud of solicitudes(); track solicitud.id) {
         <details><summary>#{{solicitud.id}} — {{solicitud.estado}} — {{solicitud.solicitante}}</summary>
-          <p>Destino #{{solicitud.destinoId}}</p><ul>
+          <p>Destino: {{solicitud.destinoNombre}}</p><ul>
             @for (linea of solicitud.lineas; track linea.id) {
               <li>{{linea.marca}} {{linea.modelo}} · {{linea.color}} · {{linea.cantidad}} unidad(es)</li>
             }
