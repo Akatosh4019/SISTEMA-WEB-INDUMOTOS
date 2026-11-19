@@ -11,9 +11,9 @@ interface Moto { id: number; marca: string; modelo: string; color: string; chasi
 @Component({
   selector: 'app-ubicaciones', imports: [FormsModule],
   template: `
-    <h1>Ubicaciones de motocicletas</h1>
-    <p>Busca una motocicleta por chasis para ver dónde está. Registra su primera ubicación o el traslado a otra sede cuando se mueva físicamente.</p>
-    <section class="panel"><label>Chasis completo o últimos cuatro dígitos <input type="text" [(ngModel)]="chasis" maxlength="120"></label>
+    <header class="page-heading"><span class="eyebrow">CONTROL DE INVENTARIO</span><h1>Ubicaciones de motocicletas</h1>
+    <p>Busca una motocicleta por chasis para ver dónde está. Registra su primera ubicación o el traslado a otra sede cuando se mueva físicamente.</p></header>
+    <section class="panel"><div class="panel-heading"><span class="eyebrow">CONSULTA</span><h2>Buscar ubicación</h2></div><label>Chasis completo o últimos cuatro dígitos <input type="text" [(ngModel)]="chasis" maxlength="120"></label>
       <button type="button" (click)="buscarMotocicletas()" [disabled]="ocupado() || !chasis.trim()">Buscar motocicletas</button>
       @for (moto of coincidencias(); track moto.id) {
         <button type="button" (click)="seleccionar(moto)">{{moto.marca}} {{moto.modelo}} · {{moto.color}} · {{moto.chasisVista}}</button>
@@ -26,7 +26,7 @@ interface Moto { id: number; marca: string; modelo: string; color: string; chasi
       @if (historial().length === 0 && consultado()) { <p>Todavía no se ha registrado una ubicación.</p> }
     </section>
     @if (access.can('UBICACIONES_REGISTRAR') || access.can('TRASLADOS_REGISTRAR')) {
-      <section class="panel"><h2>Registrar movimiento</h2>
+      <section class="panel"><div class="panel-heading"><span class="eyebrow">MOVIMIENTO FÍSICO</span><h2>Registrar movimiento</h2><p>Selecciona la sede que recibirá la motocicleta.</p></div>
         <label>Destino <select [(ngModel)]="destinoId"><option [ngValue]="0">Seleccione sede</option>
           @for (sede of sedes(); track sede.id) {
             @if (!actual() || sede.tipo === 'TIENDA' || sede.tipo === 'DESPACHO') {
@@ -45,7 +45,7 @@ interface Moto { id: number; marca: string; modelo: string; color: string; chasi
     @if (error()) { <p role="alert">{{error()}}</p> }
     @if (mensaje()) { <p role="status">{{mensaje()}}</p> }
   `,
-  styles: [`h1{color:#243347}.panel{background:#fff;border:1px solid #e5e9ee;border-radius:10px;padding:20px;margin:20px 0}label{display:grid;gap:8px;margin:12px 0}input,select{padding:9px;border:1px solid #ccd5df;border-radius:5px}button{padding:9px 12px;cursor:pointer;margin-right:10px}[role=alert]{color:#aa311e}[role=status]{color:#176744}`]
+  styles: [`:host{display:block;max-width:1120px;margin:auto;color:#102a49}.page-heading{margin:8px 0 26px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;color:#173c64}h1{font-size:clamp(28px,3vw,38px);margin:8px 0}h2{font-size:21px;margin:5px 0}p{color:#627893;line-height:1.55}.page-heading p{max-width:760px;margin:0}.panel{background:#fff;border:1px solid #dfe7ef;border-radius:16px;padding:26px;margin:20px 0;box-shadow:0 10px 30px #1836560a}.panel-heading{padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid #e6edf3}.panel-heading p{margin:4px 0 0}label{display:grid;gap:7px;margin:12px 0 16px;font-size:13px;font-weight:700;max-width:720px}input,select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #d4dfe9;border-radius:9px;background:#fff;color:#102a49;font:inherit}input:focus,select:focus{outline:2px solid #93b9db;outline-offset:1px}button{border:0;border-radius:9px;background:#183d66;color:white;font:inherit;font-weight:700;padding:11px 15px;cursor:pointer;margin:4px 8px 4px 0}button:hover:not(:disabled){background:#245684}button:disabled{opacity:.55;cursor:not-allowed}.panel>p{padding:10px 12px;background:#f6f9fc;border-radius:9px}[role=alert],[role=status]{padding:12px 16px;border-radius:9px}[role=alert]{color:#9e332c;background:#fff0ee}[role=status]{color:#176744;background:#eaf8ee}@media(max-width:560px){.panel{padding:18px}button{width:100%;margin:5px 0}}`]
 })
 export class UbicacionesPage {
   private readonly http = inject(HttpClient);
