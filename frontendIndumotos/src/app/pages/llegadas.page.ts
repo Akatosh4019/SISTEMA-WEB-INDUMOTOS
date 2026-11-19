@@ -47,9 +47,11 @@ export class LlegadasPage {
   readonly searchError = signal('');
   readonly result = signal<Llegada | null>(null);
   readonly detail = signal<DetalleLlegada | null>(null);
+  readonly coincidencias = signal<Llegada[]>([]);
   form: { numeroGuia: string; cantidadDeclarada: number | null; cantidadRecibida: number | null; observacion: string } =
     { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
   searchId: number | null = null;
+  numeroGuia = '';
 
   registrar(): void {
     this.error.set('');
@@ -86,7 +88,7 @@ export class LlegadasPage {
     this.searchError.set('');
     this.detail.set(null);
     if (!this.searchId || this.searchId < 1) {
-      this.searchError.set('Ingresa un ID válido.');
+      this.searchError.set('No se pudo identificar la llegada seleccionada.');
       return;
     }
     this.searchBusy.set(true);
@@ -94,6 +96,22 @@ export class LlegadasPage {
       next: detalle => { this.detail.set(detalle); this.searchBusy.set(false); },
       error: (error: unknown) => { this.searchError.set(this.message(error)); this.searchBusy.set(false); }
     });
+  }
+
+  buscarGuia(): void {
+    const guia = this.numeroGuia.trim();
+    this.searchError.set(''); this.detail.set(null); this.coincidencias.set([]);
+    if (!guia) { this.searchError.set('Ingresa el número de guía.'); return; }
+    this.searchBusy.set(true);
+    this.http.get<Llegada[]>('/api/v1/llegadas', {params:{numeroGuia:guia}}).subscribe({
+      next: llegadas => { this.coincidencias.set(llegadas); this.searchBusy.set(false);
+        if (!llegadas.length) this.searchError.set('No se encontraron llegadas para esa guía.'); },
+      error: error => { this.searchError.set(this.message(error)); this.searchBusy.set(false); }
+    });
+  }
+
+  abrir(llegada: Llegada): void {
+    this.searchId = llegada.id; this.coincidencias.set([]); this.buscar();
   }
 
   private message(error: unknown): string {

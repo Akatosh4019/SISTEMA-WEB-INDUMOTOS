@@ -14,8 +14,12 @@ interface Candidata { motocicletaId: number; chasis: string; modelo: string; col
   selector: 'app-seguimiento', imports: [FormsModule],
   template: `
     <h1>Seguimiento y asignación</h1>
-    <section class="panel"><label>Número de solicitud <input type="number" min="1" [(ngModel)]="solicitudId"></label>
-      <button type="button" (click)="consultar()" [disabled]="solicitudId < 1 || ocupado()">Consultar</button>
+    <p>Selecciona una solicitud para registrar su preparación, consultar el historial y asociar los chasis concretos que atenderán cada línea.</p>
+    <section class="panel"><label>Solicitud <select [(ngModel)]="solicitudId"><option [ngValue]="0">Selecciona una solicitud</option>
+      @for (item of solicitudes(); track item.id) { <option [ngValue]="item.id">{{item.solicitante}} · {{item.estado}} · {{item.lineas[0]?.marca}} {{item.lineas[0]?.modelo}}</option> }
+      </select></label>
+      <button type="button" (click)="consultar()" [disabled]="solicitudId < 1 || ocupado()">Ver seguimiento</button>
+      @if (hayMas()) { <button type="button" (click)="cargarSolicitudes()" [disabled]="ocupado()">Cargar más solicitudes</button> }
     </section>
     @if (solicitud(); as s) {
       <section class="panel"><h2>Solicitud #{{s.id}} · {{s.estado}}</h2><p>Solicitada por {{s.solicitante}}</p>
@@ -67,6 +71,8 @@ export class SeguimientoPage {
   private readonly http = inject(HttpClient);
   readonly access = inject(AuthService);
   readonly solicitud = signal<Solicitud | null>(null);
+  readonly solicitudes = signal<Solicitud[]>([]);
+  readonly hayMas = signal(true);
   readonly eventos = signal<Evento[]>([]);
   readonly unidades = signal<Record<number,Unidad[]>>({});
   readonly candidatas = signal<Candidata[]>([]);
@@ -75,6 +81,18 @@ export class SeguimientoPage {
   readonly ocupado = signal(false);
   solicitudId = 0;
   chasis = '';
+  private paginaSolicitudes = 0;
+
+  constructor() { this.cargarSolicitudes(); }
+
+  cargarSolicitudes(): void {
+    this.ocupado.set(true);
+    this.http.get<Solicitud[]>('/api/v1/solicitudes', {params:{pagina:this.paginaSolicitudes,tamano:20}}).subscribe({
+      next: lista => { this.solicitudes.update(actual => [...actual, ...lista]);
+        this.paginaSolicitudes++; this.hayMas.set(lista.length === 20); this.ocupado.set(false); },
+      error: err => { this.error.set(apiError(err)); this.ocupado.set(false); }
+    });
+  }
 
   consultar(): void {
     this.ocupado.set(true); this.error.set(''); this.solicitud.set(null);

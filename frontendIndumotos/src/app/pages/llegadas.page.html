@@ -1,6 +1,6 @@
 <div class="eyebrow">RECEPCIÓN DE MOTOCICLETAS</div>
 <h1>Llegadas</h1>
-<p class="lead">Registra una recepción vinculada a su guía y consulta el detalle por ID.</p>
+<p class="lead">Registra la guía de remisión entregada con las motocicletas. Anota las cantidades recibidas y luego consulta la llegada por número de guía.</p>
 
 <div class="page-grid">
   @if (auth.can('LLEGADAS_REGISTRAR')) {
@@ -23,19 +23,22 @@
     </form>
     @if (result(); as llegada) {
       <div class="result success" role="status"><strong>Llegada registrada · #{{ llegada.id }}</strong><span>Guía {{ llegada.numeroGuia }} · {{ llegada.cantidadRecibida }} recibidas</span>
-        <button type="button" class="detail-button" (click)="searchId = llegada.id; buscar()">Ver detalle y fichas vinculadas</button></div>
+        <button type="button" class="detail-button" (click)="abrir(llegada)">Ver detalle y fichas vinculadas</button></div>
     }
   </section>
   }
 
   @if (auth.can('INVENTARIO_CONSULTAR')) {
   <section class="panel search-panel">
-    <div class="panel-heading"><span class="panel-icon blue">⌕</span><div><h2>Consultar llegada</h2><p>Busca un registro por su ID</p></div></div>
-    <form class="search-form" (ngSubmit)="buscar()">
-      <div><label for="searchId">ID de llegada</label><input id="searchId" name="searchId" type="number" min="1" [(ngModel)]="searchId" placeholder="Ej. 12" /></div>
+    <div class="panel-heading"><span class="panel-icon blue">⌕</span><div><h2>Consultar llegada</h2><p>Busca por número de guía</p></div></div>
+    <form class="search-form" (ngSubmit)="buscarGuia()">
+      <div><label for="numeroGuiaBusqueda">Número de guía</label><input id="numeroGuiaBusqueda" name="numeroGuiaBusqueda" type="text" maxlength="120" [(ngModel)]="numeroGuia" placeholder="Ej. GR-2026-001" /></div>
       <button type="submit" [disabled]="searchBusy()">{{ searchBusy() ? 'Buscando…' : 'Buscar' }}</button>
     </form>
     @if (searchError()) { <p class="message error" role="alert">{{ searchError() }}</p> }
+    @for (llegada of coincidencias(); track llegada.id) {
+      <button type="button" class="detail-button" (click)="abrir(llegada)">{{llegada.numeroGuia}} · {{llegada.fechaLlegada | date:'dd/MM/yyyy'}} · {{llegada.receptorUsuario}}</button>
+    }
     @if (detail(); as detalle) {
       @let llegada = detalle.llegada;
       <div class="detail">
@@ -57,7 +60,7 @@
         @if (auth.can('FICHAS_REGISTRAR')) { <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId: llegada.id}">Registrar ficha para esta llegada →</a> }
       </div>
     } @else {
-      <div class="empty-state"><span>⌕</span><p>Ingresa un ID para ver los datos de una llegada.</p></div>
+      <div class="empty-state"><span>⌕</span><p>Ingresa una guía para ver los datos de una llegada.</p></div>
     }
   </section>
   }

@@ -11,7 +11,7 @@ interface Solicitud { id: number; estado: string; solicitante: string; destinoId
   selector: 'app-solicitudes',
   imports: [FormsModule],
   template: `
-    <h1>Solicitudes</h1><p>Consulta solicitudes comerciales y sus líneas.</p>
+    <h1>Solicitudes</h1><p>Comercial solicita modelos, colores y cantidades para una sede. Logística prepara las unidades y registra el avance. Almacén registra el traslado a tienda o despacho cuando corresponde.</p>
     @if (access.can('SOLICITUDES_CREAR')) {
       <section class="panel"><h2>Nueva solicitud</h2><form (ngSubmit)="crear()">
         <label>Destino <select required name="destino" [(ngModel)]="destinoId">

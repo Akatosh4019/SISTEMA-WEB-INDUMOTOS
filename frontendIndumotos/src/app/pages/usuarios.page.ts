@@ -12,7 +12,7 @@ interface PaginaCuentas { items: Cuenta[]; pagina: number; tamano: number; total
   imports: [FormsModule],
   template: `<div class="form-page">
     <div class="eyebrow">ADMINISTRACIÓN DE ACCESOS</div><h1>Crear cuenta</h1>
-    <p class="lead">Cada trabajador debe tener una cuenta individual. Solo un administrador autorizado puede registrarla.</p>
+    <p class="lead">Crea una cuenta individual para cada trabajador y asígnale el rol de su área. También puedes buscar cuentas existentes por nombre o usuario.</p>
     <div class="grid"><section class="panel"><h2>Datos del trabajador</h2><p class="hint">La contraseña se enviará al servidor para guardarla de forma segura.</p>
       <form (ngSubmit)="guardar()" #f="ngForm">
         <label for="nombreCompleto">Nombre completo</label><input id="nombreCompleto" name="nombreCompleto" required maxlength="180" autocomplete="name" [(ngModel)]="form.nombreCompleto" />

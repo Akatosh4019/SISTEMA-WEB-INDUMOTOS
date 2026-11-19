@@ -6,14 +6,19 @@ import { AuthService } from '../core/auth.service';
 
 interface Sede { id: number; codigo: string; nombre: string; tipo: string }
 interface Movimiento { id: number; destinoId: number; destinoNombre: string; tipo: string; registrador: string; fecha: string }
+interface Moto { id: number; marca: string; modelo: string; color: string; chasisVista: string }
 
 @Component({
   selector: 'app-ubicaciones', imports: [FormsModule],
   template: `
     <h1>Ubicaciones de motocicletas</h1>
-    <p>Consulta el último lugar registrado y el historial de movimientos.</p>
-    <section class="panel"><label>ID de motocicleta <input type="number" min="1" [(ngModel)]="motocicletaId"></label>
-      <button type="button" (click)="consultar()" [disabled]="ocupado() || motocicletaId < 1">Consultar</button>
+    <p>Busca una motocicleta por chasis para ver dónde está. Registra su primera ubicación o el traslado a otra sede cuando se mueva físicamente.</p>
+    <section class="panel"><label>Chasis completo o últimos cuatro dígitos <input type="text" [(ngModel)]="chasis" maxlength="120"></label>
+      <button type="button" (click)="buscarMotocicletas()" [disabled]="ocupado() || !chasis.trim()">Buscar motocicletas</button>
+      @for (moto of coincidencias(); track moto.id) {
+        <button type="button" (click)="seleccionar(moto)">{{moto.marca}} {{moto.modelo}} · {{moto.color}} · {{moto.chasisVista}}</button>
+      }
+      @if (seleccionada()) { <p>Motocicleta seleccionada: <strong>{{seleccionada()?.marca}} {{seleccionada()?.modelo}} · {{seleccionada()?.chasisVista}}</strong></p> }
       @if (actual()) { <p>Última ubicación: <strong>{{actual()?.destinoNombre}}</strong></p> }
       @for (movimiento of historial(); track movimiento.id) {
         <p>{{movimiento.tipo}} · {{movimiento.destinoNombre}} · {{movimiento.fecha}} · {{movimiento.registrador}}</p>
@@ -48,11 +53,29 @@ export class UbicacionesPage {
   readonly mensaje = signal('');
   readonly ocupado = signal(false);
   readonly consultado = signal(false);
+  readonly coincidencias = signal<Moto[]>([]);
+  readonly seleccionada = signal<Moto | null>(null);
+  chasis = '';
   motocicletaId = 0;
   destinoId = 0;
 
   constructor() {
     this.http.get<Sede[]>('/api/v1/ubicaciones').subscribe({next: sedes => this.sedes.set(sedes), error: err => this.error.set(apiError(err))});
+  }
+  buscarMotocicletas(): void {
+    const chasis = this.chasis.trim();
+    this.error.set(''); this.mensaje.set(''); this.seleccionada.set(null);
+    this.motocicletaId = 0; this.actual.set(null); this.historial.set([]); this.consultado.set(false); this.coincidencias.set([]);
+    if (chasis.length < 4) { this.error.set('Ingresa el chasis completo o sus últimos cuatro dígitos.'); return; }
+    this.ocupado.set(true);
+    this.http.get<{items:Moto[]}>('/api/v1/motocicletas', {params:{chasis, pagina:0, tamano:10}}).subscribe({
+      next: page => { this.coincidencias.set(page.items); this.ocupado.set(false);
+        if (!page.items.length) this.error.set('No se encontraron motocicletas.'); },
+      error: err => { this.error.set(apiError(err)); this.ocupado.set(false); }
+    });
+  }
+  seleccionar(moto: Moto): void {
+    this.motocicletaId = moto.id; this.seleccionada.set(moto); this.coincidencias.set([]); this.consultar();
   }
   consultar(): void {
     this.actual.set(null); this.historial.set([]); this.consultado.set(false); this.error.set('');

@@ -11,19 +11,25 @@ interface Ficha {
   chasisCompleto: string; numeroMotor: string; dua: string; itemDua: string;
   creadorUsuario: string; creadoEn: string;
 }
+interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; receptorUsuario: string }
 
 @Component({
   selector: 'app-fichas-page',
   imports: [FormsModule, DatePipe, RouterLink],
   template: `<div class="form-page">
     <div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div><h1>{{modoDetalle() ? 'Ficha de motocicleta' : 'Nueva ficha de motocicleta'}}</h1>
-    <p class="lead">Consulta la ficha seleccionada desde el inventario o registra una nueva motocicleta.</p>
+    <p class="lead">Registra cada motocicleta indicada en la guía de la llegada, con su chasis, motor y datos de la DUA. Desde inventario puedes abrir y editar una ficha existente.</p>
     <p><a routerLink="/app/inventario">Volver al inventario</a> @if (modoDetalle() && auth.can('FICHAS_REGISTRAR')) { <a class="new-link" routerLink="/app/fichas" [queryParams]="{nuevo:1}">+ Agregar motocicleta</a> }</p>
     <div class="grid">
       @if (!modoDetalle() && auth.can('FICHAS_REGISTRAR')) {
       <section class="panel"><h2>Nueva ficha</h2><p class="hint">Datos contrastados con la guía y la DUA</p>
         <form (ngSubmit)="guardar()">
-          <label for="llegadaId">ID de llegada</label><input id="llegadaId" name="llegadaId" type="number" min="1" step="1" required [(ngModel)]="form.llegadaId" [attr.aria-invalid]="fieldErrors()['llegadaId'] ? true : null" />
+          <label for="guiaBusqueda">Número de guía</label><input id="guiaBusqueda" name="guiaBusqueda" type="text" maxlength="120" [(ngModel)]="guiaBusqueda" />
+          <button type="button" class="secondary" (click)="buscarLlegadas()">Buscar llegada</button>
+          @for (llegada of llegadas(); track llegada.id) {
+            <button type="button" class="secondary" (click)="seleccionarLlegada(llegada)">{{llegada.numeroGuia}} · {{llegada.fechaLlegada | date:'dd/MM/yyyy'}} · {{llegada.receptorUsuario}}</button>
+          }
+          @if (llegadaSeleccionada(); as llegada) { <p>Guía seleccionada: {{llegada.numeroGuia}}</p> }
           @if (fieldErrors()['llegadaId']) { <small class="field-error">{{fieldErrors()['llegadaId']}}</small> }
           <div class="row"><div><label for="marca">Marca</label><input id="marca" name="marca" required maxlength="120" [(ngModel)]="form.marca" [attr.aria-invalid]="fieldErrors()['marca'] ? true : null" />
             @if (fieldErrors()['marca']) { <small class="field-error">{{fieldErrors()['marca']}}</small> }</div>
@@ -95,6 +101,9 @@ export class FichasPage implements OnInit {
   readonly editando = signal(false);
   readonly editError = signal('');
   readonly editSuccess = signal(false);
+  readonly llegadas = signal<LlegadaOpcion[]>([]);
+  readonly llegadaSeleccionada = signal<LlegadaOpcion | null>(null);
+  guiaBusqueda = '';
   edicion = { marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   form = { llegadaId: null as number | null, marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   searchId: number | null = null;
@@ -105,10 +114,33 @@ export class FichasPage implements OnInit {
       const llegadaId = Number(params.get('llegadaId'));
       this.modoDetalle.set(!params.has('nuevo') && Number.isSafeInteger(id) && id > 0);
       this.editando.set(false); this.editSuccess.set(false);
-      if (Number.isSafeInteger(llegadaId) && llegadaId > 0) this.form.llegadaId = llegadaId;
+      if (Number.isSafeInteger(llegadaId) && llegadaId > 0) {
+        this.form.llegadaId = llegadaId;
+        this.http.get<LlegadaOpcion>(`/api/v1/llegadas/${llegadaId}`).subscribe({
+          next: llegada => { this.llegadaSeleccionada.set(llegada); this.guiaBusqueda = llegada.numeroGuia; },
+          error: err => this.error.set(apiError(err))
+        });
+      }
       if (this.modoDetalle()) { this.searchId = id; this.buscar(); }
       else { this.found.set(null); this.searchId = null; }
     });
+  }
+
+  buscarLlegadas(): void {
+    const numeroGuia = this.guiaBusqueda.trim();
+    this.llegadas.set([]); this.llegadaSeleccionada.set(null); this.form.llegadaId = null;
+    if (!numeroGuia) { this.error.set('Ingresa el número de guía.'); return; }
+    this.error.set('');
+    this.http.get<LlegadaOpcion[]>('/api/v1/llegadas', {params:{numeroGuia}}).subscribe({
+      next: llegadas => { this.llegadas.set(llegadas);
+        if (!llegadas.length) this.error.set('No se encontraron llegadas para esa guía.'); },
+      error: err => this.error.set(apiError(err))
+    });
+  }
+
+  seleccionarLlegada(llegada: LlegadaOpcion): void {
+    this.form.llegadaId = llegada.id; this.llegadaSeleccionada.set(llegada);
+    this.guiaBusqueda = llegada.numeroGuia; this.llegadas.set([]); this.error.set('');
   }
 
   iniciarEdicion(ficha: Ficha): void {
@@ -166,12 +198,13 @@ export class FichasPage implements OnInit {
 
   verExistente(id: number): void {
     this.searchId = id;
+    this.modoDetalle.set(true);
     this.buscar();
   }
 
   buscar(): void {
     this.found.set(null); this.searchError.set('');
-    if (!this.searchId || this.searchId < 1) { this.searchError.set('Ingresa un ID válido.'); return; }
+    if (!this.searchId || this.searchId < 1) { this.searchError.set('No se pudo identificar la ficha seleccionada.'); return; }
     this.searchBusy.set(true);
     this.http.get<Ficha>(`/api/v1/motocicletas/${this.searchId}`).subscribe({
       next: value => { this.found.set(value); this.searchBusy.set(false); },

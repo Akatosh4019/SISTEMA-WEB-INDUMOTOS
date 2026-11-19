@@ -5,16 +5,20 @@ import { apiError } from '../core/api-error';
 
 interface Permiso { codigo: string; porRol: boolean; excepcion: string | null; permitido: boolean; }
 interface Accesos { usuarioId: number; nombreUsuario: string; rolCodigo: string; permisos: Permiso[]; }
+interface Cuenta { id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string }
 
 @Component({
   selector: 'app-permisos-page',
   imports: [FormsModule],
   template: `<div class="form-page">
     <div class="eyebrow">ADMINISTRACIÓN DE ACCESOS</div><h1>Roles y permisos</h1>
-    <p class="lead">Consulta el acceso efectivo de una cuenta y ajusta su rol o sus excepciones individuales.</p>
-    <div class="grid"><section class="panel"><h2>Consultar cuenta</h2><p class="hint">Ingresa el ID de usuario asignado al crear la cuenta.</p>
-      <form (ngSubmit)="consultar()"><label for="usuarioId">ID de usuario</label><input id="usuarioId" name="usuarioId" type="number" min="1" [(ngModel)]="usuarioId" />
-        <button type="submit" class="secondary" [disabled]="busy()">Consultar permisos</button></form>
+    <p class="lead">Busca una cuenta por nombre para revisar qué puede hacer en el sistema. Cambia su rol o ajusta un permiso individual cuando corresponda.</p>
+    <div class="grid"><section class="panel"><h2>Consultar cuenta</h2><p class="hint">Busca por nombre o usuario.</p>
+      <form (ngSubmit)="buscarCuenta()"><label for="cuentaBusqueda">Nombre o usuario</label><input id="cuentaBusqueda" name="cuentaBusqueda" type="text" maxlength="180" [(ngModel)]="busqueda" />
+        <button type="submit" class="secondary" [disabled]="busy()">Buscar cuenta</button></form>
+      @for (cuenta of cuentas(); track cuenta.id) {
+        <button type="button" class="secondary" (click)="consultar(cuenta.id)">{{cuenta.nombreCompleto}} · {{cuenta.nombreUsuario}}</button>
+      }
       @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
       @if (success()) { <p class="message success" role="status">{{success()}}</p> }
       @if (accesos(); as cuenta) { <div class="detail">
@@ -46,16 +50,29 @@ export class PermisosPage {
   readonly error = signal('');
   readonly success = signal('');
   readonly accesos = signal<Accesos | null>(null);
+  readonly cuentas = signal<Cuenta[]>([]);
   readonly codigos = ['USUARIOS_CREAR','PERMISOS_ASIGNAR','LLEGADAS_REGISTRAR','FICHAS_REGISTRAR','INVENTARIO_CONSULTAR'];
-  usuarioId: number | null = null;
+  busqueda = '';
   nuevoRol = 'ALMACEN';
   codigo = 'LLEGADAS_REGISTRAR';
   decision = 'DENEGAR';
 
-  consultar(): void {
+  buscarCuenta(): void {
+    const buscar = this.busqueda.trim();
+    this.error.set(''); this.cuentas.set([]); this.accesos.set(null);
+    if (!buscar) { this.error.set('Ingresa un nombre o usuario.'); return; }
+    this.busy.set(true);
+    this.http.get<{items:Cuenta[]}>('/api/v1/usuarios', {params:{buscar, pagina:0, tamano:10}}).subscribe({
+      next: pagina => { this.cuentas.set(pagina.items); this.busy.set(false);
+        if (!pagina.items.length) this.error.set('No se encontraron cuentas.'); },
+      error: err => { this.error.set(apiError(err)); this.busy.set(false); }
+    });
+  }
+
+  consultar(usuarioId: number): void {
     this.accesos.set(null); this.error.set(''); this.success.set('');
-    if (!this.usuarioId || this.usuarioId < 1) { this.error.set('Ingresa un ID válido.'); return; }
-    this.request(this.http.get<Accesos>(`/api/v1/usuarios/${this.usuarioId}/permisos`), 'Permisos consultados.');
+    this.cuentas.set([]);
+    this.request(this.http.get<Accesos>(`/api/v1/usuarios/${usuarioId}/permisos`), 'Permisos consultados.');
   }
 
   cambiarRol(): void {

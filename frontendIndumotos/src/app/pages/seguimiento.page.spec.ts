@@ -9,6 +9,10 @@ describe('SeguimientoPage', () => {
     const fixture=TestBed.createComponent(SeguimientoPage);
     const http=TestBed.inject(HttpTestingController);
     const page=fixture.componentInstance;
+    http.expectOne('/api/v1/solicitudes?pagina=0&tamano=20').flush([
+      {id:12,estado:'PENDIENTE',solicitante:'comercial',lineas:[]}
+    ]);
+    expect(page.solicitudes().map(s => s.id)).toEqual([12]);
     page.solicitudId=12;
     page.consultar();
     http.expectOne('/api/v1/solicitudes/12').flush({id:12,estado:'PENDIENTE',solicitante:'comercial',lineas:[]});
