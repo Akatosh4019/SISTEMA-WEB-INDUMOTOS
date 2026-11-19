@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
@@ -30,6 +30,7 @@ interface DetalleLlegada {
   cantidadFichas: number;
   diferenciaInformativa: number;
 }
+interface PaginaLlegadas { items: Llegada[]; pagina: number; tamano: number; totalElementos: number; totalPaginas: number }
 
 @Component({
   selector: 'app-llegadas-page',
@@ -37,7 +38,7 @@ interface DetalleLlegada {
   templateUrl: './llegadas.page.html',
   styleUrl: './llegadas.page.css'
 })
-export class LlegadasPage {
+export class LlegadasPage implements OnInit {
   readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   readonly busy = signal(false);
@@ -48,10 +49,15 @@ export class LlegadasPage {
   readonly result = signal<Llegada | null>(null);
   readonly detail = signal<DetalleLlegada | null>(null);
   readonly coincidencias = signal<Llegada[]>([]);
+  readonly paginaLlegadas = signal<PaginaLlegadas | null>(null);
+  private consultaListado = 0;
+  private temporizador?: ReturnType<typeof setTimeout>;
   form: { numeroGuia: string; cantidadDeclarada: number | null; cantidadRecibida: number | null; observacion: string } =
     { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
   searchId: number | null = null;
   numeroGuia = '';
+
+  ngOnInit(): void { if (this.auth.can('INVENTARIO_CONSULTAR')) this.listar(0); }
 
   registrar(): void {
     this.error.set('');
@@ -70,7 +76,7 @@ export class LlegadasPage {
       cantidadRecibida: Number(this.form.cantidadRecibida),
       observacion: this.form.observacion.trim()
     }).subscribe({
-      next: llegada => { this.result.set(llegada); this.busy.set(false); },
+      next: llegada => { this.result.set(llegada); this.busy.set(false); this.listar(0); },
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 400) {
           const details = error.error as { errores?: Record<string, string> } | null;
@@ -99,14 +105,26 @@ export class LlegadasPage {
   }
 
   buscarGuia(): void {
-    const guia = this.numeroGuia.trim();
-    this.searchError.set(''); this.detail.set(null); this.coincidencias.set([]);
-    if (!guia) { this.searchError.set('Ingresa el número de guía.'); return; }
+    clearTimeout(this.temporizador);
+    this.listar(0);
+  }
+
+  alCambiarGuia(): void {
+    clearTimeout(this.temporizador);
+    this.temporizador = setTimeout(() => this.listar(0), 300);
+  }
+
+  listar(pagina: number): void {
+    if (pagina < 0) return;
+    const consulta = ++this.consultaListado;
+    this.searchError.set('');
     this.searchBusy.set(true);
-    this.http.get<Llegada[]>('/api/v1/llegadas', {params:{numeroGuia:guia}}).subscribe({
-      next: llegadas => { this.coincidencias.set(llegadas); this.searchBusy.set(false);
-        if (!llegadas.length) this.searchError.set('No se encontraron llegadas para esa guía.'); },
-      error: error => { this.searchError.set(this.message(error)); this.searchBusy.set(false); }
+    this.http.get<PaginaLlegadas>('/api/v1/llegadas/pagina',
+      {params:{numeroGuia:this.numeroGuia.trim(),pagina}}).subscribe({
+      next: resultado => { if (consulta !== this.consultaListado) return;
+        this.paginaLlegadas.set(resultado); this.searchBusy.set(false); },
+      error: error => { if (consulta !== this.consultaListado) return;
+        this.searchError.set(this.message(error)); this.searchBusy.set(false); }
     });
   }
 

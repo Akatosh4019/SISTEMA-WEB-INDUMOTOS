@@ -30,14 +30,22 @@
 
   @if (auth.can('INVENTARIO_CONSULTAR')) {
   <section class="panel search-panel">
-    <div class="panel-heading"><span class="panel-icon blue">⌕</span><div><h2>Consultar llegada</h2><p>Busca por número de guía</p></div></div>
+    <div class="panel-heading"><span class="panel-icon blue">⌕</span><div><h2>Consultar llegadas</h2><p>Guías registradas, de la más reciente a la más antigua. Máximo 10 por página.</p></div></div>
     <form class="search-form" (ngSubmit)="buscarGuia()">
-      <div><label for="numeroGuiaBusqueda">Número de guía</label><input id="numeroGuiaBusqueda" name="numeroGuiaBusqueda" type="text" maxlength="120" [(ngModel)]="numeroGuia" placeholder="Ej. GR-2026-001" /></div>
-      <button type="submit" [disabled]="searchBusy()">{{ searchBusy() ? 'Buscando…' : 'Buscar' }}</button>
+      <div><label for="numeroGuiaBusqueda">Filtrar por número de guía</label><input id="numeroGuiaBusqueda" name="numeroGuiaBusqueda" type="text" maxlength="120" [(ngModel)]="numeroGuia" (ngModelChange)="alCambiarGuia()" placeholder="Escribe una guía o deja vacío para ver todas" /></div>
+      <button type="submit" [disabled]="searchBusy()">{{ searchBusy() ? 'Cargando…' : 'Buscar' }}</button>
     </form>
     @if (searchError()) { <p class="message error" role="alert">{{ searchError() }}</p> }
-    @for (llegada of coincidencias(); track llegada.id) {
-      <button type="button" class="detail-button" (click)="abrir(llegada)">{{llegada.numeroGuia}} · {{llegada.fechaLlegada | date:'dd/MM/yyyy'}} · {{llegada.receptorUsuario}}</button>
+    @if (paginaLlegadas(); as pagina) {
+      <p class="list-count">{{pagina.totalElementos}} {{pagina.totalElementos === 1 ? 'guía registrada' : 'guías registradas'}}</p>
+      @for (llegada of pagina.items; track llegada.id) {
+        <button type="button" class="guide-row" (click)="abrir(llegada)"><strong>{{llegada.numeroGuia}}</strong><span>{{llegada.fechaLlegada | date:'dd/MM/yyyy'}} · {{llegada.cantidadRecibida}} recibidas · {{llegada.receptorUsuario}}</span><span class="guide-open">Ver detalle →</span></button>
+      } @empty { <p class="no-fichas">No hay guías registradas para este filtro.</p> }
+      @if (pagina.totalPaginas > 1) { <nav class="guide-pages" aria-label="Páginas de llegadas">
+        <button type="button" (click)="listar(pagina.pagina - 1)" [disabled]="searchBusy() || pagina.pagina === 0">Anterior</button>
+        <span>Página {{pagina.pagina + 1}} de {{pagina.totalPaginas}}</span>
+        <button type="button" (click)="listar(pagina.pagina + 1)" [disabled]="searchBusy() || pagina.pagina + 1 >= pagina.totalPaginas">Siguiente</button>
+      </nav> }
     }
     @if (detail(); as detalle) {
       @let llegada = detalle.llegada;
@@ -59,8 +67,6 @@
         } @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
         @if (auth.can('FICHAS_REGISTRAR')) { <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId: llegada.id}">Registrar ficha para esta llegada →</a> }
       </div>
-    } @else {
-      <div class="empty-state"><span>⌕</span><p>Ingresa una guía para ver los datos de una llegada.</p></div>
     }
   </section>
   }
