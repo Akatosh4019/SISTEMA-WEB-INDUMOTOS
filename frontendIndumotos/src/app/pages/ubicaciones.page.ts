@@ -28,7 +28,11 @@ interface Moto { id: number; marca: string; modelo: string; color: string; chasi
     @if (access.can('UBICACIONES_REGISTRAR') || access.can('TRASLADOS_REGISTRAR')) {
       <section class="panel"><h2>Registrar movimiento</h2>
         <label>Destino <select [(ngModel)]="destinoId"><option [ngValue]="0">Seleccione sede</option>
-          @for (sede of sedes(); track sede.id) { <option [ngValue]="sede.id">{{sede.nombre}} ({{sede.tipo}})</option> }
+          @for (sede of sedes(); track sede.id) {
+            @if (!actual() || sede.tipo === 'TIENDA' || sede.tipo === 'DESPACHO') {
+              <option [ngValue]="sede.id">{{sede.nombre}} ({{sede.tipo}})</option>
+            }
+          }
         </select></label>
         @if (access.can('UBICACIONES_REGISTRAR') && !actual()) {
           <button type="button" (click)="guardar(false)" [disabled]="ocupado() || !destinoId || motocicletaId < 1">Primera ubicación</button>
@@ -75,7 +79,8 @@ export class UbicacionesPage {
     });
   }
   seleccionar(moto: Moto): void {
-    this.motocicletaId = moto.id; this.seleccionada.set(moto); this.coincidencias.set([]); this.consultar();
+    this.motocicletaId = moto.id; this.destinoId = 0;
+    this.seleccionada.set(moto); this.coincidencias.set([]); this.consultar();
   }
   consultar(): void {
     this.actual.set(null); this.historial.set([]); this.consultado.set(false); this.error.set('');
