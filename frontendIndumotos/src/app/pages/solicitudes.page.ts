@@ -14,7 +14,7 @@ interface Solicitud { id: number; estado: string; solicitante: string; destinoId
   template: `
     <header class="page-heading"><span class="eyebrow">OPERACIÓN COMERCIAL</span><h1>Solicitudes</h1><p>Comercial solicita modelos, colores y cantidades e indica la sede de destino. Almacén prepara las unidades, confirma la solicitud y registra el traslado a tienda o despacho cuando corresponde.</p></header>
     @if (access.can('SOLICITUDES_CREAR')) {
-      <section class="panel"><div class="panel-heading"><span class="eyebrow">NUEVO PEDIDO</span><h2>Nueva solicitud</h2><p>Indica la sede que recibirá las motos. Las marcas, modelos y colores provienen de las fichas registradas.</p></div><form (ngSubmit)="crear()">
+      <section class="panel"><div class="panel-heading"><span class="eyebrow">NUEVO PEDIDO</span><h2>Nueva solicitud</h2><p>Indica la sede que recibirá las motos. Elige marca, modelo y color entre las opciones preparadas por Inventarios en el catálogo.</p></div><form (ngSubmit)="crear()">
         <label>Destino <select required name="destino" [(ngModel)]="destinoId">
           <option [ngValue]="0">Selecciona una sede</option>
           @for (sede of sedes(); track sede.id) { <option [ngValue]="sede.id">{{sede.nombre}}</option> }
