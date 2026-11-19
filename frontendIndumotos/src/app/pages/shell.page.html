@@ -1,24 +1,29 @@
 <div class="app-layout">
-  <aside class="sidebar">
-    <a routerLink="/app" class="logo"><span class="logo-mark">IM</span><span>INDUMOTOS</span></a>
-    <div class="nav-label">ESPACIO DE TRABAJO</div>
-    <nav aria-label="Navegación principal">
-      <a routerLink="/app" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active"><span class="nav-icon">▦</span> Resumen</a>
-      @if (access.can('LLEGADAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/llegadas" routerLinkActive="active"><span class="nav-icon">⇥</span> Llegadas</a> }
-      @if (access.can('FICHAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/fichas" routerLinkActive="active"><span class="nav-icon">▤</span> Fichas</a> }
-      @if (access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/inventario" routerLinkActive="active"><span class="nav-icon">⌕</span> Inventario</a> }
-      @if (access.can('USUARIOS_CREAR')) { <a routerLink="/app/usuarios" routerLinkActive="active"><span class="nav-icon">♙</span> Cuentas</a> }
-      @if (access.can('PERMISOS_ASIGNAR')) { <a routerLink="/app/permisos" routerLinkActive="active"><span class="nav-icon">◇</span> Permisos</a> }
-      @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/solicitudes" routerLinkActive="active"><span class="nav-icon">•</span> Solicitudes</a> }
-      @if (access.can('UBICACIONES_CONSULTAR')) { <a routerLink="/app/ubicaciones" routerLinkActive="active"><span class="nav-icon">●</span> Ubicaciones</a> }
-      @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/seguimiento" routerLinkActive="active"><span class="nav-icon">●</span> Seguimiento</a> }
+  @if (menuOpen()) { <button class="sidebar-backdrop" type="button" aria-label="Cerrar menú" (click)="closeMenu()"></button> }
+  <aside class="sidebar" [class.open]="menuOpen()" id="indumotos-menu">
+    <a routerLink="/app" class="logo" (click)="closeMenu()"><span class="logo-mark">IM</span><span>INDUMOTOS</span></a>
+    <div class="nav-label">OPERACIONES</div>
+    <nav aria-label="Navegación principal" (click)="closeMenu()">
+      <a routerLink="/app" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active"><span class="nav-icon">⌂</span> Inicio</a>
+      @if (access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/inventario" routerLinkActive="active"><span class="nav-icon">▣</span> Inventario</a> }
+      @if (access.can('LLEGADAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/llegadas" routerLinkActive="active"><span class="nav-icon">▰</span> Llegadas</a> }
+      @if (access.can('FICHAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/fichas" routerLinkActive="active"><span class="nav-icon">▤</span> Fichas de motocicletas</a> }
+      @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/solicitudes" routerLinkActive="active"><span class="nav-icon">☷</span> Solicitudes</a> }
+      @if (access.can('UBICACIONES_CONSULTAR')) { <a routerLink="/app/ubicaciones" routerLinkActive="active"><span class="nav-icon">⌖</span> Ubicaciones</a> }
+      @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/seguimiento" routerLinkActive="active"><span class="nav-icon">↗</span> Seguimiento</a> }
+      @if (access.can('USUARIOS_CREAR')) { <a routerLink="/app/usuarios" routerLinkActive="active"><span class="nav-icon">✚</span> Crear cuenta</a> }
+      @if (access.can('PERMISOS_ASIGNAR')) { <a routerLink="/app/permisos" routerLinkActive="active"><span class="nav-icon">♙</span> Roles y permisos</a> }
     </nav>
-    <div class="sidebar-bottom"><span class="status-dot"></span> Sistema Indumotos</div>
+    <div class="sidebar-bottom">
+      <div class="profile-avatar" aria-hidden="true">{{ initials() }}</div>
+      <div class="profile-text"><strong>{{ username() }}</strong><span>{{ roleName() }}</span></div>
+      <button class="logout-button" type="button" (click)="salir()" [disabled]="logoutBusy()">{{ logoutBusy() ? 'Saliendo…' : 'Cerrar sesión' }}</button>
+    </div>
   </aside>
   <div class="main-column">
     <header class="topbar">
-      <div class="topbar-title">Gestión de inventario <span>/ Sprint 1</span></div>
-      <div class="topbar-actions"><span class="user-pill">{{ username || 'Usuario' }}</span><button type="button" (click)="salir()" [disabled]="logoutBusy()">{{logoutBusy() ? 'Saliendo…' : 'Salir'}}</button></div>
+      <button class="menu-toggle" type="button" [attr.aria-expanded]="menuOpen()" aria-controls="indumotos-menu" aria-label="Abrir menú" (click)="menuOpen.set(!menuOpen())">☰</button>
+      <div class="topbar-title">Indumotos <span>/ Gestión de motocicletas</span></div>
     </header>
     <main class="content">@if (logoutError()) { <p role="alert">{{logoutError()}}</p> }<router-outlet /></main>
   </div>

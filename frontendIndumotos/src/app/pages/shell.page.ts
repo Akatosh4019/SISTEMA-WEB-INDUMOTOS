@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 
@@ -11,14 +11,24 @@ import { AuthService } from '../core/auth.service';
 export class ShellPage {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  readonly username = this.auth.username();
   readonly access = this.auth;
+  readonly menuOpen = signal(false);
+  readonly username = computed(() => this.auth.access()?.nombreUsuario || this.auth.username() || 'Usuario');
+  readonly roleName = computed(() => {
+    const role = this.auth.access()?.rolCodigo;
+    return role === 'ADMIN' ? 'Administrador' : role === 'ALMACEN' ? 'Almacén'
+      : role === 'INVENTARIOS' ? 'Inventarios' : role?.replaceAll('_', ' ') || 'Cargando perfil';
+  });
+  readonly initials = computed(() => this.username().slice(0, 2).toUpperCase());
   readonly logoutError = signal('');
   readonly logoutBusy = signal(false);
 
   constructor() {
     this.auth.loadAccess().subscribe({ error: () => { /* El interceptor gestiona 401. */ } });
   }
+
+  @HostListener('document:keydown.escape')
+  closeMenu(): void { this.menuOpen.set(false); }
 
   salir(): void {
     if (this.logoutBusy()) return;
