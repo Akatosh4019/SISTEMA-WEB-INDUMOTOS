@@ -64,6 +64,11 @@ export class InventarioPage implements OnInit {
     if (actual && pagina >= 0 && pagina < actual.totalPaginas) this.cargar(pagina);
   }
 
+  paginasVisibles(total: number, actual: number): number[] {
+    const inicio = Math.max(0, Math.min(actual - 2, total - 5));
+    return Array.from({ length: Math.min(5, total - inicio) }, (_, indice) => inicio + indice);
+  }
+
   private cargar(pagina: number): void {
     if (this.loading()) return;
     this.error.set('');

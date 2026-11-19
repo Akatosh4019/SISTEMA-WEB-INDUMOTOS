@@ -29,7 +29,7 @@
       <div class="empty"><strong>No hay coincidencias</strong><span>Prueba otro chasis o cambia los filtros. Los últimos cuatro dígitos pueden corresponder a varias motos.</span></div>
     }
     @if (resultado.totalPaginas > 1) {
-      <div class="pagination"><button type="button" (click)="irPagina(resultado.pagina - 1)" [disabled]="loading() || resultado.pagina === 0">← Anterior</button><span>Página {{ resultado.pagina + 1 }} de {{ resultado.totalPaginas }}</span><button type="button" (click)="irPagina(resultado.pagina + 1)" [disabled]="loading() || resultado.pagina + 1 >= resultado.totalPaginas">Siguiente →</button></div>
+      <nav class="pagination" aria-label="Páginas del inventario"><button type="button" (click)="irPagina(resultado.pagina - 1)" [disabled]="loading() || resultado.pagina === 0">Anterior</button><div class="page-numbers">@for (numero of paginasVisibles(resultado.totalPaginas, resultado.pagina); track numero) { <button type="button" class="page-number" [class.active]="numero === resultado.pagina" [attr.aria-label]="'Página ' + (numero + 1)" [attr.aria-current]="numero === resultado.pagina ? 'page' : null" (click)="irPagina(numero)" [disabled]="loading()">{{ numero + 1 }}</button> }</div><button type="button" (click)="irPagina(resultado.pagina + 1)" [disabled]="loading() || resultado.pagina + 1 >= resultado.totalPaginas">Siguiente</button></nav>
     }
   </section>
 }
