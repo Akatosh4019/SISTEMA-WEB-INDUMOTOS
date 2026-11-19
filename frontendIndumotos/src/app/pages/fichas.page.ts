@@ -52,6 +52,7 @@ interface OpcionMotocicleta { marca: string; modelo: string; color: string }
         </form>
         @if (created(); as ficha) { <p class="message success" role="status">Ficha #{{ficha.id}} registrada para el chasis {{ficha.chasisCompleto}}.</p> }
       </section>
+      @if (auth.can('CATALOGO_GESTIONAR')) {
       <section class="panel"><h2>Catálogo de motocicletas</h2><p class="hint">¿Llegó una marca, modelo o color nuevo? Agrégalo aquí para que Inventarios pueda registrarlo y Comercial pueda solicitarlo.</p>
         <form (ngSubmit)="agregarOpcion()" class="edit-form">
           <div class="row"><div><label for="catalogoMarca">Marca</label><input id="catalogoMarca" name="catalogoMarca" required maxlength="120" [(ngModel)]="nuevaOpcion.marca" list="marcasExistentes" /><datalist id="marcasExistentes">@for (marca of marcas(); track marca) { <option [value]="marca"></option> }</datalist></div>
@@ -62,6 +63,7 @@ interface OpcionMotocicleta { marca: string; modelo: string; color: string }
           <button type="submit" [disabled]="catalogoBusy()">{{catalogoBusy() ? 'Guardando...' : 'Agregar al catálogo'}}</button>
         </form>
       </section>
+      }
       }
       @if (modoDetalle() && auth.can('INVENTARIO_CONSULTAR')) {
       <section class="panel"><h2>Datos de la motocicleta</h2>
@@ -126,7 +128,7 @@ export class FichasPage implements OnInit {
   searchId: number | null = null;
 
   ngOnInit(): void {
-    if (this.auth.can('CATALOGO_GESTIONAR')) this.cargarCatalogo();
+    if (this.auth.can('FICHAS_REGISTRAR') || this.auth.can('FICHAS_EDITAR')) this.cargarCatalogo();
     this.route.queryParamMap.subscribe(params => {
       const id = Number(params.get('id'));
       const llegadaId = Number(params.get('llegadaId'));
