@@ -52,18 +52,6 @@ interface OpcionMotocicleta { marca: string; modelo: string; color: string }
         </form>
         @if (created(); as ficha) { <p class="message success" role="status">Ficha #{{ficha.id}} registrada para el chasis {{ficha.chasisCompleto}}.</p> }
       </section>
-      @if (auth.can('CATALOGO_GESTIONAR')) {
-      <section class="panel"><h2>Catálogo de motocicletas</h2><p class="hint">¿Llegó una marca, modelo o color nuevo? Agrégalo aquí para que Inventarios pueda registrarlo y Comercial pueda solicitarlo.</p>
-        <form (ngSubmit)="agregarOpcion()" class="edit-form">
-          <div class="row"><div><label for="catalogoMarca">Marca</label><input id="catalogoMarca" name="catalogoMarca" required maxlength="120" [(ngModel)]="nuevaOpcion.marca" list="marcasExistentes" /><datalist id="marcasExistentes">@for (marca of marcas(); track marca) { <option [value]="marca"></option> }</datalist></div>
-          <div><label for="catalogoModelo">Modelo</label><input id="catalogoModelo" name="catalogoModelo" required maxlength="120" [(ngModel)]="nuevaOpcion.modelo" /></div></div>
-          <label for="catalogoColor">Color</label><input id="catalogoColor" name="catalogoColor" required maxlength="120" [(ngModel)]="nuevaOpcion.color" />
-          @if (catalogoError()) { <p class="message error" role="alert">{{catalogoError()}}</p> }
-          @if (catalogoMensaje()) { <p class="message success" role="status">{{catalogoMensaje()}}</p> }
-          <button type="submit" [disabled]="catalogoBusy()">{{catalogoBusy() ? 'Guardando...' : 'Agregar al catálogo'}}</button>
-        </form>
-      </section>
-      }
       }
       @if (modoDetalle() && auth.can('INVENTARIO_CONSULTAR')) {
       <section class="panel"><h2>Datos de la motocicleta</h2>
@@ -118,10 +106,7 @@ export class FichasPage implements OnInit {
   readonly llegadaSeleccionada = signal<LlegadaOpcion | null>(null);
   readonly opciones = signal<OpcionMotocicleta[]>([]);
   readonly marcas = signal<string[]>([]);
-  readonly catalogoBusy = signal(false);
   readonly catalogoError = signal('');
-  readonly catalogoMensaje = signal('');
-  nuevaOpcion = {marca:'',modelo:'',color:''};
   guiaBusqueda = '';
   edicion = { marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   form = { llegadaId: null as number | null, marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
@@ -159,20 +144,6 @@ export class FichasPage implements OnInit {
 
   colores(marca: string, modelo: string): string[] {
     return [...new Set(this.opciones().filter(o => o.marca === marca && o.modelo === modelo).map(o => o.color))];
-  }
-
-  agregarOpcion(): void {
-    const marca=this.nuevaOpcion.marca.trim(), modelo=this.nuevaOpcion.modelo.trim(), color=this.nuevaOpcion.color.trim();
-    if (!marca || !modelo || !color) { this.catalogoError.set('Completa marca, modelo y color.'); return; }
-    this.catalogoBusy.set(true); this.catalogoError.set(''); this.catalogoMensaje.set('');
-    this.http.post<OpcionMotocicleta>('/api/v1/catalogo-motocicletas',{marca,modelo,color}).subscribe({
-      next: opcion => { this.opciones.update(actual => [...actual,opcion]);
-        this.marcas.set([...new Set(this.opciones().map(o => o.marca))]);
-        this.form.marca=opcion.marca; this.form.modelo=opcion.modelo; this.form.color=opcion.color;
-        this.nuevaOpcion={marca:'',modelo:'',color:''}; this.catalogoBusy.set(false);
-        this.catalogoMensaje.set('Combinación agregada. Ya puedes usarla en la ficha.'); },
-      error: err => { this.catalogoError.set(apiError(err)); this.catalogoBusy.set(false); }
-    });
   }
 
   buscarLlegadas(): void {

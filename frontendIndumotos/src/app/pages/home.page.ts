@@ -7,10 +7,13 @@ import { AuthService } from '../core/auth.service';
   imports: [RouterLink],
   template: `<div class="eyebrow">PANEL PRINCIPAL</div>
     <h1>Bienvenido, {{ roleName() }}</h1>
-    <p class="lead">Consulta y registra los movimientos de motocicletas con la información vinculada a cada llegada.</p>
+    <p class="lead">{{orientacion()}}</p>
     <div class="grid">
       @if (auth.can('LLEGADAS_REGISTRAR')) { <a class="action-card" routerLink="/app/llegadas"><span class="card-symbol">⇥</span><span class="card-kicker">RECEPCIÓN</span><strong>Registrar llegada</strong><span class="card-copy">Anota la guía y las cantidades recibidas para iniciar el registro.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('FICHAS_REGISTRAR')) { <a class="action-card" routerLink="/app/fichas"><span class="card-symbol muted">▤</span><span class="card-kicker">INVENTARIO</span><strong>Registrar ficha</strong><span class="card-copy">Asocia una motocicleta a la llegada que le corresponde.</span><span class="card-arrow">Abrir módulo →</span></a> }
+      @if (auth.can('CATALOGO_GESTIONAR')) { <a class="action-card" routerLink="/app/catalogo"><span class="card-symbol muted">▤</span><span class="card-kicker">CATÁLOGO</span><strong>Agregar marca, modelo y color</strong><span class="card-copy">Prepara las opciones que usarán Inventarios y Comercial.</span><span class="card-arrow">Abrir módulo →</span></a> }
+      @if (auth.can('SOLICITUDES_CREAR')) { <a class="action-card" routerLink="/app/solicitudes"><span class="card-symbol muted">☷</span><span class="card-kicker">COMERCIAL</span><strong>Solicitar motocicletas</strong><span class="card-copy">Elige modelos, cantidades y la sede que los recibirá.</span><span class="card-arrow">Abrir módulo →</span></a> }
+      @if (auth.can('SOLICITUDES_AVANZAR')) { <a class="action-card" routerLink="/app/seguimiento"><span class="card-symbol muted">↗</span><span class="card-kicker">PREPARACIÓN</span><strong>Atender solicitudes</strong><span class="card-copy">Asigna los chasis y confirma cuando esté todo preparado.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('INVENTARIO_CONSULTAR')) { <a class="action-card" routerLink="/app/inventario"><span class="card-symbol muted">⌕</span><span class="card-kicker">CONSULTA</span><strong>Buscar motocicletas</strong><span class="card-copy">Busca por chasis o filtra el inventario por marca, modelo y color.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('USUARIOS_CREAR')) { <a class="action-card" routerLink="/app/usuarios"><span class="card-symbol muted">♙</span><span class="card-kicker">ADMINISTRACIÓN</span><strong>Crear cuenta</strong><span class="card-copy">Registra una cuenta individual para un trabajador autorizado.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('PERMISOS_ASIGNAR')) { <a class="action-card" routerLink="/app/permisos"><span class="card-symbol muted">◇</span><span class="card-kicker">ACCESO</span><strong>Roles y permisos</strong><span class="card-copy">Consulta y ajusta el acceso de una cuenta.</span><span class="card-arrow">Abrir módulo →</span></a> }
@@ -19,6 +22,14 @@ import { AuthService } from '../core/auth.service';
 })
 export class HomePage {
   readonly auth = inject(AuthService);
+  readonly orientacion = computed(() => {
+    const role = this.auth.access()?.rolCodigo;
+    return role === 'ALMACEN' ? 'Registra las guías recibidas, prepara las motos solicitadas y confirma los movimientos hacia su sede.'
+      : role === 'INVENTARIOS' ? 'Mantén el catálogo, registra cada motocicleta de una llegada y consulta sus fichas.'
+      : role === 'COMERCIAL' ? 'Solicita las motocicletas que necesita cada sede y consulta el estado de tus pedidos.'
+      : role === 'ENSAMBLAJE' ? 'Consulta las solicitudes asignadas y registra su preparación.'
+      : 'Consulta el inventario y administra las operaciones y accesos del equipo.';
+  });
   readonly roleName = computed(() => {
     const role = this.auth.access()?.rolCodigo;
     return role === 'ADMIN' ? 'Administrador' : role === 'ALMACEN' ? 'Almacén'

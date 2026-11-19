@@ -12,6 +12,7 @@ export const routes: Routes = [
       { path: '', loadComponent: () => import('./pages/home.page').then(m => m.HomePage) },
       { path: 'llegadas', canActivate: [permissionGuard], data: { permissions: ['LLEGADAS_REGISTRAR', 'INVENTARIO_CONSULTAR'] }, loadComponent: () => import('./pages/llegadas.page').then(m => m.LlegadasPage) },
       { path: 'fichas', canActivate: [permissionGuard], data: { permissions: ['FICHAS_REGISTRAR', 'INVENTARIO_CONSULTAR'] }, loadComponent: () => import('./pages/fichas.page').then(m => m.FichasPage) },
+      { path: 'catalogo', canActivate: [permissionGuard], data: { permission: 'CATALOGO_GESTIONAR' }, loadComponent: () => import('./pages/catalogo.page').then(m => m.CatalogoPage) },
       { path: 'inventario', canActivate: [permissionGuard], data: { permission: 'INVENTARIO_CONSULTAR' }, loadComponent: () => import('./pages/inventario.page').then(m => m.InventarioPage) },
       { path: 'solicitudes', canActivate: [permissionGuard], data: { permission: 'SOLICITUDES_CONSULTAR' }, loadComponent: () => import('./pages/solicitudes.page').then(m => m.SolicitudesPage) },
       { path: 'ubicaciones', canActivate: [permissionGuard], data: { permission: 'UBICACIONES_CONSULTAR' }, loadComponent: () => import('./pages/ubicaciones.page').then(m => m.UbicacionesPage) },

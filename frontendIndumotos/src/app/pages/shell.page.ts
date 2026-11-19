@@ -17,7 +17,8 @@ export class ShellPage {
   readonly roleName = computed(() => {
     const role = this.auth.access()?.rolCodigo;
     return role === 'ADMIN' ? 'Administrador' : role === 'ALMACEN' ? 'Almacén'
-      : role === 'INVENTARIOS' ? 'Inventarios' : role?.replaceAll('_', ' ') || 'Cargando perfil';
+      : role === 'INVENTARIOS' ? 'Inventarios' : role === 'COMERCIAL' ? 'Comercial'
+      : role === 'ENSAMBLAJE' ? 'Ensamblaje' : role?.replaceAll('_', ' ') || 'Cargando perfil';
   });
   readonly initials = computed(() => this.username().slice(0, 2).toUpperCase());
   readonly logoutError = signal('');

@@ -1,9 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { apiError } from '../core/api-error';
 import { AuthService } from '../core/auth.service';
+import { FichaDialogComponent } from './ficha-dialog.component';
 
 interface ResumenMotocicleta {
   id: number;
@@ -25,22 +26,41 @@ type Filtros = { chasis: string; marca: string; modelo: string; color: string };
 
 @Component({
   selector: 'app-inventario-page',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, FichaDialogComponent],
   templateUrl: './inventario.page.html',
   styleUrl: './inventario.page.css'
 })
 export class InventarioPage implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute);
   readonly auth = inject(AuthService);
   readonly loading = signal(false);
   readonly error = signal('');
   readonly page = signal<PaginaMotocicletas | null>(null);
+  readonly fichaAbierta = signal<number | null>(null);
   filtros: Filtros = { chasis: '', marca: '', modelo: '', color: '' };
   private aplicados: Filtros = { ...this.filtros };
+  private temporizador?: ReturnType<typeof setTimeout>;
+  private consulta = 0;
 
-  ngOnInit(): void { this.cargar(0); }
+  ngOnInit(): void {
+    this.cargar(0);
+    this.route.queryParamMap.subscribe(params => {
+      const id = Number(params.get('id'));
+      if (Number.isSafeInteger(id) && id > 0) this.fichaAbierta.set(id);
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  cerrarFicha(): void { this.fichaAbierta.set(null); }
+
+  alCambiarFiltro(): void {
+    clearTimeout(this.temporizador);
+    this.temporizador = setTimeout(() => this.buscar(), 300);
+  }
 
   buscar(): void {
+    clearTimeout(this.temporizador);
     const chasis = this.filtros.chasis.trim();
     if (chasis && (chasis.length < 4 || (chasis.length === 4 && !/^\d{4}$/.test(chasis)))) {
       this.error.set('Ingresa el chasis completo o sus últimos cuatro dígitos.');
@@ -72,7 +92,7 @@ export class InventarioPage implements OnInit {
   }
 
   private cargar(pagina: number): void {
-    if (this.loading()) return;
+    const consulta = ++this.consulta;
     this.error.set('');
     this.loading.set(true);
     let params = new HttpParams().set('pagina', pagina).set('tamano', 10);
@@ -80,8 +100,9 @@ export class InventarioPage implements OnInit {
       if (valor) params = params.set(campo, valor);
     }
     this.http.get<PaginaMotocicletas>('/api/v1/motocicletas', { params }).subscribe({
-      next: resultado => { this.page.set(resultado); this.loading.set(false); },
+      next: resultado => { if (consulta !== this.consulta) return; this.page.set(resultado); this.loading.set(false); },
       error: error => {
+        if (consulta !== this.consulta) return;
         this.page.set(null);
         this.error.set(apiError(error));
         this.loading.set(false);

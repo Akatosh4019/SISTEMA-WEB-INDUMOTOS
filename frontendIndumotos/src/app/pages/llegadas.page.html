@@ -53,7 +53,7 @@
         <p class="detail-hint">Diferencia informativa; no confirma conformidad ni cambia el inventario.</p>
         <h3>Motocicletas de esta llegada</h3>
         @for (ficha of detalle.fichas; track ficha.id) {
-          <a class="ficha-link" routerLink="/app/fichas" [queryParams]="{id: ficha.id}">
+          <a class="ficha-link" routerLink="/app/inventario" [queryParams]="{id: ficha.id}">
             <span><strong>#{{ ficha.id }} · {{ ficha.marca }} {{ ficha.modelo }}</strong><small>{{ ficha.color }} · {{ ficha.chasisCompleto }}</small></span><span>Abrir ficha →</span>
           </a>
         } @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
