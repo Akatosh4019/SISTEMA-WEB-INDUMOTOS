@@ -41,12 +41,12 @@ interface Candidata { motocicletaId: number; chasis: string; modelo: string; col
               <button type="button" (click)="verUnidades(linea.id)">Ver asignadas</button>
               @for (unidad of unidades()[linea.id]; track unidad.asociacionId) {
                 <p>{{unidad.chasis}}
-                  @if (s.estado === 'PENDIENTE' || s.estado === 'EN_PREPARACION') {
+                  @if (s.estado === 'EN_PREPARACION') {
                     <button type="button" (click)="retirar(linea.id,unidad.asociacionId)">Retirar</button>
                   }
                 </p>
               }
-              @if (s.estado === 'PENDIENTE' || s.estado === 'EN_PREPARACION') {
+              @if (s.estado === 'EN_PREPARACION') {
                 <label>Buscar chasis <input [(ngModel)]="chasis"></label>
                 <button type="button" (click)="buscar()">Buscar libres</button>
                 @for (moto of candidatas(); track moto.motocicletaId) {
