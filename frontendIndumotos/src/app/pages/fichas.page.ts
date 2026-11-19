@@ -12,6 +12,7 @@ interface Ficha {
   creadorUsuario: string; creadoEn: string;
 }
 interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; receptorUsuario: string }
+interface OpcionMotocicleta { marca: string; modelo: string; color: string }
 
 @Component({
   selector: 'app-fichas-page',
@@ -31,11 +32,11 @@ interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; 
           }
           @if (llegadaSeleccionada(); as llegada) { <p>Guía seleccionada: {{llegada.numeroGuia}}</p> }
           @if (fieldErrors()['llegadaId']) { <small class="field-error">{{fieldErrors()['llegadaId']}}</small> }
-          <div class="row"><div><label for="marca">Marca</label><input id="marca" name="marca" required maxlength="120" [(ngModel)]="form.marca" [attr.aria-invalid]="fieldErrors()['marca'] ? true : null" />
+          <div class="row"><div><label for="marca">Marca</label><select id="marca" name="marca" required [(ngModel)]="form.marca" (ngModelChange)="form.modelo=''; form.color=''" [attr.aria-invalid]="fieldErrors()['marca'] ? true : null"><option value="">Selecciona marca</option>@for (marca of marcas(); track marca) { <option [value]="marca">{{marca}}</option> }</select>
             @if (fieldErrors()['marca']) { <small class="field-error">{{fieldErrors()['marca']}}</small> }</div>
-          <div><label for="modelo">Modelo</label><input id="modelo" name="modelo" required maxlength="120" [(ngModel)]="form.modelo" [attr.aria-invalid]="fieldErrors()['modelo'] ? true : null" />
+          <div><label for="modelo">Modelo</label><select id="modelo" name="modelo" required [(ngModel)]="form.modelo" (ngModelChange)="form.color=''" [disabled]="!form.marca" [attr.aria-invalid]="fieldErrors()['modelo'] ? true : null"><option value="">Selecciona modelo</option>@for (modelo of modelos(form.marca); track modelo) { <option [value]="modelo">{{modelo}}</option> }</select>
             @if (fieldErrors()['modelo']) { <small class="field-error">{{fieldErrors()['modelo']}}</small> }</div></div>
-          <div class="row"><div><label for="color">Color</label><input id="color" name="color" required maxlength="120" [(ngModel)]="form.color" [attr.aria-invalid]="fieldErrors()['color'] ? true : null" />
+          <div class="row"><div><label for="color">Color</label><select id="color" name="color" required [(ngModel)]="form.color" [disabled]="!form.modelo" [attr.aria-invalid]="fieldErrors()['color'] ? true : null"><option value="">Selecciona color</option>@for (color of colores(form.marca,form.modelo); track color) { <option [value]="color">{{color}}</option> }</select>
             @if (fieldErrors()['color']) { <small class="field-error">{{fieldErrors()['color']}}</small> }</div>
           <div><label for="chasis">Chasis completo</label><input id="chasis" name="chasis" required maxlength="120" [(ngModel)]="form.chasisCompleto" [attr.aria-invalid]="fieldErrors()['chasisCompleto'] ? true : null" />
             @if (fieldErrors()['chasisCompleto']) { <small class="field-error">{{fieldErrors()['chasisCompleto']}}</small> }</div></div>
@@ -50,6 +51,16 @@ interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; 
           <button [disabled]="busy()" type="submit">{{busy() ? 'Guardando…' : 'Registrar ficha'}}</button>
         </form>
         @if (created(); as ficha) { <p class="message success" role="status">Ficha #{{ficha.id}} registrada para el chasis {{ficha.chasisCompleto}}.</p> }
+      </section>
+      <section class="panel"><h2>Catálogo de motocicletas</h2><p class="hint">¿Llegó una marca, modelo o color nuevo? Agrégalo aquí para que Inventarios pueda registrarlo y Comercial pueda solicitarlo.</p>
+        <form (ngSubmit)="agregarOpcion()" class="edit-form">
+          <div class="row"><div><label for="catalogoMarca">Marca</label><input id="catalogoMarca" name="catalogoMarca" required maxlength="120" [(ngModel)]="nuevaOpcion.marca" list="marcasExistentes" /><datalist id="marcasExistentes">@for (marca of marcas(); track marca) { <option [value]="marca"></option> }</datalist></div>
+          <div><label for="catalogoModelo">Modelo</label><input id="catalogoModelo" name="catalogoModelo" required maxlength="120" [(ngModel)]="nuevaOpcion.modelo" /></div></div>
+          <label for="catalogoColor">Color</label><input id="catalogoColor" name="catalogoColor" required maxlength="120" [(ngModel)]="nuevaOpcion.color" />
+          @if (catalogoError()) { <p class="message error" role="alert">{{catalogoError()}}</p> }
+          @if (catalogoMensaje()) { <p class="message success" role="status">{{catalogoMensaje()}}</p> }
+          <button type="submit" [disabled]="catalogoBusy()">{{catalogoBusy() ? 'Guardando...' : 'Agregar al catálogo'}}</button>
+        </form>
       </section>
       }
       @if (modoDetalle() && auth.can('INVENTARIO_CONSULTAR')) {
@@ -69,8 +80,8 @@ interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; 
           @if (!editando()) { <button type="button" (click)="iniciarEdicion(ficha)">Editar ficha</button> }
           @else { <form (ngSubmit)="actualizar()" class="edit-form">
             <p class="hint">La llegada y la fecha de registro permanecen vinculadas a esta ficha.</p>
-            <div class="row"><div><label for="editMarca">Marca</label><input id="editMarca" name="editMarca" required maxlength="120" [(ngModel)]="edicion.marca" /></div><div><label for="editModelo">Modelo</label><input id="editModelo" name="editModelo" required maxlength="120" [(ngModel)]="edicion.modelo" /></div></div>
-            <div class="row"><div><label for="editColor">Color</label><input id="editColor" name="editColor" required maxlength="120" [(ngModel)]="edicion.color" /></div><div><label for="editChasis">Chasis completo</label><input id="editChasis" name="editChasis" required maxlength="120" [(ngModel)]="edicion.chasisCompleto" /></div></div>
+            <div class="row"><div><label for="editMarca">Marca</label><select id="editMarca" name="editMarca" required [(ngModel)]="edicion.marca" (ngModelChange)="edicion.modelo=''; edicion.color=''"><option value="">Selecciona marca</option>@for (marca of marcas(); track marca) { <option [value]="marca">{{marca}}</option> }</select></div><div><label for="editModelo">Modelo</label><select id="editModelo" name="editModelo" required [(ngModel)]="edicion.modelo" (ngModelChange)="edicion.color=''" [disabled]="!edicion.marca"><option value="">Selecciona modelo</option>@for (modelo of modelos(edicion.marca); track modelo) { <option [value]="modelo">{{modelo}}</option> }</select></div></div>
+            <div class="row"><div><label for="editColor">Color</label><select id="editColor" name="editColor" required [(ngModel)]="edicion.color" [disabled]="!edicion.modelo"><option value="">Selecciona color</option>@for (color of colores(edicion.marca,edicion.modelo); track color) { <option [value]="color">{{color}}</option> }</select></div><div><label for="editChasis">Chasis completo</label><input id="editChasis" name="editChasis" required maxlength="120" [(ngModel)]="edicion.chasisCompleto" /></div></div>
             <label for="editMotor">Número de motor</label><input id="editMotor" name="editMotor" required maxlength="120" [(ngModel)]="edicion.numeroMotor" />
             <div class="row"><div><label for="editDua">DUA</label><input id="editDua" name="editDua" required maxlength="120" [(ngModel)]="edicion.dua" /></div><div><label for="editItem">Ítem DUA</label><input id="editItem" name="editItem" required maxlength="120" [(ngModel)]="edicion.itemDua" /></div></div>
             @if (editError()) { <p class="message error" role="alert">{{editError()}}</p> }
@@ -83,7 +94,7 @@ interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; 
       }
     </div></div>`,
   styles: [`.field-error{display:block;color:#aa3721;font-size:12px;margin:-12px 0 16px}
-    input[aria-invalid="true"]{border-color:#ca4b32}.new-link{display:inline-block;margin-left:20px}.edit-form{margin-top:22px}`]
+    input[aria-invalid="true"],select[aria-invalid="true"]{border-color:#ca4b32}.new-link{display:inline-block;margin-left:20px}.edit-form{margin-top:22px}`]
 })
 export class FichasPage implements OnInit {
   readonly auth = inject(AuthService);
@@ -103,12 +114,19 @@ export class FichasPage implements OnInit {
   readonly editSuccess = signal(false);
   readonly llegadas = signal<LlegadaOpcion[]>([]);
   readonly llegadaSeleccionada = signal<LlegadaOpcion | null>(null);
+  readonly opciones = signal<OpcionMotocicleta[]>([]);
+  readonly marcas = signal<string[]>([]);
+  readonly catalogoBusy = signal(false);
+  readonly catalogoError = signal('');
+  readonly catalogoMensaje = signal('');
+  nuevaOpcion = {marca:'',modelo:'',color:''};
   guiaBusqueda = '';
   edicion = { marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   form = { llegadaId: null as number | null, marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   searchId: number | null = null;
 
   ngOnInit(): void {
+    if (this.auth.can('CATALOGO_GESTIONAR')) this.cargarCatalogo();
     this.route.queryParamMap.subscribe(params => {
       const id = Number(params.get('id'));
       const llegadaId = Number(params.get('llegadaId'));
@@ -123,6 +141,35 @@ export class FichasPage implements OnInit {
       }
       if (this.modoDetalle()) { this.searchId = id; this.buscar(); }
       else { this.found.set(null); this.searchId = null; }
+    });
+  }
+
+  cargarCatalogo(): void {
+    this.http.get<OpcionMotocicleta[]>('/api/v1/catalogo-motocicletas').subscribe({
+      next: opciones => { this.opciones.set(opciones); this.marcas.set([...new Set(opciones.map(o => o.marca))]); },
+      error: err => this.catalogoError.set(apiError(err))
+    });
+  }
+
+  modelos(marca: string): string[] {
+    return [...new Set(this.opciones().filter(o => o.marca === marca).map(o => o.modelo))];
+  }
+
+  colores(marca: string, modelo: string): string[] {
+    return [...new Set(this.opciones().filter(o => o.marca === marca && o.modelo === modelo).map(o => o.color))];
+  }
+
+  agregarOpcion(): void {
+    const marca=this.nuevaOpcion.marca.trim(), modelo=this.nuevaOpcion.modelo.trim(), color=this.nuevaOpcion.color.trim();
+    if (!marca || !modelo || !color) { this.catalogoError.set('Completa marca, modelo y color.'); return; }
+    this.catalogoBusy.set(true); this.catalogoError.set(''); this.catalogoMensaje.set('');
+    this.http.post<OpcionMotocicleta>('/api/v1/catalogo-motocicletas',{marca,modelo,color}).subscribe({
+      next: opcion => { this.opciones.update(actual => [...actual,opcion]);
+        this.marcas.set([...new Set(this.opciones().map(o => o.marca))]);
+        this.form.marca=opcion.marca; this.form.modelo=opcion.modelo; this.form.color=opcion.color;
+        this.nuevaOpcion={marca:'',modelo:'',color:''}; this.catalogoBusy.set(false);
+        this.catalogoMensaje.set('Combinación agregada. Ya puedes usarla en la ficha.'); },
+      error: err => { this.catalogoError.set(apiError(err)); this.catalogoBusy.set(false); }
     });
   }
 
