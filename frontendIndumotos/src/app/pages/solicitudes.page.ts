@@ -5,6 +5,7 @@ import { apiError } from '../core/api-error';
 import { AuthService } from '../core/auth.service';
 
 interface Linea { id?: number; marca: string; modelo: string; color: string; cantidad: number }
+interface OpcionMotocicleta { marca: string; modelo: string; color: string }
 interface Solicitud { id: number; estado: string; solicitante: string; destinoId: number; destinoNombre: string; lineas: Linea[] }
 
 @Component({
@@ -13,15 +14,15 @@ interface Solicitud { id: number; estado: string; solicitante: string; destinoId
   template: `
     <header class="page-heading"><span class="eyebrow">OPERACIÓN COMERCIAL</span><h1>Solicitudes</h1><p>Comercial solicita modelos, colores y cantidades e indica la sede de destino. Almacén prepara las unidades, confirma la solicitud y registra el traslado a tienda o despacho cuando corresponde.</p></header>
     @if (access.can('SOLICITUDES_CREAR')) {
-      <section class="panel"><div class="panel-heading"><span class="eyebrow">NUEVO PEDIDO</span><h2>Nueva solicitud</h2><p>Indica la sede que recibirá las motos y detalla cada modelo solicitado.</p></div><form (ngSubmit)="crear()">
+      <section class="panel"><div class="panel-heading"><span class="eyebrow">NUEVO PEDIDO</span><h2>Nueva solicitud</h2><p>Indica la sede que recibirá las motos. Las marcas, modelos y colores provienen de las fichas registradas.</p></div><form (ngSubmit)="crear()">
         <label>Destino <select required name="destino" [(ngModel)]="destinoId">
           <option [ngValue]="0">Selecciona una sede</option>
           @for (sede of sedes(); track sede.id) { <option [ngValue]="sede.id">{{sede.nombre}}</option> }
         </select></label>
         @for (linea of lineas; track $index; let i = $index) {
-          <div class="linea"><label>Marca <input required maxlength="120" [name]="'marca'+i" [(ngModel)]="linea.marca"></label>
-            <label>Modelo <input required maxlength="120" [name]="'modelo'+i" [(ngModel)]="linea.modelo"></label>
-            <label>Color <input required maxlength="120" [name]="'color'+i" [(ngModel)]="linea.color"></label>
+          <div class="linea"><label>Marca <select required [name]="'marca'+i" [(ngModel)]="linea.marca" (ngModelChange)="linea.modelo=''; linea.color=''"><option value="">Selecciona marca</option>@for (marca of marcas(); track marca) { <option [value]="marca">{{marca}}</option> }</select></label>
+            <label>Modelo <select required [name]="'modelo'+i" [(ngModel)]="linea.modelo" (ngModelChange)="linea.color=''" [disabled]="!linea.marca"><option value="">Selecciona modelo</option>@for (modelo of modelos(linea.marca); track modelo) { <option [value]="modelo">{{modelo}}</option> }</select></label>
+            <label>Color <select required [name]="'color'+i" [(ngModel)]="linea.color" [disabled]="!linea.modelo"><option value="">Selecciona color</option>@for (color of colores(linea.marca,linea.modelo); track color) { <option [value]="color">{{color}}</option> }</select></label>
             <label>Cantidad <input type="number" min="1" required [name]="'cantidad'+i" [(ngModel)]="linea.cantidad"></label>
             <button class="secondary" type="button" (click)="quitar(i)" [disabled]="lineas.length === 1">Quitar</button></div>
         }
@@ -51,6 +52,8 @@ export class SolicitudesPage implements OnInit {
   readonly access = inject(AuthService);
   readonly solicitudes = signal<Solicitud[]>([]);
   readonly sedes = signal<{id:number; nombre:string}[]>([]);
+  readonly opciones = signal<OpcionMotocicleta[]>([]);
+  readonly marcas = signal<string[]>([]);
   readonly cargando = signal(false);
   readonly guardando = signal(false);
   readonly error = signal('');
@@ -62,10 +65,20 @@ export class SolicitudesPage implements OnInit {
   ngOnInit(): void {
     this.cargar();
     if (this.access.can('SOLICITUDES_CREAR')) {
+      this.http.get<OpcionMotocicleta[]>('/api/v1/solicitudes/opciones-motocicleta').subscribe({
+        next: opciones => { this.opciones.set(opciones); this.marcas.set([...new Set(opciones.map(o => o.marca))]); },
+        error: err => this.error.set(apiError(err))
+      });
       this.http.get<{id:number; nombre:string}[]>('/api/v1/ubicaciones').subscribe({
         next: sedes => this.sedes.set(sedes), error: err => this.error.set(apiError(err))
       });
     }
+  }
+  modelos(marca: string): string[] {
+    return [...new Set(this.opciones().filter(o => o.marca === marca).map(o => o.modelo))];
+  }
+  colores(marca: string, modelo: string): string[] {
+    return [...new Set(this.opciones().filter(o => o.marca === marca && o.modelo === modelo).map(o => o.color))];
   }
   agregar(): void { this.lineas.push({marca:'',modelo:'',color:'',cantidad:1}); }
   quitar(i: number): void { if (this.lineas.length > 1) this.lineas.splice(i,1); }
@@ -77,8 +90,8 @@ export class SolicitudesPage implements OnInit {
     });
   }
   crear(): void {
-    if (!this.destinoId || this.lineas.some(l => !l.marca.trim() || !l.modelo.trim() || !l.color.trim() || l.cantidad < 1)) {
-      this.error.set('Selecciona una sede y completa todas las líneas con cantidad positiva.'); return;
+    if (!this.destinoId || this.lineas.some(l => !this.opciones().some(o => o.marca === l.marca && o.modelo === l.modelo && o.color === l.color) || !Number.isSafeInteger(l.cantidad) || l.cantidad < 1)) {
+      this.error.set('Selecciona una sede y una combinación válida de marca, modelo y color para cada línea.'); return;
     }
     this.error.set(''); this.confirmacion.set(''); this.guardando.set(true);
     this.http.post<Solicitud>('/api/v1/solicitudes', { destinoId:this.destinoId, observacion:this.observacion, lineas:this.lineas })
