@@ -14,6 +14,8 @@ export const routes: Routes = [
       { path: 'fichas', loadComponent: () => import('./pages/fichas.page').then(m => m.FichasPage) },
       { path: 'inventario', canActivate: [permissionGuard], data: { permission: 'INVENTARIO_CONSULTAR' }, loadComponent: () => import('./pages/inventario.page').then(m => m.InventarioPage) },
       { path: 'solicitudes', canActivate: [permissionGuard], data: { permission: 'SOLICITUDES_CONSULTAR' }, loadComponent: () => import('./pages/solicitudes.page').then(m => m.SolicitudesPage) },
+      { path: 'ubicaciones', canActivate: [permissionGuard], data: { permission: 'UBICACIONES_CONSULTAR' }, loadComponent: () => import('./pages/ubicaciones.page').then(m => m.UbicacionesPage) },
+      { path: 'seguimiento', canActivate: [permissionGuard], data: { permission: 'SOLICITUDES_CONSULTAR' }, loadComponent: () => import('./pages/seguimiento.page').then(m => m.SeguimientoPage) },
       { path: 'usuarios', loadComponent: () => import('./pages/usuarios.page').then(m => m.UsuariosPage) },
       { path: 'permisos', canActivate: [permissionGuard], loadComponent: () => import('./pages/permisos.page').then(m => m.PermisosPage) }
     ]
