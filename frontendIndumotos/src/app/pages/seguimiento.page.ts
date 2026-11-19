@@ -13,19 +13,19 @@ interface Candidata { motocicletaId: number; chasis: string; modelo: string; col
 @Component({
   selector: 'app-seguimiento', imports: [FormsModule],
   template: `
-    <h1>Seguimiento y asignación</h1>
-    <p>Selecciona una solicitud para registrar su preparación, consultar el historial y asociar los chasis concretos que atenderán cada línea.</p>
-    <section class="panel"><label>Solicitud <select [(ngModel)]="solicitudId"><option [ngValue]="0">Selecciona una solicitud</option>
+    <header class="page-heading"><span class="eyebrow">OPERACIÓN DE ALMACÉN</span><h1>Preparación de solicitudes</h1>
+    <p>Selecciona una solicitud, inicia la preparación y asigna los chasis de cada línea. Confirma cuando estén completas todas las cantidades solicitadas.</p></header>
+    <section class="panel"><div class="panel-heading"><span class="eyebrow">PASO 1</span><h2>Elegir solicitud</h2></div><label>Solicitud <select [(ngModel)]="solicitudId"><option [ngValue]="0">Selecciona una solicitud</option>
       @for (item of solicitudes(); track item.id) { <option [ngValue]="item.id">{{item.solicitante}} · {{item.estado}} · {{item.lineas[0]?.marca}} {{item.lineas[0]?.modelo}}</option> }
       </select></label>
       <button type="button" (click)="consultar()" [disabled]="solicitudId < 1 || ocupado()">Ver seguimiento</button>
       @if (hayMas()) { <button type="button" (click)="cargarSolicitudes()" [disabled]="ocupado()">Cargar más solicitudes</button> }
     </section>
     @if (solicitud(); as s) {
-      <section class="panel"><h2>Solicitud #{{s.id}} · {{s.estado}}</h2><p>Solicitada por {{s.solicitante}}</p>
+      <section class="panel"><div class="panel-heading"><span class="eyebrow">PASO 2 · SEGUIMIENTO</span><h2>Solicitud <span class="badge">{{s.estado}}</span></h2><p>Solicitada por {{s.solicitante}}</p></div>
         @if (access.can('SOLICITUDES_AVANZAR')) {
           @if (s.estado === 'PENDIENTE') { <button type="button" (click)="avanzar('EN_PREPARACION')">Iniciar preparación</button> }
-          @if (s.estado === 'EN_PREPARACION') { <button type="button" (click)="avanzar('ATENDIDA')">Marcar atendida</button> }
+          @if (s.estado === 'EN_PREPARACION') { <button type="button" (click)="avanzar('ATENDIDA')">Confirmar preparación</button> }
           @if (s.estado === 'PENDIENTE' || s.estado === 'EN_PREPARACION') {
             <button type="button" (click)="avanzar('RECHAZADA')">Rechazar</button>
           }
@@ -33,13 +33,13 @@ interface Candidata { motocicletaId: number; chasis: string; modelo: string; col
         @if (access.can('SOLICITUDES_ANULAR') && s.estado === 'PENDIENTE') {
           <button type="button" (click)="anular()">Anular solicitud</button>
         }
-        <h3>Historial</h3>
+        <h3>Historial de cambios</h3>
         @for (evento of eventos(); track evento.id) {
           <p>{{evento.estado}} · {{evento.fecha}} · {{evento.registrador}} {{evento.motivo || ''}}</p>
         }
       </section>
       @if (access.can('UNIDADES_ASIGNAR')) {
-        <section class="panel"><h2>Unidades solicitadas</h2>
+        <section class="panel"><div class="panel-heading"><span class="eyebrow">PASO 3 · ASIGNACIÓN</span><h2>Unidades solicitadas</h2><p>Asigna un chasis disponible por cada unidad pedida antes de confirmar.</p></div>
           @for (linea of s.lineas; track linea.id) {
             <article><h3>{{linea.marca}} {{linea.modelo}} · {{linea.color}} · {{linea.cantidad}}</h3>
               <button type="button" (click)="verUnidades(linea.id)">Ver asignadas</button>
@@ -65,7 +65,7 @@ interface Candidata { motocicletaId: number; chasis: string; modelo: string; col
     @if (error()) { <p role="alert">{{error()}}</p> }
     @if (mensaje()) { <p role="status">{{mensaje()}}</p> }
   `,
-  styles: [`h1{color:#243347}.panel{background:white;border:1px solid #e5e9ee;border-radius:10px;padding:20px;margin:20px 0}article{border-top:1px solid #e5e9ee;padding:12px 0}label{display:grid;gap:6px;margin:10px 0}input{padding:9px;border:1px solid #ccd5df;border-radius:5px}button{padding:9px 12px;cursor:pointer;margin:4px}[role=alert]{color:#aa311e}[role=status]{color:#176744}`]
+  styles: [`:host{display:block;max-width:1120px;margin:auto;color:#102a49}.page-heading{margin:8px 0 26px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;color:#173c64}h1{font-size:clamp(28px,3vw,38px);margin:8px 0}h2{font-size:21px;margin:5px 0}h3{font-size:16px;margin:20px 0 10px}p{color:#627893;line-height:1.55}.page-heading p{max-width:760px;margin:0}.panel{background:#fff;border:1px solid #dfe7ef;border-radius:16px;padding:26px;margin:20px 0;box-shadow:0 10px 30px #1836560a}.panel-heading{padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid #e6edf3}.panel-heading p{margin:4px 0 0}.badge{display:inline-block;vertical-align:middle;padding:6px 10px;border-radius:999px;background:#eaf1f8;color:#173c64;font-size:11px;font-weight:800}article{border:1px solid #e5edf4;background:#f8fafc;border-radius:12px;padding:16px;margin:14px 0}article h3{margin:0 0 12px}article p{padding:8px 12px;background:#fff;border-radius:8px}label{display:grid;gap:7px;margin:10px 0 16px;font-size:13px;font-weight:700;max-width:720px}input,select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #d4dfe9;border-radius:9px;background:#fff;color:#102a49;font:inherit}input:focus,select:focus{outline:2px solid #93b9db;outline-offset:1px}button{border:0;border-radius:9px;background:#183d66;color:white;font:inherit;font-weight:700;padding:11px 15px;cursor:pointer;margin:4px 8px 4px 0}button:hover:not(:disabled){background:#245684}button:disabled{opacity:.55;cursor:not-allowed}[role=alert],[role=status]{padding:12px 16px;border-radius:9px}[role=alert]{color:#9e332c;background:#fff0ee}[role=status]{color:#176744;background:#eaf8ee}@media(max-width:560px){.panel{padding:18px}button{width:100%;margin:5px 0}}`]
 })
 export class SeguimientoPage {
   private readonly http = inject(HttpClient);
