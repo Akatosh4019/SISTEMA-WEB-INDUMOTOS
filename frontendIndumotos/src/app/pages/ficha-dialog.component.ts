@@ -11,8 +11,8 @@ interface Opcion { marca: string; modelo: string; color: string }
 
 @Component({
   selector: 'app-ficha-dialog', imports: [DatePipe, FormsModule],
-  template: `<div class="overlay" (click)="cerrar.emit()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo" (click)="$event.stopPropagation()">
-    <header><div><span class="eyebrow">FICHA DE MOTOCICLETA</span><h2 id="ficha-titulo">{{ficha()?.marca}} {{ficha()?.modelo}}</h2></div><button type="button" class="close" aria-label="Cerrar ficha" (click)="cerrar.emit()">✕</button></header>
+  template: `<div class="im-overlay" (click)="cerrar.emit()"><section class="im-dialog" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo" (click)="$event.stopPropagation()">
+    <header class="im-dialog-header"><div><span class="eyebrow">FICHA DE MOTOCICLETA</span><h2 id="ficha-titulo">{{ficha()?.marca}} {{ficha()?.modelo}}</h2></div><button type="button" class="im-dialog-close" aria-label="Cerrar ficha" (click)="cerrar.emit()">✕</button></header>
     @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
     @if (ficha(); as f) {
       @if (!editando()) { <div class="details">

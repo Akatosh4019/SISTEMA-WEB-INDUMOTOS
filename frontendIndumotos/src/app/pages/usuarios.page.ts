@@ -33,18 +33,21 @@ interface PaginaCuentas { items: Cuenta[]; pagina: number; tamano: number; total
       <div class="detail-row"><span>COMERCIAL</span><strong>Crear solicitudes para sedes</strong></div>
       <div class="detail-row"><span>ENSAMBLAJE</span><strong>Consultar y preparar solicitudes</strong></div></div>
     </section></div>
-    <section class="panel" style="margin-top:20px"><h2>Cuentas creadas</h2><p class="hint">Consulta por nombre o usuario. Cada página muestra hasta 10 cuentas.</p>
-      <div class="row"><div><label for="buscarCuenta">Buscar cuenta</label><input id="buscarCuenta" name="buscarCuenta" [(ngModel)]="busqueda" (ngModelChange)="buscar()" placeholder="Escribe nombre o usuario" maxlength="180" /></div><button type="button" (click)="limpiarBusqueda()">Limpiar</button></div>
+    <section class="panel accounts-panel"><div class="accounts-head"><div><h2>Cuentas creadas</h2><p class="hint">Consulta las cuentas del equipo. Se muestran hasta 10 por página.</p></div>
+      <div class="account-search"><label for="buscarCuenta">Buscar cuenta</label><div class="search-controls"><input id="buscarCuenta" name="buscarCuenta" type="text" [(ngModel)]="busqueda" (ngModelChange)="buscar()" placeholder="Nombre o usuario" maxlength="180" /><button type="button" class="clear-search" (click)="limpiarBusqueda()" [disabled]="!busqueda" aria-label="Limpiar búsqueda" title="Limpiar búsqueda">✕</button></div></div></div>
       @if (errorLista()) { <p class="message error" role="alert">{{errorLista()}}</p> }
       @if (cuentas(); as resultado) {
-        <p class="hint">{{resultado.totalElementos}} {{resultado.totalElementos === 1 ? 'cuenta' : 'cuentas'}} · Página {{resultado.pagina + 1}} de {{totalPaginas(resultado) || 1}}</p>
-        <div class="detail">@for (cuenta of resultado.items; track cuenta.id) { <div class="detail-row"><span>{{cuenta.nombreCompleto}} ({{cuenta.nombreUsuario}})</span><strong>{{cuenta.rolCodigo}} · {{cuenta.estado}}</strong></div> } @empty { <p>No se encontraron cuentas.</p> }</div>
+        <div class="table-wrap"><table><thead><tr><th>Trabajador</th><th>Usuario</th><th>Rol</th><th>Estado</th></tr></thead><tbody>
+          @for (cuenta of resultado.items; track cuenta.id) { <tr><td><strong>{{cuenta.nombreCompleto}}</strong></td><td>{{cuenta.nombreUsuario}}</td><td>{{nombreRol(cuenta.rolCodigo)}}</td><td><span class="account-state" [class.inactive]="cuenta.estado !== 'ACTIVO'">{{cuenta.estado}}</span></td></tr> }
+          @empty { <tr><td colspan="4" class="no-results">No se encontraron cuentas.</td></tr> }
+        </tbody></table></div>
+        <div class="accounts-footer"><span>{{resultado.totalElementos}} {{resultado.totalElementos === 1 ? 'cuenta' : 'cuentas'}} · Página {{resultado.pagina + 1}} de {{totalPaginas(resultado) || 1}}</span>
         @if (totalPaginas(resultado) > 1) { <nav class="account-pages" aria-label="Páginas de cuentas"><button type="button" (click)="irPagina(resultado.pagina - 1)" [disabled]="listando() || resultado.pagina === 0">Anterior</button>
           @for (numero of paginasVisibles(totalPaginas(resultado), resultado.pagina); track numero) { <button type="button" [attr.aria-current]="numero === resultado.pagina ? 'page' : null" [attr.aria-label]="'Página ' + (numero + 1)" (click)="irPagina(numero)" [disabled]="listando()">{{numero + 1}}</button> }
-          <button type="button" (click)="irPagina(resultado.pagina + 1)" [disabled]="listando() || resultado.pagina + 1 >= totalPaginas(resultado)">Siguiente</button></nav> }
+          <button type="button" (click)="irPagina(resultado.pagina + 1)" [disabled]="listando() || resultado.pagina + 1 >= totalPaginas(resultado)">Siguiente</button></nav> }</div>
       }
     </section></div>`,
-  styles: [`.account-pages{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:18px}.account-pages button{min-width:38px}.account-pages button[aria-current=page]{background:#193d61;color:white}.account-pages button:focus-visible{outline:3px solid #cbd51c;outline-offset:2px}`]
+  styleUrl: './usuarios.page.css'
 })
 export class UsuariosPage implements OnInit {
   private readonly http = inject(HttpClient);
@@ -75,6 +78,9 @@ export class UsuariosPage implements OnInit {
   }
   buscar(): void { this.irPagina(0); }
   limpiarBusqueda(): void { this.busqueda = ''; this.buscar(); }
+  nombreRol(codigo: string): string {
+    return ({ADMIN:'Administración', ALMACEN:'Almacén', INVENTARIOS:'Inventarios', COMERCIAL:'Comercial', ENSAMBLAJE:'Ensamblaje'} as Record<string,string>)[codigo] ?? codigo;
+  }
   totalPaginas(resultado: PaginaCuentas): number { return Math.ceil(resultado.totalElementos / 10); }
   paginasVisibles(total: number, actual: number): number[] {
     const inicio = Math.max(0, Math.min(actual - 2, total - 5));
