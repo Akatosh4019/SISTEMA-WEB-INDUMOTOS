@@ -67,17 +67,41 @@ export class LlegadasPage implements OnInit, OnDestroy {
   ngOnInit(): void { if (this.auth.can('INVENTARIO_CONSULTAR')) this.listar(0); }
   ngOnDestroy(): void { clearTimeout(this.temporizador); this.limpiarFotos(); }
 
-  abrirNueva(): void { this.error.set(''); this.fieldErrors.set({}); this.nuevaAbierta.set(true); }
-  cerrarNueva(): void { if (!this.busy()) this.nuevaAbierta.set(false); }
+  abrirNueva(): void { this.resetearNueva(); this.nuevaAbierta.set(true); }
+  cerrarNueva(): void { if (!this.busy()) { this.nuevaAbierta.set(false); this.resetearNueva(); } }
+
+  private resetearNueva(): void {
+    this.form = {numeroGuia:'', cantidadDeclarada:1, cantidadRecibida:1, observacion:''};
+    this.imagenes = [];
+    this.error.set('');
+    this.fieldErrors.set({});
+  }
 
   seleccionarImagenes(evento: Event): void {
     const input = evento.target as HTMLInputElement;
-    this.imagenes = Array.from(input.files ?? []);
-    const invalidas = this.imagenes.some(foto => !['image/jpeg', 'image/png'].includes(foto.type)
-      || foto.size < 1 || foto.size > 5 * 1024 * 1024);
-    this.fieldErrors.update(actual => ({...actual, imagenes: this.imagenes.length < 1 || this.imagenes.length > 3
-      ? 'Adjunta entre una y tres fotos de la guía.'
-      : invalidas ? 'Cada foto debe ser JPG o PNG y pesar hasta 5 MB.' : undefined}));
+    const nuevas = Array.from(input.files ?? []);
+    input.value = '';
+    if (!nuevas.length) return;
+    if (this.imagenes.length + nuevas.length > 3) {
+      this.fieldErrors.update(actual => ({...actual, imagenes:'Puedes adjuntar como máximo tres fotos.'}));
+      return;
+    }
+    this.imagenes = [...this.imagenes, ...nuevas];
+    this.fieldErrors.update(actual => ({...actual, imagenes:this.errorImagenes()}));
+  }
+
+  quitarImagen(indice: number): void {
+    this.imagenes = this.imagenes.filter((_, posicion) => posicion !== indice);
+    this.fieldErrors.update(actual => ({...actual, imagenes:undefined}));
+  }
+
+  private errorImagenes(): string | undefined {
+    if (this.imagenes.length < 1 || this.imagenes.length > 3)
+      return 'Adjunta entre una y tres fotos de la guía.';
+    if (this.imagenes.some(foto => !['image/jpeg', 'image/png'].includes(foto.type)
+      || foto.size < 1 || foto.size > 5 * 1024 * 1024))
+      return 'Cada foto debe ser JPG o PNG y pesar hasta 5 MB.';
+    return undefined;
   }
 
   registrar(): void {
@@ -89,11 +113,8 @@ export class LlegadasPage implements OnInit, OnDestroy {
       errores.cantidadDeclarada = 'Ingresa una cantidad declarada entera mayor que cero.';
     if (!Number.isSafeInteger(this.form.cantidadRecibida) || (this.form.cantidadRecibida ?? 0) <= 0)
       errores.cantidadRecibida = 'Ingresa una cantidad recibida entera mayor que cero.';
-    if (this.imagenes.length < 1 || this.imagenes.length > 3)
-      errores.imagenes = 'Adjunta entre una y tres fotos de la guía.';
-    else if (this.imagenes.some(foto => !['image/jpeg', 'image/png'].includes(foto.type)
-      || foto.size < 1 || foto.size > 5 * 1024 * 1024))
-      errores.imagenes = 'Cada foto debe ser JPG o PNG y pesar hasta 5 MB.';
+    const errorImagenes = this.errorImagenes();
+    if (errorImagenes) errores.imagenes = errorImagenes;
     if (Object.keys(errores).length) { this.fieldErrors.set(errores); this.error.set('Corrige los campos marcados.'); return; }
     this.busy.set(true);
     const datos = new FormData();
@@ -104,8 +125,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.imagenes.forEach(imagen => datos.append('imagenes', imagen, imagen.name));
     this.http.post<Llegada>('/api/v1/llegadas/con-guia', datos).subscribe({
       next: llegada => { this.result.set(llegada); this.busy.set(false); this.nuevaAbierta.set(false);
-        this.form = {numeroGuia:'', cantidadDeclarada:1, cantidadRecibida:1, observacion:''};
-        this.imagenes = []; if (this.auth.can('INVENTARIO_CONSULTAR')) this.listar(0);
+        this.resetearNueva(); if (this.auth.can('INVENTARIO_CONSULTAR')) this.listar(0);
         if (this.auth.can('INVENTARIO_CONSULTAR')) this.abrir(llegada); },
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 400) {

@@ -6,6 +6,37 @@ import { AuthService } from '../core/auth.service';
 import { LlegadasPage } from './llegadas.page';
 
 describe('LlegadasPage', () => {
+  it('permite quitar una foto y cancelar descarta todo el formulario', () => {
+    TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
+      provideRouter([]),{provide:AuthService,useValue:{can:(permiso:string) => permiso === 'LLEGADAS_REGISTRAR'}}]});
+    const fixture = TestBed.createComponent(LlegadasPage);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    page.abrirNueva();
+    page.form.numeroGuia = 'GUIA-EQUIVOCADA';
+    page.form.observacion = 'Borrador';
+    const primera = new File(['uno'], 'primera.jpg', {type:'image/jpeg'});
+    const segunda = new File(['dos'], 'segunda.jpg', {type:'image/jpeg'});
+    const input = {files:[primera, segunda], value:'seleccionadas'};
+    page.seleccionarImagenes({target:input} as unknown as Event);
+    expect(input.value).toBe('');
+    expect(page.imagenes.length).toBe(2);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.remove-file') as HTMLButtonElement).click();
+    expect(page.imagenes.map(foto => foto.name)).toEqual(['segunda.jpg']);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.dialog-actions .secondary-button') as HTMLButtonElement).click();
+    expect(page.nuevaAbierta()).toBe(false);
+    expect(page.imagenes).toEqual([]);
+    expect(page.form.numeroGuia).toBe('');
+    expect(page.form.observacion).toBe('');
+    page.abrirNueva();
+    expect(page.imagenes).toEqual([]);
+    expect(page.form.numeroGuia).toBe('');
+    http.expectNone('/api/v1/llegadas/con-guia');
+    http.verify();
+  });
   it('exige foto y envía la guía como formulario multipart', () => {
     TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
       provideRouter([]),{provide:AuthService,useValue:{can:(permiso:string) => permiso === 'LLEGADAS_REGISTRAR'}}]});
