@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { apiError } from '../core/api-error';
@@ -21,6 +21,7 @@ interface BorradorMoto { marca: string; modelo: string; color: string; chasisCom
 interface SugerenciaOcr { marca: string; modelo: string; color: string; chasisCompleto: string;
   numeroMotor: string; dua: string; itemDua: string; pagina: number }
 interface ResultadoOcr { fotosAnalizadas: number; sugerencias: SugerenciaOcr[] }
+interface FotoGuia { id: number; orden: number; nombreArchivo: string; url: string }
 
 @Component({
   selector: 'app-fichas-page',
@@ -28,7 +29,7 @@ interface ResultadoOcr { fotosAnalizadas: number; sugerencias: SugerenciaOcr[] }
   templateUrl: './fichas.page.html',
   styleUrl: './fichas.page.css'
 })
-export class FichasPage implements OnInit {
+export class FichasPage implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
@@ -53,12 +54,18 @@ export class FichasPage implements OnInit {
   readonly ocrBusy = signal(false);
   readonly ocrMensaje = signal('');
   readonly llegadaSeleccionada = signal<LlegadaOpcion | null>(null);
+  readonly fotosGuia = signal<FotoGuia[]>([]);
+  readonly fotosCargando = signal(false);
+  readonly fotosError = signal('');
+  readonly paginaFoto = signal(0);
+  readonly zoomFoto = signal(1);
   readonly opciones = signal<OpcionMotocicleta[]>([]);
   readonly marcas = signal<string[]>([]);
   readonly catalogoError = signal('');
   guiaBusqueda = '';
   private temporizadorGuia?: ReturnType<typeof setTimeout>;
   private consultaGuias = 0;
+  private consultaFotos = 0;
   edicion = { marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   form = { llegadaId: null as number | null, marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   searchId: number | null = null;
@@ -83,6 +90,52 @@ export class FichasPage implements OnInit {
     });
   }
 
+  ngOnDestroy(): void { clearTimeout(this.temporizadorGuia); this.limpiarFotos(); }
+
+  private limpiarFotos(): void {
+    ++this.consultaFotos;
+    this.fotosGuia().forEach(foto => URL.revokeObjectURL(foto.url));
+    this.fotosGuia.set([]); this.paginaFoto.set(0); this.zoomFoto.set(1);
+    this.fotosCargando.set(false); this.fotosError.set('');
+  }
+
+  private cargarFotos(llegadaId: number): void {
+    const consulta = this.consultaFotos;
+    this.fotosCargando.set(true);
+    this.http.get<FotoGuia[]>(`/api/v1/llegadas/${llegadaId}/guias`).subscribe({
+      next: imagenes => {
+        if (consulta !== this.consultaFotos) return;
+        if (!imagenes.length) { this.fotosCargando.set(false); return; }
+        let pendientes = imagenes.length;
+        for (const imagen of imagenes) {
+          this.http.get(`/api/v1/llegadas/${llegadaId}/guias/${imagen.id}`, {responseType:'blob'}).subscribe({
+            next: blob => {
+              if (consulta === this.consultaFotos) this.fotosGuia.update(actual =>
+                [...actual, {...imagen, url:URL.createObjectURL(blob)}].sort((a,b) => a.orden - b.orden));
+              if (--pendientes === 0 && consulta === this.consultaFotos) this.fotosCargando.set(false);
+            },
+            error: () => {
+              if (consulta === this.consultaFotos) this.fotosError.set('No se pudo cargar una foto de la guía.');
+              if (--pendientes === 0 && consulta === this.consultaFotos) this.fotosCargando.set(false);
+            }
+          });
+        }
+      },
+      error: err => { if (consulta === this.consultaFotos) {
+        this.fotosError.set(apiError(err)); this.fotosCargando.set(false);
+      } }
+    });
+  }
+
+  cambiarPaginaFoto(direccion: number): void {
+    this.paginaFoto.set(Math.max(0, Math.min(this.fotosGuia().length - 1, this.paginaFoto() + direccion)));
+    this.zoomFoto.set(1);
+  }
+
+  cambiarZoom(direccion: number): void {
+    this.zoomFoto.set(Math.max(1, Math.min(3, Math.round((this.zoomFoto() + direccion * .25) * 100) / 100)));
+  }
+
   cargarCatalogo(): void {
     this.http.get<OpcionMotocicleta[]>('/api/v1/catalogo-motocicletas').subscribe({
       next: opciones => { this.opciones.set(opciones); this.marcas.set([...new Set(opciones.map(o => o.marca))]); },
@@ -100,6 +153,7 @@ export class FichasPage implements OnInit {
 
   alCambiarGuia(): void {
     clearTimeout(this.temporizadorGuia);
+    this.limpiarFotos();
     this.llegadaSeleccionada.set(null);
     this.detalleLlegada.set(null);
     this.form.llegadaId = null;
@@ -124,7 +178,9 @@ export class FichasPage implements OnInit {
   }
 
   seleccionarLlegada(llegada: LlegadaOpcion): void {
+    this.limpiarFotos();
     this.form.llegadaId = llegada.id; this.llegadaSeleccionada.set(llegada);
+    this.cargarFotos(llegada.id);
     this.guiaBusqueda = llegada.numeroGuia;
     this.detalleLlegada.set(null); this.bloques.set([]); this.verRegistradas.set(false);
     this.ocrMensaje.set(''); this.ocrBusy.set(false); this.error.set('');

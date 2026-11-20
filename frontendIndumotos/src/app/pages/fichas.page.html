@@ -28,6 +28,15 @@
         @if (verRegistradas()) { <div class="registered-list"><h3>Motos de esta guía</h3>@for (ficha of detalleLlegada()?.fichas ?? []; track ficha.id) { <a routerLink="/app/inventario" [queryParams]="{id:ficha.id}"><span><strong>{{ ficha.marca }} {{ ficha.modelo }}</strong><small>{{ ficha.color }} · Chasis {{ ficha.chasisCompleto }}</small></span><span>Ver ficha →</span></a> } @empty { <p>Aún no hay motocicletas registradas para esta guía.</p> }</div> }
       </section>
 
+      <div class="registration-workspace">
+      <aside class="guide-viewer" aria-label="Fotos de la guía"><div class="viewer-heading"><div><span class="eyebrow">GUÍA A LA VISTA</span><h2>Revisa mientras registras</h2></div></div>
+        @if (fotosCargando()) { <p class="hint">Cargando fotos…</p> }
+        @if (fotosError()) { <p class="message error" role="alert">{{ fotosError() }}</p> }
+        @if (fotosGuia().length) { <div class="viewer-toolbar"><button type="button" class="secondary" aria-label="Página anterior" [disabled]="paginaFoto() === 0" (click)="cambiarPaginaFoto(-1)">←</button><span>Página {{ paginaFoto() + 1 }} de {{ fotosGuia().length }}</span><button type="button" class="secondary" aria-label="Página siguiente" [disabled]="paginaFoto() + 1 >= fotosGuia().length" (click)="cambiarPaginaFoto(1)">→</button><button type="button" class="secondary" aria-label="Reducir zoom" [disabled]="zoomFoto() <= 1" (click)="cambiarZoom(-1)">−</button><span>{{ zoomFoto() * 100 }}%</span><button type="button" class="secondary" aria-label="Ampliar zoom" [disabled]="zoomFoto() >= 3" (click)="cambiarZoom(1)">+</button></div>
+          <div class="viewer-canvas"><img [src]="fotosGuia()[paginaFoto()].url" [alt]="'Página ' + fotosGuia()[paginaFoto()].orden + ' de la guía ' + llegada.numeroGuia" [style.width.%]="zoomFoto() * 100" /></div>
+          <p class="viewer-hint">Desplaza la foto para leer cada fila. Contrasta los caracteres antes de guardar.</p>
+        } @else if (!fotosCargando() && !fotosError()) { <p class="hint">Esta guía no tiene fotos adjuntas.</p> }
+      </aside>
       <section class="blocks-section" aria-labelledby="blocks-title"><div class="section-heading"><div><span class="eyebrow">PASO 3 · COMPLETAR Y GUARDAR</span><h2 id="blocks-title">Motocicletas pendientes</h2><p>Revisa chasis, motor, DUA, marca, modelo y color antes de guardar cada unidad.</p></div><span class="blocks-count">{{ pendientesEnPantalla() }} pendientes</span></div>
         @for (bloque of bloques(); track $index; let indice = $index) {
           <article class="moto-card" [class.saved]="bloque.guardada"><div class="moto-card-header"><div class="moto-number">{{ indice + 1 }}</div><div><h3>Motocicleta {{ indice + 1 }}</h3><p>{{ bloque.guardada ? 'Ficha registrada' : bloque.sugerida ? 'Datos sugeridos por OCR · revisa cada carácter' : 'Pendiente de completar' }}</p></div>@if (bloque.guardada) { <span class="saved-badge">Guardada ✓</span> }</div>
@@ -45,6 +54,7 @@
           </article>
         } @empty { @if (detalleLlegada()) { <div class="all-done">Todas las unidades recibidas de esta guía tienen una ficha registrada.</div> } }
       </section>
+      </div>
     }
     @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
   }

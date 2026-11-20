@@ -19,6 +19,15 @@ describe('FichasPage', () => {
     http.expectOne(req => req.url === '/api/v1/llegadas/pagina' && req.params.get('pagina') === '0'
       && req.params.get('numeroGuia') === '').flush({items:[guia],pagina:0,totalPaginas:1,totalElementos:1});
     fixture.componentInstance.seleccionarLlegada(guia);
+    const crearUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValueOnce('blob:guia-1').mockReturnValueOnce('blob:guia-2');
+    http.expectOne('/api/v1/llegadas/7/guias').flush([
+      {id:11,orden:1,nombreArchivo:'pagina-1.jpg'}, {id:12,orden:2,nombreArchivo:'pagina-2.jpg'}]);
+    http.expectOne('/api/v1/llegadas/7/guias/11').flush(new Blob(['foto 1'], {type:'image/jpeg'}));
+    http.expectOne('/api/v1/llegadas/7/guias/12').flush(new Blob(['foto 2'], {type:'image/jpeg'}));
+    expect(fixture.componentInstance.fotosGuia().length).toBe(2);
+    fixture.componentInstance.cambiarPaginaFoto(1);
+    expect(fixture.componentInstance.paginaFoto()).toBe(1);
+    crearUrl.mockRestore();
     http.expectOne('/api/v1/llegadas/7/detalle').flush({llegada:guia,fichas:[],cantidadFichas:3,diferenciaInformativa:16});
     fixture.detectChanges();
     expect(fixture.componentInstance.form.llegadaId).toBe(7);
