@@ -33,7 +33,7 @@
         <div><label for="recibida">Cantidad recibida <span class="required">*</span></label><input id="recibida" name="recibida" type="number" min="1" step="1" required [(ngModel)]="form.cantidadRecibida" [attr.aria-invalid]="fieldErrors().cantidadRecibida ? true : null" />
         @if (fieldErrors().cantidadRecibida) { <small class="field-error">{{fieldErrors().cantidadRecibida}}</small> }</div></div>
       <label for="imagenes">Fotos de la guía <span class="required">*</span></label><div class="upload-box"><input id="imagenes" name="imagenes" type="file" accept="image/jpeg,image/png" multiple (change)="seleccionarImagenes($event)" [attr.aria-invalid]="fieldErrors().imagenes ? true : null" />
-        <small>JPG o PNG · máximo 3 fotos · hasta 5 MB cada una. Si la guía tiene varias páginas, adjúntalas juntas.</small>
+        <small>JPG o PNG · máximo 3 fotos · hasta 5 MB cada una · mínimo 600 px por lado. Adjunta todas las páginas con texto visible.</small>
         @for (imagen of imagenes; track $index) { <span class="chosen-file">▰ {{imagen.name}}</span> }
       </div>@if (fieldErrors().imagenes) { <small class="field-error">{{fieldErrors().imagenes}}</small> }
       <label for="observacion">Observación</label><textarea id="observacion" name="observacion" rows="3" maxlength="1000" [(ngModel)]="form.observacion" placeholder="Diferencias, daños u otra información de recepción"></textarea>
