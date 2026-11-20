@@ -33,6 +33,15 @@ describe('FichasPage', () => {
     expect(fixture.componentInstance.bloques()[0].chasisCompleto).toBe('L2BB3322XVMD12128');
     expect(fixture.componentInstance.bloques()[0].sugerida).toBe(true);
     http.expectNone('/api/v1/motocicletas');
+    fixture.componentInstance.bloques()[0].numeroMotor = '';
+    fixture.componentInstance.bloques()[0].dua = 'DUA CORREGIDO MANUALMENTE';
+    fixture.componentInstance.autocompletar();
+    http.expectOne('/api/v1/llegadas/7/sugerencias-ocr').flush({fotosAnalizadas:2,sugerencias:[{
+      pagina:1,marca:'RONCO',modelo:'RZ 250',color:'VERDE',chasisCompleto:'L2BB3322XVMD12128',
+      numeroMotor:'167YMMVZ212128',dua:'118-2026-10-269348-00',itemDua:'128'
+    }]});
+    expect(fixture.componentInstance.bloques()[0].numeroMotor).toBe('167YMMVZ212128');
+    expect(fixture.componentInstance.bloques()[0].dua).toBe('DUA CORREGIDO MANUALMENTE');
     const bloque = fixture.componentInstance.bloques()[0];
     bloque.marca = 'RONCO'; bloque.modelo = 'RZ 250'; bloque.color = 'VERDE';
     bloque.dua = '118-2026-10-269348-00'; bloque.itemDua = '128';

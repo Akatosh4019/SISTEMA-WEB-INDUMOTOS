@@ -156,17 +156,19 @@ export class FichasPage implements OnInit {
         if (this.llegadaSeleccionada()?.id !== llegada.id) return;
         const existentes = new Set((this.detalleLlegada()?.fichas ?? [])
           .map(ficha => ficha.chasisCompleto.trim().toUpperCase()));
-        this.bloques().forEach(bloque => {
-          if (bloque.chasisCompleto.trim()) existentes.add(bloque.chasisCompleto.trim().toUpperCase());
-        });
         const sugerencias = resultado.sugerencias.filter(sugerencia =>
           !existentes.has(sugerencia.chasisCompleto.trim().toUpperCase()));
         let indice = 0;
+        const usadas = new Set<string>();
         this.bloques.update(actual => actual.map(bloque => {
-          if (bloque.guardada || bloque.sugerida || bloque.chasisCompleto || bloque.numeroMotor
-            || bloque.marca || bloque.modelo || bloque.color || bloque.dua || bloque.itemDua
-            || indice >= sugerencias.length) return bloque;
-          const sugerencia = sugerencias[indice++];
+          if (bloque.guardada) return bloque;
+          const sugerencia = bloque.chasisCompleto.trim()
+            ? sugerencias.find(item => item.chasisCompleto.toUpperCase() === bloque.chasisCompleto.trim().toUpperCase())
+            : sugerencias.find(item => !usadas.has(item.chasisCompleto.toUpperCase())
+                && !actual.some(otro => otro !== bloque && otro.chasisCompleto.trim().toUpperCase() === item.chasisCompleto.toUpperCase()));
+          if (!sugerencia) return bloque;
+          usadas.add(sugerencia.chasisCompleto.toUpperCase());
+          indice++;
           const marca = this.coincidencia(this.marcas(), sugerencia.marca);
           const modelo = this.coincidencia(this.modelos(marca), sugerencia.modelo);
           const color = this.coincidencia(this.colores(marca, modelo), sugerencia.color);
