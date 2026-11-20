@@ -1,0 +1,71 @@
+<div class="form-page fichas-page">
+  <div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div>
+  <h1>{{ modoDetalle() ? 'Ficha de motocicleta' : 'Registrar motocicletas' }}</h1>
+  <p class="lead">{{ modoDetalle() ? 'Consulta y edita la ficha vinculada a una guía.' : 'Elige la guía recibida por Almacén y registra cada unidad. Los datos de la foto siempre se revisan antes de guardar.' }}</p>
+  <a class="back-link" routerLink="/app/inventario">← Volver al inventario</a>
+
+  @if (!modoDetalle() && auth.can('FICHAS_REGISTRAR')) {
+    <section class="panel guide-panel" aria-labelledby="guide-title">
+      <div class="section-heading"><div><span class="eyebrow">PASO 1 · ELEGIR GUÍA</span><h2 id="guide-title">Guías de llegada</h2><p>Selecciona el documento de la carga que vas a registrar.</p></div></div>
+      <div class="guide-search"><label for="guiaBusqueda" class="sr-only">Buscar número de guía</label><input id="guiaBusqueda" type="search" maxlength="120" [(ngModel)]="guiaBusqueda" (ngModelChange)="alCambiarGuia()" placeholder="Buscar por número de guía" /><button type="button" class="secondary" (click)="buscarLlegadas()">Buscar</button></div>
+      @if (guiasBusy()) { <p class="hint">Cargando guías…</p> }
+      @if (paginaLlegadas(); as pagina) {
+        <div class="guide-list">
+          @for (llegada of pagina.items; track llegada.id) {
+            <button type="button" class="guide-option" [class.selected]="llegadaSeleccionada()?.id === llegada.id" (click)="seleccionarLlegada(llegada)"><span><strong>{{ llegada.numeroGuia }}</strong><small>{{ llegada.fechaLlegada | date:'dd/MM/yyyy' }} · Registró {{ llegada.receptorUsuario }}</small></span><span class="guide-option-count">{{ llegada.cantidadRecibida }} recibidas <span>→</span></span></button>
+          } @empty { <p class="empty-guides">No hay guías para esta búsqueda.</p> }
+        </div>
+        <div class="guide-pages"><span>{{ pagina.totalElementos }} guías · Página {{ pagina.pagina + 1 }} de {{ pagina.totalPaginas || 1 }}</span>@if (pagina.totalPaginas > 1) { <button type="button" class="secondary" [disabled]="pagina.pagina === 0 || guiasBusy()" (click)="buscarLlegadas(pagina.pagina - 1)">Anterior</button><button type="button" class="secondary" [disabled]="pagina.pagina + 1 >= pagina.totalPaginas || guiasBusy()" (click)="buscarLlegadas(pagina.pagina + 1)">Siguiente</button> }</div>
+      }
+    </section>
+
+    @if (llegadaSeleccionada(); as llegada) {
+      <section class="panel selected-panel" aria-labelledby="selected-title">
+        <div class="section-heading"><div><span class="eyebrow">PASO 2 · REVISAR CARGA</span><h2 id="selected-title">Guía {{ llegada.numeroGuia }}</h2><p>Las cantidades vienen del registro de Almacén; cada ficha se confirma individualmente.</p></div><a routerLink="/app/llegadas" [queryParams]="{id:llegada.id}">Ver fotos de la guía →</a></div>
+        <div class="stats"><div><strong>{{ llegada.cantidadDeclarada }}</strong><span>Declaradas</span></div><div><strong>{{ llegada.cantidadRecibida }}</strong><span>Recibidas</span></div><div><strong>{{ detalleLlegada()?.cantidadFichas ?? '…' }}</strong><span>Fichas registradas</span></div><div class="remaining"><strong>{{ detalleLlegada() ? (llegada.cantidadRecibida - (detalleLlegada()?.cantidadFichas ?? 0)) : '…' }}</strong><span>Pendientes</span></div></div>
+        <div class="guide-actions"><button type="button" class="secondary" (click)="verRegistradas.set(!verRegistradas())">{{ verRegistradas() ? 'Ocultar motos registradas' : 'Ver motos registradas por guía' }}</button><button type="button" class="autofill-button" (click)="autocompletar()" [disabled]="ocrBusy() || !detalleLlegada()">{{ ocrBusy() ? 'Leyendo fotos…' : 'Autocompletar desde fotos' }}</button></div>
+        @if (ocrMensaje()) { <p class="ocr-notice" role="status">{{ ocrMensaje() }}</p> }
+        @if (verRegistradas()) { <div class="registered-list"><h3>Motos de esta guía</h3>@for (ficha of detalleLlegada()?.fichas ?? []; track ficha.id) { <a routerLink="/app/inventario" [queryParams]="{id:ficha.id}"><span><strong>{{ ficha.marca }} {{ ficha.modelo }}</strong><small>{{ ficha.color }} · Chasis {{ ficha.chasisCompleto }}</small></span><span>Ver ficha →</span></a> } @empty { <p>Aún no hay motocicletas registradas para esta guía.</p> }</div> }
+      </section>
+
+      <section class="blocks-section" aria-labelledby="blocks-title"><div class="section-heading"><div><span class="eyebrow">PASO 3 · COMPLETAR Y GUARDAR</span><h2 id="blocks-title">Motocicletas pendientes</h2><p>Revisa chasis, motor, DUA, marca, modelo y color antes de guardar cada unidad.</p></div><span class="blocks-count">{{ pendientesEnPantalla() }} pendientes</span></div>
+        @for (bloque of bloques(); track $index; let indice = $index) {
+          <article class="moto-card" [class.saved]="bloque.guardada"><div class="moto-card-header"><div class="moto-number">{{ indice + 1 }}</div><div><h3>Motocicleta {{ indice + 1 }}</h3><p>{{ bloque.guardada ? 'Ficha registrada' : bloque.sugerida ? 'Datos sugeridos por OCR · revisa cada carácter' : 'Pendiente de completar' }}</p></div>@if (bloque.guardada) { <span class="saved-badge">Guardada ✓</span> }</div>
+            @if (!bloque.guardada) { <form (ngSubmit)="guardarBloque(indice)">
+              <div class="moto-fields"><label>Marca<select [name]="'marca'+indice" [(ngModel)]="bloque.marca" (ngModelChange)="bloque.modelo='';bloque.color=''" required><option value="">Selecciona marca</option>@for (marca of marcas(); track marca) { <option [value]="marca">{{ marca }}</option> }</select></label>
+              <label>Modelo<select [name]="'modelo'+indice" [(ngModel)]="bloque.modelo" (ngModelChange)="bloque.color=''" [disabled]="!bloque.marca" required><option value="">Selecciona modelo</option>@for (modelo of modelos(bloque.marca); track modelo) { <option [value]="modelo">{{ modelo }}</option> }</select></label>
+              <label>Color<select [name]="'color'+indice" [(ngModel)]="bloque.color" [disabled]="!bloque.modelo" required><option value="">Selecciona color</option>@for (color of colores(bloque.marca,bloque.modelo); track color) { <option [value]="color">{{ color }}</option> }</select></label>
+              <label>Chasis completo<input [name]="'chasis'+indice" [(ngModel)]="bloque.chasisCompleto" maxlength="120" required /></label>
+              <label>Número de motor<input [name]="'motor'+indice" [(ngModel)]="bloque.numeroMotor" maxlength="120" required /></label>
+              <label>DUA<input [name]="'dua'+indice" [(ngModel)]="bloque.dua" maxlength="120" required /></label>
+              <label>Ítem DUA<input [name]="'item'+indice" [(ngModel)]="bloque.itemDua" maxlength="120" required /></label></div>
+              @if (bloque.error) { <p class="message error" role="alert">{{ bloque.error }}</p> }@if (bloque.existingId) { <a routerLink="/app/inventario" [queryParams]="{id:bloque.existingId}">Ver chasis ya registrado →</a> }
+              <div class="moto-actions"><span>Esta acción guarda solo esta motocicleta.</span><button type="submit" [disabled]="busy()">{{ busy() ? 'Guardando…' : 'Guardar motocicleta' }}</button></div>
+            </form> }
+          </article>
+        } @empty { @if (detalleLlegada()) { <div class="all-done">Todas las unidades recibidas de esta guía tienen una ficha registrada.</div> } }
+      </section>
+    }
+    @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+  }
+
+  @if (modoDetalle() && auth.can('INVENTARIO_CONSULTAR')) {
+    <section class="panel detail-panel"><h2>Datos de la motocicleta</h2>
+      @if (searchError()) { <p class="message error" role="alert">{{ searchError() }}</p> }
+      @if (found(); as ficha) { <div class="detail">
+        <div class="detail-row"><span>Ficha</span><strong>#{{ ficha.id }}</strong></div><div class="detail-row"><span>Guía</span><strong>#{{ ficha.llegadaId }}</strong></div>
+        <div class="detail-row"><span>Motocicleta</span><strong>{{ ficha.marca }} {{ ficha.modelo }} · {{ ficha.color }}</strong></div>
+        <div class="detail-row"><span>Chasis</span><strong>{{ ficha.chasisCompleto }}</strong></div><div class="detail-row"><span>Motor</span><strong>{{ ficha.numeroMotor }}</strong></div>
+        <div class="detail-row"><span>DUA / Ítem</span><strong>{{ ficha.dua }} / {{ ficha.itemDua }}</strong></div><div class="detail-row"><span>Registró</span><strong>{{ ficha.creadorUsuario }}</strong></div><div class="detail-row"><span>Fecha</span><strong>{{ ficha.creadoEn | date:'dd/MM/yyyy, HH:mm' }}</strong></div>
+      </div>
+      @if (auth.can('FICHAS_EDITAR')) { @if (!editando()) { <button type="button" (click)="iniciarEdicion(ficha)">Editar ficha</button> } @else { <form (ngSubmit)="actualizar()" class="edit-form"><p class="hint">La guía y la fecha de registro permanecen vinculadas a esta ficha.</p>
+        <div class="moto-fields"><label>Marca<select name="editMarca" [(ngModel)]="edicion.marca" (ngModelChange)="edicion.modelo='';edicion.color=''" required><option value="">Selecciona marca</option>@for (marca of marcas(); track marca) { <option [value]="marca">{{ marca }}</option> }</select></label>
+        <label>Modelo<select name="editModelo" [(ngModel)]="edicion.modelo" (ngModelChange)="edicion.color=''" [disabled]="!edicion.marca" required><option value="">Selecciona modelo</option>@for (modelo of modelos(edicion.marca); track modelo) { <option [value]="modelo">{{ modelo }}</option> }</select></label>
+        <label>Color<select name="editColor" [(ngModel)]="edicion.color" [disabled]="!edicion.modelo" required><option value="">Selecciona color</option>@for (color of colores(edicion.marca,edicion.modelo); track color) { <option [value]="color">{{ color }}</option> }</select></label>
+        <label>Chasis completo<input name="editChasis" [(ngModel)]="edicion.chasisCompleto" maxlength="120" required /></label><label>Número de motor<input name="editMotor" [(ngModel)]="edicion.numeroMotor" maxlength="120" required /></label><label>DUA<input name="editDua" [(ngModel)]="edicion.dua" maxlength="120" required /></label><label>Ítem DUA<input name="editItem" [(ngModel)]="edicion.itemDua" maxlength="120" required /></label></div>
+        @if (editError()) { <p class="message error" role="alert">{{ editError() }}</p> }<div class="moto-actions"><button type="button" class="secondary" (click)="editando.set(false)">Cancelar</button><button type="submit" [disabled]="busy()">{{ busy() ? 'Guardando…' : 'Guardar cambios' }}</button></div>
+      </form> } }@if (editSuccess()) { <p class="message success" role="status">Cambios guardados.</p> }
+      } @else { <p class="hint">{{ searchBusy() ? 'Cargando ficha…' : 'No se pudo cargar la ficha.' }}</p> }
+    </section>
+  }
+</div>

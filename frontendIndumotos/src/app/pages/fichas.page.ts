@@ -13,83 +13,20 @@ interface Ficha {
 }
 interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; receptorUsuario: string; cantidadDeclarada: number; cantidadRecibida: number }
 interface PaginaLlegadas { items: LlegadaOpcion[]; pagina: number; totalPaginas: number; totalElementos: number }
-interface DetalleLlegada { llegada: LlegadaOpcion; cantidadFichas: number; diferenciaInformativa: number }
+interface DetalleLlegada { llegada: LlegadaOpcion; fichas: Ficha[]; cantidadFichas: number; diferenciaInformativa: number }
 interface OpcionMotocicleta { marca: string; modelo: string; color: string }
+interface BorradorMoto { marca: string; modelo: string; color: string; chasisCompleto: string;
+  numeroMotor: string; dua: string; itemDua: string; guardada: boolean; error: string;
+  fieldErrors: Record<string, string>; existingId?: number; sugerida?: boolean }
+interface SugerenciaOcr { marca: string; modelo: string; color: string; chasisCompleto: string;
+  numeroMotor: string; dua: string; itemDua: string; pagina: number }
+interface ResultadoOcr { fotosAnalizadas: number; sugerencias: SugerenciaOcr[] }
 
 @Component({
   selector: 'app-fichas-page',
   imports: [FormsModule, DatePipe, RouterLink],
-  template: `<div class="form-page">
-    <div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div><h1>{{modoDetalle() ? 'Ficha de motocicleta' : 'Nueva ficha de motocicleta'}}</h1>
-    <p class="lead">Registra cada motocicleta indicada en la guía de la llegada, con su chasis, motor y datos de la DUA. Desde inventario puedes abrir y editar una ficha existente.</p>
-    <p><a routerLink="/app/inventario">Volver al inventario</a> @if (modoDetalle() && auth.can('FICHAS_REGISTRAR')) { <a class="new-link" routerLink="/app/fichas" [queryParams]="{nuevo:1}">+ Agregar motocicleta</a> }</p>
-    <div class="grid">
-      @if (!modoDetalle() && auth.can('FICHAS_REGISTRAR')) {
-      <section class="panel"><h2>Registrar desde una guía</h2><p class="hint">Selecciona la guía registrada por Almacén. Revisa cada moto y guarda su ficha por separado.</p>
-        <form (ngSubmit)="guardar()">
-          <div class="guide-picker"><label for="guiaBusqueda">Guías de llegada</label><div class="guide-search"><input id="guiaBusqueda" name="guiaBusqueda" type="search" maxlength="120" [(ngModel)]="guiaBusqueda" (ngModelChange)="alCambiarGuia()" placeholder="Buscar por número de guía" /><button type="button" class="secondary" (click)="buscarLlegadas()">Buscar</button></div>
-          @if (guiasBusy()) { <p class="hint">Cargando guías…</p> }
-          @if (paginaLlegadas(); as pagina) { <div class="guide-list">
-            @for (llegada of llegadas(); track llegada.id) { <button type="button" class="guide-option" [class.selected]="llegadaSeleccionada()?.id === llegada.id" (click)="seleccionarLlegada(llegada)"><span><strong>{{llegada.numeroGuia}}</strong><small>{{llegada.fechaLlegada | date:'dd/MM/yyyy'}} · {{llegada.receptorUsuario}}</small></span><span>{{llegada.cantidadRecibida}} motos · Elegir →</span></button> }
-            @empty { <p class="hint">No hay guías para esta búsqueda.</p> }
-          </div><div class="guide-pages"><span>{{pagina.totalElementos}} guías · Página {{pagina.pagina + 1}} de {{pagina.totalPaginas || 1}}</span>@if (pagina.totalPaginas > 1) { <button type="button" class="secondary" [disabled]="pagina.pagina === 0 || guiasBusy()" (click)="buscarLlegadas(pagina.pagina - 1)">Anterior</button><button type="button" class="secondary" [disabled]="pagina.pagina + 1 >= pagina.totalPaginas || guiasBusy()" (click)="buscarLlegadas(pagina.pagina + 1)">Siguiente</button> }</div> }
-          @if (llegadaSeleccionada(); as llegada) { <div class="guide-summary"><strong>Guía {{llegada.numeroGuia}}</strong><span>{{llegada.cantidadDeclarada}} declaradas · {{llegada.cantidadRecibida}} recibidas · {{detalleLlegada()?.cantidadFichas ?? '…'}} fichas registradas</span><a routerLink="/app/llegadas" [queryParams]="{id:llegada.id}">Ver guía y sus fotos →</a></div> }
-          </div>
-          @if (fieldErrors()['llegadaId']) { <small class="field-error">{{fieldErrors()['llegadaId']}}</small> }
-          <div class="row"><div><label for="marca">Marca</label><select id="marca" name="marca" required [(ngModel)]="form.marca" (ngModelChange)="form.modelo=''; form.color=''" [attr.aria-invalid]="fieldErrors()['marca'] ? true : null"><option value="">Selecciona marca</option>@for (marca of marcas(); track marca) { <option [value]="marca">{{marca}}</option> }</select>
-            @if (fieldErrors()['marca']) { <small class="field-error">{{fieldErrors()['marca']}}</small> }</div>
-          <div><label for="modelo">Modelo</label><select id="modelo" name="modelo" required [(ngModel)]="form.modelo" (ngModelChange)="form.color=''" [disabled]="!form.marca" [attr.aria-invalid]="fieldErrors()['modelo'] ? true : null"><option value="">Selecciona modelo</option>@for (modelo of modelos(form.marca); track modelo) { <option [value]="modelo">{{modelo}}</option> }</select>
-            @if (fieldErrors()['modelo']) { <small class="field-error">{{fieldErrors()['modelo']}}</small> }</div></div>
-          <div class="row"><div><label for="color">Color</label><select id="color" name="color" required [(ngModel)]="form.color" [disabled]="!form.modelo" [attr.aria-invalid]="fieldErrors()['color'] ? true : null"><option value="">Selecciona color</option>@for (color of colores(form.marca,form.modelo); track color) { <option [value]="color">{{color}}</option> }</select>
-            @if (fieldErrors()['color']) { <small class="field-error">{{fieldErrors()['color']}}</small> }</div>
-          <div><label for="chasis">Chasis completo</label><input id="chasis" name="chasis" required maxlength="120" [(ngModel)]="form.chasisCompleto" [attr.aria-invalid]="fieldErrors()['chasisCompleto'] ? true : null" />
-            @if (fieldErrors()['chasisCompleto']) { <small class="field-error">{{fieldErrors()['chasisCompleto']}}</small> }</div></div>
-          <label for="motor">Número de motor</label><input id="motor" name="motor" required maxlength="120" [(ngModel)]="form.numeroMotor" [attr.aria-invalid]="fieldErrors()['numeroMotor'] ? true : null" />
-          @if (fieldErrors()['numeroMotor']) { <small class="field-error">{{fieldErrors()['numeroMotor']}}</small> }
-          <div class="row"><div><label for="dua">DUA</label><input id="dua" name="dua" required maxlength="120" [(ngModel)]="form.dua" [attr.aria-invalid]="fieldErrors()['dua'] ? true : null" />
-            @if (fieldErrors()['dua']) { <small class="field-error">{{fieldErrors()['dua']}}</small> }</div>
-          <div><label for="itemDua">Ítem DUA</label><input id="itemDua" name="itemDua" required maxlength="120" [(ngModel)]="form.itemDua" [attr.aria-invalid]="fieldErrors()['itemDua'] ? true : null" />
-            @if (fieldErrors()['itemDua']) { <small class="field-error">{{fieldErrors()['itemDua']}}</small> }</div></div>
-          @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
-          @if (existingId(); as id) { <button class="secondary" type="button" (click)="verExistente(id)">Ver ficha existente #{{id}}</button> }
-          <button [disabled]="busy()" type="submit">{{busy() ? 'Guardando…' : 'Registrar ficha'}}</button>
-        </form>
-        @if (created(); as ficha) { <p class="message success" role="status">Ficha #{{ficha.id}} registrada para el chasis {{ficha.chasisCompleto}}.</p> }
-      </section>
-      }
-      @if (modoDetalle() && auth.can('INVENTARIO_CONSULTAR')) {
-      <section class="panel"><h2>Datos de la motocicleta</h2>
-        @if (searchError()) { <p class="message error" role="alert">{{searchError()}}</p> }
-        @if (found(); as ficha) { <div class="detail">
-          <div class="detail-row"><span>Ficha</span><strong>#{{ficha.id}}</strong></div>
-          <div class="detail-row"><span>Llegada</span><strong>#{{ficha.llegadaId}}</strong></div>
-          <div class="detail-row"><span>Motocicleta</span><strong>{{ficha.marca}} {{ficha.modelo}} · {{ficha.color}}</strong></div>
-          <div class="detail-row"><span>Chasis</span><strong>{{ficha.chasisCompleto}}</strong></div>
-          <div class="detail-row"><span>Motor</span><strong>{{ficha.numeroMotor}}</strong></div>
-          <div class="detail-row"><span>DUA / Ítem</span><strong>{{ficha.dua}} / {{ficha.itemDua}}</strong></div>
-          <div class="detail-row"><span>Registró</span><strong>{{ficha.creadorUsuario}}</strong></div>
-          <div class="detail-row"><span>Fecha</span><strong>{{ficha.creadoEn | date:'dd/MM/yyyy, HH:mm'}}</strong></div>
-        </div>
-        @if (auth.can('FICHAS_EDITAR')) {
-          @if (!editando()) { <button type="button" (click)="iniciarEdicion(ficha)">Editar ficha</button> }
-          @else { <form (ngSubmit)="actualizar()" class="edit-form">
-            <p class="hint">La llegada y la fecha de registro permanecen vinculadas a esta ficha.</p>
-            <div class="row"><div><label for="editMarca">Marca</label><select id="editMarca" name="editMarca" required [(ngModel)]="edicion.marca" (ngModelChange)="edicion.modelo=''; edicion.color=''"><option value="">Selecciona marca</option>@for (marca of marcas(); track marca) { <option [value]="marca">{{marca}}</option> }</select></div><div><label for="editModelo">Modelo</label><select id="editModelo" name="editModelo" required [(ngModel)]="edicion.modelo" (ngModelChange)="edicion.color=''" [disabled]="!edicion.marca"><option value="">Selecciona modelo</option>@for (modelo of modelos(edicion.marca); track modelo) { <option [value]="modelo">{{modelo}}</option> }</select></div></div>
-            <div class="row"><div><label for="editColor">Color</label><select id="editColor" name="editColor" required [(ngModel)]="edicion.color" [disabled]="!edicion.modelo"><option value="">Selecciona color</option>@for (color of colores(edicion.marca,edicion.modelo); track color) { <option [value]="color">{{color}}</option> }</select></div><div><label for="editChasis">Chasis completo</label><input id="editChasis" name="editChasis" required maxlength="120" [(ngModel)]="edicion.chasisCompleto" /></div></div>
-            <label for="editMotor">Número de motor</label><input id="editMotor" name="editMotor" required maxlength="120" [(ngModel)]="edicion.numeroMotor" />
-            <div class="row"><div><label for="editDua">DUA</label><input id="editDua" name="editDua" required maxlength="120" [(ngModel)]="edicion.dua" /></div><div><label for="editItem">Ítem DUA</label><input id="editItem" name="editItem" required maxlength="120" [(ngModel)]="edicion.itemDua" /></div></div>
-            @if (editError()) { <p class="message error" role="alert">{{editError()}}</p> }
-            <button type="submit" [disabled]="busy()">{{busy() ? 'Guardando...' : 'Guardar cambios'}}</button> <button type="button" class="secondary" (click)="editando.set(false)">Cancelar</button>
-          </form> }
-        }
-        @if (editSuccess()) { <p class="message success" role="status">Cambios guardados.</p> }
-        } @else { <div class="empty">{{searchBusy() ? 'Cargando ficha...' : 'No se pudo cargar la ficha.'}}</div> }
-      </section>
-      }
-    </div></div>`,
-  styles: [`.field-error{display:block;color:#aa3721;font-size:12px;margin:-12px 0 16px}
-    input[aria-invalid="true"],select[aria-invalid="true"]{border-color:#ca4b32}.new-link{display:inline-block;margin-left:20px}.edit-form{margin-top:22px}
-    .guide-picker{border:1px solid #dfe8f0;border-radius:12px;padding:16px;background:#f8fafc;margin-bottom:20px}.guide-search{display:flex;gap:8px}.guide-search input{flex:1;min-width:0}.guide-list{max-height:250px;overflow:auto;margin:12px 0}.guide-option{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:11px 12px;border:1px solid #e0e8ef;background:#fff;border-radius:8px;margin:5px 0;text-align:left;color:#193d61;cursor:pointer}.guide-option.selected{border-color:#193d61;background:#edf4fa}.guide-option span:first-child{display:grid;gap:3px}.guide-option small{font-size:11px;color:#718197}.guide-option span:last-child{font-size:12px;white-space:nowrap}.guide-pages{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#718197}.guide-pages span{margin-right:auto}.guide-summary{display:grid;gap:5px;margin-top:12px;padding:13px;border-radius:9px;background:#eaf2f8;color:#193d61;font-size:13px}.guide-summary a{color:#193d61;font-weight:700}.guide-summary span{color:#536a80}@media(max-width:600px){.guide-option{align-items:start;flex-direction:column}.guide-search{flex-wrap:wrap}}`]
+  templateUrl: './fichas.page.html',
+  styleUrl: './fichas.page.css'
 })
 export class FichasPage implements OnInit {
   readonly auth = inject(AuthService);
@@ -110,7 +47,11 @@ export class FichasPage implements OnInit {
   readonly llegadas = signal<LlegadaOpcion[]>([]);
   readonly paginaLlegadas = signal<PaginaLlegadas | null>(null);
   readonly detalleLlegada = signal<DetalleLlegada | null>(null);
+  readonly bloques = signal<BorradorMoto[]>([]);
+  readonly verRegistradas = signal(false);
   readonly guiasBusy = signal(false);
+  readonly ocrBusy = signal(false);
+  readonly ocrMensaje = signal('');
   readonly llegadaSeleccionada = signal<LlegadaOpcion | null>(null);
   readonly opciones = signal<OpcionMotocicleta[]>([]);
   readonly marcas = signal<string[]>([]);
@@ -162,6 +103,10 @@ export class FichasPage implements OnInit {
     this.llegadaSeleccionada.set(null);
     this.detalleLlegada.set(null);
     this.form.llegadaId = null;
+    this.bloques.set([]);
+    this.verRegistradas.set(false);
+    this.ocrBusy.set(false);
+    this.ocrMensaje.set('');
     this.temporizadorGuia = setTimeout(() => this.buscarLlegadas(), 300);
   }
 
@@ -181,11 +126,68 @@ export class FichasPage implements OnInit {
   seleccionarLlegada(llegada: LlegadaOpcion): void {
     this.form.llegadaId = llegada.id; this.llegadaSeleccionada.set(llegada);
     this.guiaBusqueda = llegada.numeroGuia;
-    this.detalleLlegada.set(null); this.error.set('');
+    this.detalleLlegada.set(null); this.bloques.set([]); this.verRegistradas.set(false);
+    this.ocrMensaje.set(''); this.ocrBusy.set(false); this.error.set('');
     this.http.get<DetalleLlegada>(`/api/v1/llegadas/${llegada.id}/detalle`).subscribe({
-      next: detalle => { if (this.form.llegadaId === llegada.id) this.detalleLlegada.set(detalle); },
+      next: detalle => { if (this.form.llegadaId !== llegada.id) return;
+        this.detalleLlegada.set(detalle);
+        const pendientes = Math.max(0, detalle.llegada.cantidadRecibida - detalle.cantidadFichas);
+        this.bloques.set(Array.from({length:pendientes}, () => this.nuevoBloque()));
+      },
       error: err => this.error.set(apiError(err))
     });
+  }
+
+  private nuevoBloque(): BorradorMoto {
+    return {marca:'',modelo:'',color:'',chasisCompleto:'',numeroMotor:'',dua:'',itemDua:'',
+      guardada:false,error:'',fieldErrors:{}};
+  }
+
+  pendientesEnPantalla(): number {
+    return this.bloques().filter(bloque => !bloque.guardada).length;
+  }
+
+  autocompletar(): void {
+    const llegada = this.llegadaSeleccionada();
+    if (!llegada || this.ocrBusy()) return;
+    this.ocrBusy.set(true); this.ocrMensaje.set('');
+    this.http.get<ResultadoOcr>(`/api/v1/llegadas/${llegada.id}/sugerencias-ocr`).subscribe({
+      next: resultado => {
+        if (this.llegadaSeleccionada()?.id !== llegada.id) return;
+        const existentes = new Set((this.detalleLlegada()?.fichas ?? [])
+          .map(ficha => ficha.chasisCompleto.trim().toUpperCase()));
+        this.bloques().forEach(bloque => {
+          if (bloque.chasisCompleto.trim()) existentes.add(bloque.chasisCompleto.trim().toUpperCase());
+        });
+        const sugerencias = resultado.sugerencias.filter(sugerencia =>
+          !existentes.has(sugerencia.chasisCompleto.trim().toUpperCase()));
+        let indice = 0;
+        this.bloques.update(actual => actual.map(bloque => {
+          if (bloque.guardada || bloque.sugerida || bloque.chasisCompleto || bloque.numeroMotor
+            || bloque.marca || bloque.modelo || bloque.color || bloque.dua || bloque.itemDua
+            || indice >= sugerencias.length) return bloque;
+          const sugerencia = sugerencias[indice++];
+          const marca = this.coincidencia(this.marcas(), sugerencia.marca);
+          const modelo = this.coincidencia(this.modelos(marca), sugerencia.modelo);
+          const color = this.coincidencia(this.colores(marca, modelo), sugerencia.color);
+          return {...bloque, marca:bloque.marca || marca, modelo:bloque.modelo || modelo,
+            color:bloque.color || color, chasisCompleto:bloque.chasisCompleto || sugerencia.chasisCompleto,
+            numeroMotor:bloque.numeroMotor || sugerencia.numeroMotor, dua:bloque.dua || sugerencia.dua,
+            itemDua:bloque.itemDua || sugerencia.itemDua, sugerida:true};
+        }));
+        this.ocrMensaje.set(indice
+          ? `Se propusieron datos para ${indice} moto${indice === 1 ? '' : 's'} desde ${resultado.fotosAnalizadas} foto${resultado.fotosAnalizadas === 1 ? '' : 's'}. Revisa todos los caracteres antes de guardar.`
+          : 'No se pudieron reconocer chasis en las fotos. Completa los bloques manualmente.');
+        this.ocrBusy.set(false);
+      }, error: err => { this.ocrMensaje.set(apiError(err)); this.ocrBusy.set(false); }
+    });
+  }
+
+  private coincidencia(opciones: string[], texto: string): string {
+    const normalizar = (valor: string) => valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const lectura = normalizar(texto || '');
+    return opciones.find(opcion => lectura.includes(normalizar(opcion))) ?? '';
   }
 
   iniciarEdicion(ficha: Ficha): void {
@@ -204,46 +206,54 @@ export class FichasPage implements OnInit {
       error: err => { this.editError.set(apiError(err)); this.busy.set(false); }
     });
   }
-  guardar(): void {
-    this.created.set(null); this.error.set('');
-    this.existingId.set(null);
-    this.fieldErrors.set({});
+  guardarBloque(indice: number): void {
+    const bloque = this.bloques()[indice];
+    const llegadaId = this.form.llegadaId;
+    if (!bloque || bloque.guardada || this.busy() || !llegadaId) return;
+    this.error.set('');
     const mensajes: Record<string, string> = {
       marca: 'Ingresa la marca.', modelo: 'Ingresa el modelo.', color: 'Ingresa el color.',
       chasisCompleto: 'Ingresa el chasis completo.', numeroMotor: 'Ingresa el número de motor.',
       dua: 'Ingresa la DUA.', itemDua: 'Ingresa el ítem de DUA.'
     };
     const errores: Record<string, string> = {};
-    if (!Number.isSafeInteger(this.form.llegadaId) || (this.form.llegadaId ?? 0) <= 0)
-      errores['llegadaId'] = 'Selecciona una llegada válida.';
     for (const [campo, mensaje] of Object.entries(mensajes)) {
-      if (!String(this.form[campo as keyof typeof this.form] ?? '').trim()) errores[campo] = mensaje;
+      if (!String(bloque[campo as keyof BorradorMoto] ?? '').trim()) errores[campo] = mensaje;
     }
     if (Object.keys(errores).length) {
-      this.fieldErrors.set(errores); this.error.set('Corrige los campos marcados.'); return;
+      this.actualizarBloque(indice, {fieldErrors:errores,error:'Completa los campos de esta motocicleta.'}); return;
     }
+    this.actualizarBloque(indice, {fieldErrors:{},error:'',existingId:undefined});
     this.busy.set(true);
-    this.http.post<Ficha>('/api/v1/motocicletas', this.form).subscribe({
+    const datos = {llegadaId,marca:bloque.marca,modelo:bloque.modelo,color:bloque.color,
+      chasisCompleto:bloque.chasisCompleto,numeroMotor:bloque.numeroMotor,dua:bloque.dua,itemDua:bloque.itemDua};
+    this.http.post<Ficha>('/api/v1/motocicletas', datos).subscribe({
       next: value => { this.created.set(value); this.busy.set(false);
-        this.form = {llegadaId:this.form.llegadaId, marca:'', modelo:'', color:'',
-          chasisCompleto:'', numeroMotor:'', dua:'', itemDua:''};
-        const llegada = this.llegadaSeleccionada();
-        if (llegada) this.seleccionarLlegada(llegada);
+        this.actualizarBloque(indice, {guardada:true,error:'',fieldErrors:{}});
+        this.http.get<DetalleLlegada>(`/api/v1/llegadas/${llegadaId}/detalle`).subscribe({
+          next: detalle => { if (this.form.llegadaId === llegadaId) this.detalleLlegada.set(detalle); },
+          error: err => this.error.set(apiError(err))
+        });
       },
       error: err => {
         if (err instanceof HttpErrorResponse && err.status === 409) {
           const body = err.error as { fichaExistenteId?: number } | null;
-          this.existingId.set(body?.fichaExistenteId ?? null);
-          this.error.set('El chasis completo ya está registrado.');
+          this.actualizarBloque(indice, {existingId:body?.fichaExistenteId,
+            error:'El chasis completo ya está registrado.'});
         } else if (err instanceof HttpErrorResponse && err.status === 400) {
           const body = err.error as { errores?: Record<string, string> } | null;
-          this.fieldErrors.set(body?.errores ?? {});
-          this.error.set(body?.errores && Object.keys(body.errores).length
-            ? 'Corrige los campos marcados.' : 'Revisa el formato de la ficha.');
-        } else this.error.set(apiError(err));
+          this.actualizarBloque(indice, {fieldErrors:body?.errores ?? {},
+            error:body?.errores && Object.keys(body.errores).length
+              ? 'Corrige los campos marcados.' : 'Revisa el formato de la ficha.'});
+        } else this.actualizarBloque(indice, {error:apiError(err)});
         this.busy.set(false);
       }
     });
+  }
+
+  private actualizarBloque(indice: number, cambios: Partial<BorradorMoto>): void {
+    this.bloques.update(actual => actual.map((bloque, posicion) =>
+      posicion === indice ? {...bloque,...cambios} : bloque));
   }
 
   verExistente(id: number): void {
