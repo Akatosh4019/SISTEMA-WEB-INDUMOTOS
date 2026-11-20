@@ -22,6 +22,8 @@ interface SugerenciaOcr { marca: string; modelo: string; color: string; chasisCo
   numeroMotor: string; dua: string; itemDua: string; pagina: number }
 interface ResultadoOcr { fotosAnalizadas: number; sugerencias: SugerenciaOcr[] }
 interface FotoGuia { id: number; orden: number; nombreArchivo: string; url: string }
+interface EstadoRegistro { terminado: boolean; recibidas: number; registradas: number;
+  borradores: (BorradorMoto & {posicion: number})[] }
 
 @Component({
   selector: 'app-fichas-page',
@@ -49,6 +51,11 @@ export class FichasPage implements OnInit, OnDestroy {
   readonly paginaLlegadas = signal<PaginaLlegadas | null>(null);
   readonly detalleLlegada = signal<DetalleLlegada | null>(null);
   readonly bloques = signal<BorradorMoto[]>([]);
+  readonly registroTerminado = signal(false);
+  readonly registroCargado = signal(false);
+  readonly paginaBloques = signal(0);
+  readonly borradoresBusy = signal(false);
+  readonly finalizando = signal(false);
   readonly verRegistradas = signal(false);
   readonly guiasBusy = signal(false);
   readonly ocrBusy = signal(false);
@@ -66,6 +73,7 @@ export class FichasPage implements OnInit, OnDestroy {
   private temporizadorGuia?: ReturnType<typeof setTimeout>;
   private consultaGuias = 0;
   private consultaFotos = 0;
+  private arrastreFoto?: {x:number;y:number;izquierda:number;arriba:number};
   edicion = { marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   form = { llegadaId: null as number | null, marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   searchId: number | null = null;
@@ -135,6 +143,33 @@ export class FichasPage implements OnInit, OnDestroy {
   cambiarZoom(direccion: number): void {
     this.zoomFoto.set(Math.max(1, Math.min(3, Math.round((this.zoomFoto() + direccion * .25) * 100) / 100)));
   }
+  iniciarArrastreFoto(evento: PointerEvent): void {
+    if (evento.pointerType === 'touch') return;
+    const visor = evento.currentTarget as HTMLElement;
+    this.arrastreFoto = {x:evento.clientX,y:evento.clientY,
+      izquierda:visor.scrollLeft,arriba:visor.scrollTop};
+    visor.setPointerCapture(evento.pointerId);
+  }
+  moverFoto(evento: PointerEvent): void {
+    if (!this.arrastreFoto) return;
+    const visor = evento.currentTarget as HTMLElement;
+    visor.scrollLeft = this.arrastreFoto.izquierda - (evento.clientX - this.arrastreFoto.x);
+    visor.scrollTop = this.arrastreFoto.arriba - (evento.clientY - this.arrastreFoto.y);
+  }
+  terminarArrastreFoto(): void { this.arrastreFoto = undefined; }
+
+  bloquesPagina(): {bloque:BorradorMoto; indice:number}[] {
+    return this.bloques().map((bloque,indice) => ({bloque,indice}))
+      .slice(this.paginaBloques() * 5, (this.paginaBloques() + 1) * 5);
+  }
+  totalPaginasBloques(): number { return Math.max(1, Math.ceil(this.bloques().length / 5)); }
+  cambiarPaginaBloques(pagina: number): void {
+    this.paginaBloques.set(Math.max(0, Math.min(this.totalPaginasBloques() - 1,pagina)));
+  }
+  borradoresCompletos(): boolean {
+    return !!this.detalleLlegada() && this.registroCargado() && !this.registroTerminado() && !this.borradoresBusy()
+      && this.bloques().every(bloque => bloque.guardada);
+  }
 
   cargarCatalogo(): void {
     this.http.get<OpcionMotocicleta[]>('/api/v1/catalogo-motocicletas').subscribe({
@@ -158,6 +193,7 @@ export class FichasPage implements OnInit, OnDestroy {
     this.detalleLlegada.set(null);
     this.form.llegadaId = null;
     this.bloques.set([]);
+    this.registroTerminado.set(false); this.registroCargado.set(false); this.paginaBloques.set(0);
     this.verRegistradas.set(false);
     this.ocrBusy.set(false);
     this.ocrMensaje.set('');
@@ -183,14 +219,27 @@ export class FichasPage implements OnInit, OnDestroy {
     this.cargarFotos(llegada.id);
     this.guiaBusqueda = llegada.numeroGuia;
     this.detalleLlegada.set(null); this.bloques.set([]); this.verRegistradas.set(false);
+    this.registroTerminado.set(false); this.registroCargado.set(false);
+    this.paginaBloques.set(0); this.borradoresBusy.set(true);
     this.ocrMensaje.set(''); this.ocrBusy.set(false); this.error.set('');
     this.http.get<DetalleLlegada>(`/api/v1/llegadas/${llegada.id}/detalle`).subscribe({
       next: detalle => { if (this.form.llegadaId !== llegada.id) return;
         this.detalleLlegada.set(detalle);
         const pendientes = Math.max(0, detalle.llegada.cantidadRecibida - detalle.cantidadFichas);
-        this.bloques.set(Array.from({length:pendientes}, () => this.nuevoBloque()));
+        this.http.get<EstadoRegistro>(`/api/v1/llegadas/${llegada.id}/registro`).subscribe({
+          next: estado => { if (this.form.llegadaId !== llegada.id) return;
+            this.registroTerminado.set(estado.terminado);
+            this.registroCargado.set(true);
+            const borradores = new Map(estado.borradores.map(b => [b.posicion,b]));
+            this.bloques.set(estado.terminado ? [] : Array.from({length:pendientes},(_,i) => {
+              const guardado = borradores.get(i + 1);
+              return guardado ? {...this.nuevoBloque(),...guardado,guardada:true} : this.nuevoBloque();
+            }));
+            this.borradoresBusy.set(false);
+          }, error: err => { this.error.set(apiError(err)); this.borradoresBusy.set(false); }
+        });
       },
-      error: err => this.error.set(apiError(err))
+      error: err => { this.error.set(apiError(err)); this.borradoresBusy.set(false); }
     });
   }
 
@@ -201,6 +250,21 @@ export class FichasPage implements OnInit, OnDestroy {
 
   pendientesEnPantalla(): number {
     return this.bloques().filter(bloque => !bloque.guardada).length;
+  }
+
+  finalizarRegistro(): void {
+    const llegada = this.llegadaSeleccionada();
+    if (!llegada || !this.borradoresCompletos() || this.finalizando()) return;
+    this.finalizando.set(true); this.error.set('');
+    this.http.post<EstadoRegistro>(`/api/v1/llegadas/${llegada.id}/registro/finalizar`,{}).subscribe({
+      next: estado => { this.finalizando.set(false); this.registroTerminado.set(estado.terminado);
+        this.bloques.set([]); this.paginaBloques.set(0);
+        this.http.get<DetalleLlegada>(`/api/v1/llegadas/${llegada.id}/detalle`).subscribe({
+          next: detalle => { if (this.llegadaSeleccionada()?.id === llegada.id) this.detalleLlegada.set(detalle); },
+          error: err => this.error.set(apiError(err))
+        });
+      }, error: err => { this.error.set(apiError(err)); this.finalizando.set(false); }
+    });
   }
 
   autocompletar(): void {
@@ -267,7 +331,7 @@ export class FichasPage implements OnInit, OnDestroy {
   guardarBloque(indice: number): void {
     const bloque = this.bloques()[indice];
     const llegadaId = this.form.llegadaId;
-    if (!bloque || bloque.guardada || this.busy() || !llegadaId) return;
+    if (!bloque || this.registroTerminado() || this.busy() || !llegadaId) return;
     this.error.set('');
     const mensajes: Record<string, string> = {
       marca: 'Ingresa la marca.', modelo: 'Ingresa el modelo.', color: 'Ingresa el color.',
@@ -283,15 +347,11 @@ export class FichasPage implements OnInit, OnDestroy {
     }
     this.actualizarBloque(indice, {fieldErrors:{},error:'',existingId:undefined});
     this.busy.set(true);
-    const datos = {llegadaId,marca:bloque.marca,modelo:bloque.modelo,color:bloque.color,
+    const datos = {posicion:indice + 1,marca:bloque.marca,modelo:bloque.modelo,color:bloque.color,
       chasisCompleto:bloque.chasisCompleto,numeroMotor:bloque.numeroMotor,dua:bloque.dua,itemDua:bloque.itemDua};
-    this.http.post<Ficha>('/api/v1/motocicletas', datos).subscribe({
-      next: value => { this.created.set(value); this.busy.set(false);
+    this.http.put<EstadoRegistro>(`/api/v1/llegadas/${llegadaId}/registro/borradores/${indice + 1}`, datos).subscribe({
+      next: () => { this.busy.set(false);
         this.actualizarBloque(indice, {guardada:true,error:'',fieldErrors:{}});
-        this.http.get<DetalleLlegada>(`/api/v1/llegadas/${llegadaId}/detalle`).subscribe({
-          next: detalle => { if (this.form.llegadaId === llegadaId) this.detalleLlegada.set(detalle); },
-          error: err => this.error.set(apiError(err))
-        });
       },
       error: err => {
         if (err instanceof HttpErrorResponse && err.status === 409) {
