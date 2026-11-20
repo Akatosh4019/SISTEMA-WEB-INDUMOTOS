@@ -63,8 +63,10 @@ describe('InventarioPage', () => {
     fixture.detectChanges();
     http.expectOne('/api/v1/motocicletas/8').flush({id:8,llegadaId:2,marca:'RONCO',modelo:'RZ 250',color:'Rojo',
       chasisCompleto:'DEMO-A-0042',numeroMotor:'MOTOR-1',dua:'DUA-1',itemDua:'1',creadorUsuario:'inventarios',creadoEn:'2026-11-19T09:00:00Z'});
+    http.expectOne('/api/v1/llegadas/2').flush({id:2,numeroGuia:'TG01-38337'});
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('DEMO-A-0042');
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('TG01-38337');
     page.cerrarFicha(); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeNull();
     expect(page.page()).not.toBeNull();

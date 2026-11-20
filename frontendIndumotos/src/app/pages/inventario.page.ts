@@ -38,6 +38,7 @@ export class InventarioPage implements OnInit {
   readonly error = signal('');
   readonly page = signal<PaginaMotocicletas | null>(null);
   readonly fichaAbierta = signal<number | null>(null);
+  readonly filtrosAbiertos = signal(false);
   filtros: Filtros = { chasis: '', marca: '', modelo: '', color: '' };
   private aplicados: Filtros = { ...this.filtros };
   private temporizador?: ReturnType<typeof setTimeout>;

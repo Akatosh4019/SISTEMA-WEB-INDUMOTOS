@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 
 interface Llegada {
@@ -43,6 +43,7 @@ interface FotoVisible extends GuiaImagen { url: string }
 export class LlegadasPage implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute);
   readonly busy = signal(false);
   readonly searchBusy = signal(false);
   readonly error = signal('');
@@ -64,7 +65,18 @@ export class LlegadasPage implements OnInit, OnDestroy {
     { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
   numeroGuia = '';
 
-  ngOnInit(): void { if (this.auth.can('INVENTARIO_CONSULTAR')) this.listar(0); }
+  ngOnInit(): void {
+    if (!this.auth.can('INVENTARIO_CONSULTAR')) return;
+    this.listar(0);
+    this.route.queryParamMap.subscribe(params => {
+      const id = Number(params.get('id'));
+      if (Number.isSafeInteger(id) && id > 0) {
+        this.http.get<Llegada>(`/api/v1/llegadas/${id}`).subscribe({
+          next: llegada => this.abrir(llegada), error: err => this.searchError.set(this.message(err))
+        });
+      }
+    });
+  }
   ngOnDestroy(): void { clearTimeout(this.temporizador); this.limpiarFotos(); }
 
   abrirNueva(): void { this.resetearNueva(); this.nuevaAbierta.set(true); }

@@ -11,7 +11,9 @@ interface Ficha {
   chasisCompleto: string; numeroMotor: string; dua: string; itemDua: string;
   creadorUsuario: string; creadoEn: string;
 }
-interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; receptorUsuario: string }
+interface LlegadaOpcion { id: number; numeroGuia: string; fechaLlegada: string; receptorUsuario: string; cantidadDeclarada: number; cantidadRecibida: number }
+interface PaginaLlegadas { items: LlegadaOpcion[]; pagina: number; totalPaginas: number; totalElementos: number }
+interface DetalleLlegada { llegada: LlegadaOpcion; cantidadFichas: number; diferenciaInformativa: number }
 interface OpcionMotocicleta { marca: string; modelo: string; color: string }
 
 @Component({
@@ -23,14 +25,16 @@ interface OpcionMotocicleta { marca: string; modelo: string; color: string }
     <p><a routerLink="/app/inventario">Volver al inventario</a> @if (modoDetalle() && auth.can('FICHAS_REGISTRAR')) { <a class="new-link" routerLink="/app/fichas" [queryParams]="{nuevo:1}">+ Agregar motocicleta</a> }</p>
     <div class="grid">
       @if (!modoDetalle() && auth.can('FICHAS_REGISTRAR')) {
-      <section class="panel"><h2>Nueva ficha</h2><p class="hint">Datos contrastados con la guía y la DUA</p>
+      <section class="panel"><h2>Registrar desde una guía</h2><p class="hint">Selecciona la guía registrada por Almacén. Revisa cada moto y guarda su ficha por separado.</p>
         <form (ngSubmit)="guardar()">
-          <label for="guiaBusqueda">Número de guía</label><input id="guiaBusqueda" name="guiaBusqueda" type="text" maxlength="120" [(ngModel)]="guiaBusqueda" />
-          <button type="button" class="secondary" (click)="buscarLlegadas()">Buscar llegada</button>
-          @for (llegada of llegadas(); track llegada.id) {
-            <button type="button" class="secondary" (click)="seleccionarLlegada(llegada)">{{llegada.numeroGuia}} · {{llegada.fechaLlegada | date:'dd/MM/yyyy'}} · {{llegada.receptorUsuario}}</button>
-          }
-          @if (llegadaSeleccionada(); as llegada) { <p>Guía seleccionada: {{llegada.numeroGuia}}</p> }
+          <div class="guide-picker"><label for="guiaBusqueda">Guías de llegada</label><div class="guide-search"><input id="guiaBusqueda" name="guiaBusqueda" type="search" maxlength="120" [(ngModel)]="guiaBusqueda" (ngModelChange)="alCambiarGuia()" placeholder="Buscar por número de guía" /><button type="button" class="secondary" (click)="buscarLlegadas()">Buscar</button></div>
+          @if (guiasBusy()) { <p class="hint">Cargando guías…</p> }
+          @if (paginaLlegadas(); as pagina) { <div class="guide-list">
+            @for (llegada of llegadas(); track llegada.id) { <button type="button" class="guide-option" [class.selected]="llegadaSeleccionada()?.id === llegada.id" (click)="seleccionarLlegada(llegada)"><span><strong>{{llegada.numeroGuia}}</strong><small>{{llegada.fechaLlegada | date:'dd/MM/yyyy'}} · {{llegada.receptorUsuario}}</small></span><span>{{llegada.cantidadRecibida}} motos · Elegir →</span></button> }
+            @empty { <p class="hint">No hay guías para esta búsqueda.</p> }
+          </div><div class="guide-pages"><span>{{pagina.totalElementos}} guías · Página {{pagina.pagina + 1}} de {{pagina.totalPaginas || 1}}</span>@if (pagina.totalPaginas > 1) { <button type="button" class="secondary" [disabled]="pagina.pagina === 0 || guiasBusy()" (click)="buscarLlegadas(pagina.pagina - 1)">Anterior</button><button type="button" class="secondary" [disabled]="pagina.pagina + 1 >= pagina.totalPaginas || guiasBusy()" (click)="buscarLlegadas(pagina.pagina + 1)">Siguiente</button> }</div> }
+          @if (llegadaSeleccionada(); as llegada) { <div class="guide-summary"><strong>Guía {{llegada.numeroGuia}}</strong><span>{{llegada.cantidadDeclarada}} declaradas · {{llegada.cantidadRecibida}} recibidas · {{detalleLlegada()?.cantidadFichas ?? '…'}} fichas registradas</span><a routerLink="/app/llegadas" [queryParams]="{id:llegada.id}">Ver guía y sus fotos →</a></div> }
+          </div>
           @if (fieldErrors()['llegadaId']) { <small class="field-error">{{fieldErrors()['llegadaId']}}</small> }
           <div class="row"><div><label for="marca">Marca</label><select id="marca" name="marca" required [(ngModel)]="form.marca" (ngModelChange)="form.modelo=''; form.color=''" [attr.aria-invalid]="fieldErrors()['marca'] ? true : null"><option value="">Selecciona marca</option>@for (marca of marcas(); track marca) { <option [value]="marca">{{marca}}</option> }</select>
             @if (fieldErrors()['marca']) { <small class="field-error">{{fieldErrors()['marca']}}</small> }</div>
@@ -84,7 +88,8 @@ interface OpcionMotocicleta { marca: string; modelo: string; color: string }
       }
     </div></div>`,
   styles: [`.field-error{display:block;color:#aa3721;font-size:12px;margin:-12px 0 16px}
-    input[aria-invalid="true"],select[aria-invalid="true"]{border-color:#ca4b32}.new-link{display:inline-block;margin-left:20px}.edit-form{margin-top:22px}`]
+    input[aria-invalid="true"],select[aria-invalid="true"]{border-color:#ca4b32}.new-link{display:inline-block;margin-left:20px}.edit-form{margin-top:22px}
+    .guide-picker{border:1px solid #dfe8f0;border-radius:12px;padding:16px;background:#f8fafc;margin-bottom:20px}.guide-search{display:flex;gap:8px}.guide-search input{flex:1;min-width:0}.guide-list{max-height:250px;overflow:auto;margin:12px 0}.guide-option{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:11px 12px;border:1px solid #e0e8ef;background:#fff;border-radius:8px;margin:5px 0;text-align:left;color:#193d61;cursor:pointer}.guide-option.selected{border-color:#193d61;background:#edf4fa}.guide-option span:first-child{display:grid;gap:3px}.guide-option small{font-size:11px;color:#718197}.guide-option span:last-child{font-size:12px;white-space:nowrap}.guide-pages{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#718197}.guide-pages span{margin-right:auto}.guide-summary{display:grid;gap:5px;margin-top:12px;padding:13px;border-radius:9px;background:#eaf2f8;color:#193d61;font-size:13px}.guide-summary a{color:#193d61;font-weight:700}.guide-summary span{color:#536a80}@media(max-width:600px){.guide-option{align-items:start;flex-direction:column}.guide-search{flex-wrap:wrap}}`]
 })
 export class FichasPage implements OnInit {
   readonly auth = inject(AuthService);
@@ -103,17 +108,23 @@ export class FichasPage implements OnInit {
   readonly editError = signal('');
   readonly editSuccess = signal(false);
   readonly llegadas = signal<LlegadaOpcion[]>([]);
+  readonly paginaLlegadas = signal<PaginaLlegadas | null>(null);
+  readonly detalleLlegada = signal<DetalleLlegada | null>(null);
+  readonly guiasBusy = signal(false);
   readonly llegadaSeleccionada = signal<LlegadaOpcion | null>(null);
   readonly opciones = signal<OpcionMotocicleta[]>([]);
   readonly marcas = signal<string[]>([]);
   readonly catalogoError = signal('');
   guiaBusqueda = '';
+  private temporizadorGuia?: ReturnType<typeof setTimeout>;
+  private consultaGuias = 0;
   edicion = { marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   form = { llegadaId: null as number | null, marca: '', modelo: '', color: '', chasisCompleto: '', numeroMotor: '', dua: '', itemDua: '' };
   searchId: number | null = null;
 
   ngOnInit(): void {
     if (this.auth.can('FICHAS_REGISTRAR') || this.auth.can('FICHAS_EDITAR')) this.cargarCatalogo();
+    if (this.auth.can('FICHAS_REGISTRAR') && this.auth.can('INVENTARIO_CONSULTAR')) this.buscarLlegadas();
     this.route.queryParamMap.subscribe(params => {
       const id = Number(params.get('id'));
       const llegadaId = Number(params.get('llegadaId'));
@@ -122,7 +133,7 @@ export class FichasPage implements OnInit {
       if (Number.isSafeInteger(llegadaId) && llegadaId > 0) {
         this.form.llegadaId = llegadaId;
         this.http.get<LlegadaOpcion>(`/api/v1/llegadas/${llegadaId}`).subscribe({
-          next: llegada => { this.llegadaSeleccionada.set(llegada); this.guiaBusqueda = llegada.numeroGuia; },
+          next: llegada => this.seleccionarLlegada(llegada),
           error: err => this.error.set(apiError(err))
         });
       }
@@ -146,21 +157,35 @@ export class FichasPage implements OnInit {
     return [...new Set(this.opciones().filter(o => o.marca === marca && o.modelo === modelo).map(o => o.color))];
   }
 
-  buscarLlegadas(): void {
-    const numeroGuia = this.guiaBusqueda.trim();
-    this.llegadas.set([]); this.llegadaSeleccionada.set(null); this.form.llegadaId = null;
-    if (!numeroGuia) { this.error.set('Ingresa el número de guía.'); return; }
-    this.error.set('');
-    this.http.get<LlegadaOpcion[]>('/api/v1/llegadas', {params:{numeroGuia}}).subscribe({
-      next: llegadas => { this.llegadas.set(llegadas);
-        if (!llegadas.length) this.error.set('No se encontraron llegadas para esa guía.'); },
-      error: err => this.error.set(apiError(err))
+  alCambiarGuia(): void {
+    clearTimeout(this.temporizadorGuia);
+    this.llegadaSeleccionada.set(null);
+    this.detalleLlegada.set(null);
+    this.form.llegadaId = null;
+    this.temporizadorGuia = setTimeout(() => this.buscarLlegadas(), 300);
+  }
+
+  buscarLlegadas(pagina = 0): void {
+    clearTimeout(this.temporizadorGuia);
+    const consulta = ++this.consultaGuias;
+    this.guiasBusy.set(true);
+    this.http.get<PaginaLlegadas>('/api/v1/llegadas/pagina',
+      {params:{numeroGuia:this.guiaBusqueda.trim(),pagina}}).subscribe({
+      next: resultado => { if (consulta !== this.consultaGuias) return;
+        this.paginaLlegadas.set(resultado); this.llegadas.set(resultado.items); this.guiasBusy.set(false); },
+      error: err => { if (consulta !== this.consultaGuias) return;
+        this.error.set(apiError(err)); this.guiasBusy.set(false); }
     });
   }
 
   seleccionarLlegada(llegada: LlegadaOpcion): void {
     this.form.llegadaId = llegada.id; this.llegadaSeleccionada.set(llegada);
-    this.guiaBusqueda = llegada.numeroGuia; this.llegadas.set([]); this.error.set('');
+    this.guiaBusqueda = llegada.numeroGuia;
+    this.detalleLlegada.set(null); this.error.set('');
+    this.http.get<DetalleLlegada>(`/api/v1/llegadas/${llegada.id}/detalle`).subscribe({
+      next: detalle => { if (this.form.llegadaId === llegada.id) this.detalleLlegada.set(detalle); },
+      error: err => this.error.set(apiError(err))
+    });
   }
 
   iniciarEdicion(ficha: Ficha): void {
@@ -199,7 +224,12 @@ export class FichasPage implements OnInit {
     }
     this.busy.set(true);
     this.http.post<Ficha>('/api/v1/motocicletas', this.form).subscribe({
-      next: value => { this.created.set(value); this.busy.set(false); },
+      next: value => { this.created.set(value); this.busy.set(false);
+        this.form = {llegadaId:this.form.llegadaId, marca:'', modelo:'', color:'',
+          chasisCompleto:'', numeroMotor:'', dua:'', itemDua:''};
+        const llegada = this.llegadaSeleccionada();
+        if (llegada) this.seleccionarLlegada(llegada);
+      },
       error: err => {
         if (err instanceof HttpErrorResponse && err.status === 409) {
           const body = err.error as { fichaExistenteId?: number } | null;

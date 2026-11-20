@@ -1,18 +1,19 @@
 <div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div>
-<h1>Buscar y filtrar</h1>
+<h1>Inventario</h1>
 <p class="lead">Busca una motocicleta ya registrada por chasis, marca, modelo o color. Abre su ficha para consultar los datos de la guía y la DUA.</p>
 @if (auth.can('FICHAS_REGISTRAR')) { <a class="new-record" routerLink="/app/fichas" [queryParams]="{nuevo: 1}">+ Agregar motocicleta</a> }
 
 <section class="panel" aria-labelledby="filtros-titulo">
-  <div class="panel-heading"><span class="panel-icon">⌕</span><div><h2 id="filtros-titulo">Consulta de inventario</h2><p>Los filtros se combinan entre sí.</p></div></div>
+  <div class="panel-heading"><span class="panel-icon">⌕</span><div><h2 id="filtros-titulo">Buscar motocicleta</h2><p>Busca por chasis o abre los filtros para combinar marca, modelo y color.</p></div></div>
   <form (ngSubmit)="buscar()">
-    <div class="fields">
-      <div class="chasis-field"><label for="chasis">Chasis completo o últimos cuatro dígitos</label><input id="chasis" name="chasis" [(ngModel)]="filtros.chasis" (ngModelChange)="alCambiarFiltro()" maxlength="120" autocomplete="off" placeholder="Ej. DEMO-A-0042 o 0042" /></div>
+    <div class="search-line"><div class="chasis-field"><label for="chasis">Chasis completo o últimos cuatro dígitos</label><input id="chasis" name="chasis" [(ngModel)]="filtros.chasis" (ngModelChange)="alCambiarFiltro()" maxlength="120" autocomplete="off" placeholder="Escribe el chasis o sus últimos 4 dígitos" /></div>
+      <button type="submit" [disabled]="loading()">{{ loading() ? 'Buscando…' : 'Buscar' }}</button><button type="button" class="secondary" [attr.aria-expanded]="filtrosAbiertos()" aria-controls="filtros-avanzados" (click)="filtrosAbiertos.set(!filtrosAbiertos())">Filtros {{filtrosAbiertos() ? '▴' : '▾'}}</button></div>
+    @if (filtrosAbiertos()) { <div class="fields" id="filtros-avanzados">
       <div><label for="marca">Marca</label><input id="marca" name="marca" [(ngModel)]="filtros.marca" (ngModelChange)="alCambiarFiltro()" maxlength="120" placeholder="Ej. RONCO" /></div>
       <div><label for="modelo">Modelo</label><input id="modelo" name="modelo" [(ngModel)]="filtros.modelo" (ngModelChange)="alCambiarFiltro()" maxlength="120" placeholder="Ej. RZ 250" /></div>
       <div><label for="color">Color</label><input id="color" name="color" [(ngModel)]="filtros.color" (ngModelChange)="alCambiarFiltro()" maxlength="120" placeholder="Ej. ROJO" /></div>
-    </div>
-    <div class="actions"><button type="submit" [disabled]="loading()">{{ loading() ? 'Buscando…' : 'Buscar motocicletas' }}</button><button type="button" class="secondary" (click)="limpiar()" [disabled]="loading()">Limpiar filtros</button></div>
+    </div> }
+    @if (filtros.chasis || filtros.marca || filtros.modelo || filtros.color) { <div class="actions"><button type="button" class="secondary" (click)="limpiar()" [disabled]="loading()">Limpiar búsqueda</button></div> }
   </form>
 </section>
 
