@@ -66,7 +66,8 @@ describe('LlegadasPage', () => {
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     http.expectOne(req => req.url === '/api/v1/llegadas/pagina' && req.params.get('pagina') === '0'
-      && req.params.get('numeroGuia') === '').flush({items:[],pagina:0,tamano:10,totalElementos:21,totalPaginas:3});
+      && req.params.get('numeroGuia') === '' && req.params.get('estado') === 'PENDIENTE')
+      .flush({items:[],pagina:0,tamano:10,totalElementos:21,totalPaginas:3});
     const page = fixture.componentInstance;
     expect(page.paginaLlegadas()?.totalPaginas).toBe(3);
     page.numeroGuia = 'GR-'; page.buscarGuia();
@@ -76,6 +77,11 @@ describe('LlegadasPage', () => {
     http.expectOne(req => req.params.get('numeroGuia') === 'GR-' && req.params.get('pagina') === '1')
       .flush({items:[],pagina:1,tamano:10,totalElementos:11,totalPaginas:2});
     expect(page.paginaLlegadas()?.pagina).toBe(1);
+    page.cambiarEstado('CONFIRMADA');
+    http.expectOne(req => req.params.get('estado') === 'CONFIRMADA' && req.params.get('pagina') === '0')
+      .flush({items:[],pagina:0,tamano:10,totalElementos:2,totalPaginas:1});
+    expect(page.estadoActivo()).toBe('CONFIRMADA');
+    expect(page.paginaLlegadas()?.totalElementos).toBe(2);
     http.verify();
   });
 });

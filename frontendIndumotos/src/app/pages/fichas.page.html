@@ -6,7 +6,7 @@
 
   @if (!modoDetalle() && auth.can('FICHAS_REGISTRAR')) {
     <section class="panel guide-panel" aria-labelledby="guide-title">
-      <div class="section-heading"><div><span class="eyebrow">PASO 1 · ELEGIR GUÍA</span><h2 id="guide-title">Guías de llegada</h2><p>Selecciona el documento de la carga que vas a registrar.</p></div></div>
+      <div class="section-heading"><div><span class="eyebrow">PASO 1 · ELEGIR GUÍA</span><h2 id="guide-title">Guías pendientes</h2><p>Selecciona una guía recibida por Almacén que Inventario aún debe completar.</p></div></div>
       <div class="guide-search"><label for="guiaBusqueda" class="sr-only">Buscar número de guía</label><input id="guiaBusqueda" type="search" maxlength="120" [(ngModel)]="guiaBusqueda" (ngModelChange)="alCambiarGuia()" placeholder="Buscar por número de guía" /><button type="button" class="secondary" (click)="buscarLlegadas()">Buscar</button></div>
       @if (guiasBusy()) { <p class="hint">Cargando guías…</p> }
       @if (paginaLlegadas(); as pagina) {

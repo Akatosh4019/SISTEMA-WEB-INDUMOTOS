@@ -3,10 +3,11 @@
     <p class="lead">Consulta las guías recibidas y las motocicletas vinculadas. Registra una nueva llegada con las fotos de su guía de remisión.</p></div>
     @if (auth.can('LLEGADAS_REGISTRAR')) { <button type="button" class="primary-button new-button" (click)="abrirNueva()">＋ Nueva llegada</button> }</div>
 
-  @if (result() && !detalleAbierto()) { <p class="message success" role="status">Guía {{result()?.numeroGuia}} registrada correctamente.</p> }
+  @if (result() && !detalleAbierto()) { <p class="message success" role="status">Guía {{result()?.numeroGuia}} registrada como pendiente. Inventario podrá completar sus motocicletas.</p> }
 
   @if (auth.can('INVENTARIO_CONSULTAR')) {
-    <section class="panel"><div class="panel-heading"><div class="panel-icon">▰</div><div><h2>Guías registradas</h2><p>Ordenadas de la más reciente a la más antigua · 10 por página</p></div></div>
+    <section class="panel"><div class="panel-heading"><div class="panel-icon">▰</div><div><h2>Guías de llegada</h2><p>La guía pasa a confirmada cuando Inventario finaliza el registro de todas las motos recibidas.</p></div></div>
+      <div class="arrival-tabs" role="tablist" aria-label="Estado de las guías"><button type="button" role="tab" [attr.aria-selected]="estadoActivo() === 'PENDIENTE'" [class.active]="estadoActivo() === 'PENDIENTE'" (click)="cambiarEstado('PENDIENTE')">Nuevas guías <small>Pendientes de inventario</small></button><button type="button" role="tab" [attr.aria-selected]="estadoActivo() === 'CONFIRMADA'" [class.active]="estadoActivo() === 'CONFIRMADA'" (click)="cambiarEstado('CONFIRMADA')">Guías confirmadas <small>Registro terminado</small></button></div>
       <form class="search-form" (ngSubmit)="buscarGuia()"><label for="numeroGuiaBusqueda">Buscar guía</label>
         <input id="numeroGuiaBusqueda" name="numeroGuiaBusqueda" type="search" maxlength="120" [(ngModel)]="numeroGuia" (ngModelChange)="alCambiarGuia()" placeholder="Escribe el número de guía" />
         <button type="submit" class="search-button" [disabled]="searchBusy()">Buscar</button></form>
@@ -14,7 +15,7 @@
       @if (paginaLlegadas(); as pagina) {
         <div class="table-wrap"><table><thead><tr><th>Número de guía</th><th>Registro</th><th>Recibidas</th><th>Registró</th><th><span class="sr-only">Acción</span></th></tr></thead><tbody>
           @for (llegada of pagina.items; track llegada.id) { <tr><td><strong>{{llegada.numeroGuia}}</strong></td><td>{{llegada.fechaLlegada | date:'dd/MM/yyyy, HH:mm'}}</td><td><span class="quantity">{{llegada.cantidadRecibida}} / {{llegada.cantidadDeclarada}}</span></td><td>{{llegada.receptorUsuario}}</td><td class="row-action"><button type="button" class="view-button" [attr.aria-label]="'Ver guía ' + llegada.numeroGuia" (click)="abrir(llegada)">Ver</button></td></tr> }
-          @empty { <tr><td colspan="5" class="empty-row">No hay guías registradas para este filtro.</td></tr> }
+          @empty { <tr><td colspan="5" class="empty-row">No hay guías {{ estadoActivo() === 'PENDIENTE' ? 'pendientes' : 'confirmadas' }} para este filtro.</td></tr> }
         </tbody></table></div>
         <div class="list-footer"><span>{{pagina.totalElementos}} {{pagina.totalElementos === 1 ? 'guía' : 'guías'}} · Página {{pagina.pagina + 1}} de {{pagina.totalPaginas || 1}}</span>
           @if (pagina.totalPaginas > 1) { <nav class="guide-pages" aria-label="Páginas de llegadas"><button type="button" (click)="listar(pagina.pagina - 1)" [disabled]="searchBusy() || pagina.pagina === 0">Anterior</button>
@@ -46,6 +47,7 @@
     <header class="im-dialog-header"><div><span class="eyebrow">GUÍA REGISTRADA</span><h2 id="detalle-llegada-titulo">{{detail()?.llegada?.numeroGuia || 'Cargando detalle…'}}</h2><p>Recepción, fotos y fichas vinculadas</p></div><button type="button" class="im-dialog-close" aria-label="Cerrar detalle" (click)="cerrarDetalle()">✕</button></header>
     @if (fotosError()) { <p class="message error" role="alert">{{fotosError()}}</p> }
     @if (detail(); as detalle) { @let llegada = detalle.llegada;
+      <p class="arrival-state" [class.confirmed]="llegada.estadoRegistro === 'CONFIRMADA'">{{ llegada.estadoRegistro === 'CONFIRMADA' ? '✓ Confirmada · registro de inventario terminado' : '● Pendiente · Inventario debe completar las motocicletas' }}</p>
       <div class="detail-grid"><div><span>Registrada</span><strong>{{llegada.fechaLlegada | date:'dd/MM/yyyy, HH:mm'}}</strong></div><div><span>Registró</span><strong>{{llegada.receptorUsuario}}</strong></div><div><span>Cantidades</span><strong>{{llegada.cantidadRecibida}} recibidas / {{llegada.cantidadDeclarada}} en guía</strong></div><div><span>Fichas vinculadas</span><strong>{{detalle.cantidadFichas}}</strong></div></div>
       @if (llegada.observacion) { <p class="detail-note">{{llegada.observacion}}</p> }
       <h3>Fotos de la guía</h3>
@@ -55,7 +57,7 @@
       <h3>Motocicletas vinculadas</h3><p class="detail-hint">Recibidas sin ficha: {{detalle.diferenciaInformativa}}. Es un dato informativo; no confirma conformidad.</p>
       @for (ficha of detalle.fichas; track ficha.id) { <a class="ficha-link" routerLink="/app/inventario" [queryParams]="{id:ficha.id}" (click)="cerrarDetalle()"><span><strong>{{ficha.marca}} {{ficha.modelo}}</strong><small>{{ficha.color}} · Chasis {{ficha.chasisCompleto}}</small></span><span>Abrir ficha →</span></a> }
       @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
-      @if (auth.can('FICHAS_REGISTRAR')) { <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId:llegada.id}" (click)="cerrarDetalle()">Registrar motocicleta de esta llegada →</a> }
+      @if (auth.can('FICHAS_REGISTRAR') && llegada.estadoRegistro !== 'CONFIRMADA') { <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId:llegada.id}" (click)="cerrarDetalle()">Continuar registro de motocicletas →</a> }
     } @else if (searchBusy()) { <p class="loading">Cargando detalle…</p> }
   </section></div> }
 </div>

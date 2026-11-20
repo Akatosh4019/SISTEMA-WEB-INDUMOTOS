@@ -205,7 +205,7 @@ export class FichasPage implements OnInit, OnDestroy {
     const consulta = ++this.consultaGuias;
     this.guiasBusy.set(true);
     this.http.get<PaginaLlegadas>('/api/v1/llegadas/pagina',
-      {params:{numeroGuia:this.guiaBusqueda.trim(),pagina}}).subscribe({
+      {params:{numeroGuia:this.guiaBusqueda.trim(),pagina,estado:'PENDIENTE'}}).subscribe({
       next: resultado => { if (consulta !== this.consultaGuias) return;
         this.paginaLlegadas.set(resultado); this.llegadas.set(resultado.items); this.guiasBusy.set(false); },
       error: err => { if (consulta !== this.consultaGuias) return;

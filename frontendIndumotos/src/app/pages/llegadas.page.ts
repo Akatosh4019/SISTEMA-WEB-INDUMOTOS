@@ -13,6 +13,7 @@ interface Llegada {
   cantidadDeclarada: number;
   cantidadRecibida: number;
   observacion: string | null;
+  estadoRegistro: 'PENDIENTE' | 'CONFIRMADA';
 }
 
 interface FichaVinculada {
@@ -57,6 +58,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
   readonly fotosCargando = signal(false);
   readonly fotosError = signal('');
   readonly paginaLlegadas = signal<PaginaLlegadas | null>(null);
+  readonly estadoActivo = signal<'PENDIENTE' | 'CONFIRMADA'>('PENDIENTE');
   private consultaListado = 0;
   private consultaDetalle = 0;
   private temporizador?: ReturnType<typeof setTimeout>;
@@ -137,7 +139,8 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.imagenes.forEach(imagen => datos.append('imagenes', imagen, imagen.name));
     this.http.post<Llegada>('/api/v1/llegadas/con-guia', datos).subscribe({
       next: llegada => { this.result.set(llegada); this.busy.set(false); this.nuevaAbierta.set(false);
-        this.resetearNueva(); if (this.auth.can('INVENTARIO_CONSULTAR')) this.listar(0);
+        this.resetearNueva(); this.estadoActivo.set('PENDIENTE');
+        if (this.auth.can('INVENTARIO_CONSULTAR')) this.listar(0);
         if (this.auth.can('INVENTARIO_CONSULTAR')) this.abrir(llegada); },
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 400) {
@@ -201,6 +204,13 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.listar(0);
   }
 
+  cambiarEstado(estado: 'PENDIENTE' | 'CONFIRMADA'): void {
+    if (this.estadoActivo() === estado) return;
+    this.estadoActivo.set(estado);
+    this.paginaLlegadas.set(null);
+    this.listar(0);
+  }
+
   alCambiarGuia(): void {
     clearTimeout(this.temporizador);
     this.temporizador = setTimeout(() => this.listar(0), 300);
@@ -212,7 +222,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.searchError.set('');
     this.searchBusy.set(true);
     this.http.get<PaginaLlegadas>('/api/v1/llegadas/pagina',
-      {params:{numeroGuia:this.numeroGuia.trim(),pagina}}).subscribe({
+      {params:{numeroGuia:this.numeroGuia.trim(),pagina,estado:this.estadoActivo()}}).subscribe({
       next: resultado => { if (consulta !== this.consultaListado) return;
         this.paginaLlegadas.set(resultado); this.searchBusy.set(false); },
       error: error => { if (consulta !== this.consultaListado) return;
