@@ -1,73 +1,61 @@
-<div class="eyebrow">RECEPCIÓN DE MOTOCICLETAS</div>
-<h1>Llegadas</h1>
-<p class="lead">Registra la guía de remisión entregada con las motocicletas. Anota las cantidades recibidas y luego consulta la llegada por número de guía.</p>
+<div class="arrivals-page">
+  <div class="page-heading"><div><div class="eyebrow">RECEPCIÓN DE MOTOCICLETAS</div><h1>Llegadas</h1>
+    <p class="lead">Consulta las guías recibidas y las motocicletas vinculadas. Registra una nueva llegada con las fotos de su guía de remisión.</p></div>
+    @if (auth.can('LLEGADAS_REGISTRAR')) { <button type="button" class="primary-button new-button" (click)="abrirNueva()">＋ Nueva llegada</button> }</div>
 
-<div class="page-grid">
-  @if (auth.can('LLEGADAS_REGISTRAR')) {
-  <section class="panel">
-    <div class="panel-heading"><span class="panel-icon">＋</span><div><h2>Nueva llegada</h2><p>Datos de la guía de remisión</p></div></div>
-    <form (ngSubmit)="registrar()" #llegadaForm="ngForm">
-      <label for="numeroGuia">Número de guía <span>*</span></label>
-      <input id="numeroGuia" name="numeroGuia" type="text" maxlength="120" required [(ngModel)]="form.numeroGuia" [attr.aria-invalid]="fieldErrors().numeroGuia ? true : null" placeholder="Ej. GR-2026-001" />
-      @if (fieldErrors().numeroGuia) { <small class="field-error">{{ fieldErrors().numeroGuia }}</small> }
-      <div class="fields-row">
-        <div><label for="declarada">Cantidad declarada <span>*</span></label><input id="declarada" name="declarada" type="number" min="1" step="1" required [(ngModel)]="form.cantidadDeclarada" [attr.aria-invalid]="fieldErrors().cantidadDeclarada ? true : null" />
-          @if (fieldErrors().cantidadDeclarada) { <small class="field-error">{{ fieldErrors().cantidadDeclarada }}</small> }</div>
-        <div><label for="recibida">Cantidad recibida <span>*</span></label><input id="recibida" name="recibida" type="number" min="1" step="1" required [(ngModel)]="form.cantidadRecibida" [attr.aria-invalid]="fieldErrors().cantidadRecibida ? true : null" />
-          @if (fieldErrors().cantidadRecibida) { <small class="field-error">{{ fieldErrors().cantidadRecibida }}</small> }</div>
-      </div>
-      <label for="observacion">Observación</label>
-      <textarea id="observacion" name="observacion" rows="4" maxlength="1000" [(ngModel)]="form.observacion" placeholder="Información adicional de la recepción"></textarea>
-      @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
-      <button type="submit" class="primary-button" [disabled]="busy()">{{ busy() ? 'Guardando…' : 'Registrar llegada' }}</button>
-    </form>
-    @if (result(); as llegada) {
-      <div class="result success" role="status"><strong>Llegada registrada · #{{ llegada.id }}</strong><span>Guía {{ llegada.numeroGuia }} · {{ llegada.cantidadRecibida }} recibidas</span>
-        <button type="button" class="detail-button" (click)="abrir(llegada)">Ver detalle y fichas vinculadas</button></div>
-    }
-  </section>
-  }
+  @if (result() && !detalleAbierto()) { <p class="message success" role="status">Guía {{result()?.numeroGuia}} registrada correctamente.</p> }
 
   @if (auth.can('INVENTARIO_CONSULTAR')) {
-  <section class="panel search-panel">
-    <div class="panel-heading"><span class="panel-icon blue">⌕</span><div><h2>Consultar llegadas</h2><p>Guías registradas, de la más reciente a la más antigua. Máximo 10 por página.</p></div></div>
-    <form class="search-form" (ngSubmit)="buscarGuia()">
-      <div><label for="numeroGuiaBusqueda">Filtrar por número de guía</label><input id="numeroGuiaBusqueda" name="numeroGuiaBusqueda" type="text" maxlength="120" [(ngModel)]="numeroGuia" (ngModelChange)="alCambiarGuia()" placeholder="Escribe una guía o deja vacío para ver todas" /></div>
-      <button type="submit" [disabled]="searchBusy()">{{ searchBusy() ? 'Cargando…' : 'Buscar' }}</button>
-    </form>
-    @if (searchError()) { <p class="message error" role="alert">{{ searchError() }}</p> }
-    @if (paginaLlegadas(); as pagina) {
-      <p class="list-count">{{pagina.totalElementos}} {{pagina.totalElementos === 1 ? 'guía registrada' : 'guías registradas'}}</p>
-      @for (llegada of pagina.items; track llegada.id) {
-        <button type="button" class="guide-row" (click)="abrir(llegada)"><strong>{{llegada.numeroGuia}}</strong><span>{{llegada.fechaLlegada | date:'dd/MM/yyyy'}} · {{llegada.cantidadRecibida}} recibidas · {{llegada.receptorUsuario}}</span><span class="guide-open">Ver detalle →</span></button>
-      } @empty { <p class="no-fichas">No hay guías registradas para este filtro.</p> }
-      @if (pagina.totalPaginas > 1) { <nav class="guide-pages" aria-label="Páginas de llegadas">
-        <button type="button" (click)="listar(pagina.pagina - 1)" [disabled]="searchBusy() || pagina.pagina === 0">Anterior</button>
-        <span>Página {{pagina.pagina + 1}} de {{pagina.totalPaginas}}</span>
-        <button type="button" (click)="listar(pagina.pagina + 1)" [disabled]="searchBusy() || pagina.pagina + 1 >= pagina.totalPaginas">Siguiente</button>
-      </nav> }
-    }
-    @if (detail(); as detalle) {
-      @let llegada = detalle.llegada;
-      <div class="detail">
-        <div class="detail-top"><span>REGISTRO #{{ llegada.id }}</span><span class="badge">Encontrado</span></div>
-        <div class="detail-row"><span>Guía</span><strong>{{ llegada.numeroGuia }}</strong></div>
-        <div class="detail-row"><span>Fecha</span><strong>{{ llegada.fechaLlegada | date:'dd/MM/yyyy, HH:mm' }}</strong></div>
-        <div class="detail-row"><span>Recibió</span><strong>{{ llegada.receptorUsuario }}</strong></div>
-        <div class="detail-row"><span>Cantidades</span><strong>{{ llegada.cantidadRecibida }} / {{ llegada.cantidadDeclarada }}</strong></div>
-        @if (llegada.observacion) { <div class="detail-note">{{ llegada.observacion }}</div> }
-        <div class="detail-row"><span>Fichas vinculadas</span><strong>{{ detalle.cantidadFichas }}</strong></div>
-        <div class="detail-row"><span>Recibidas sin ficha</span><strong>{{ detalle.diferenciaInformativa }}</strong></div>
-        <p class="detail-hint">Diferencia informativa; no confirma conformidad ni cambia el inventario.</p>
-        <h3>Motocicletas de esta llegada</h3>
-        @for (ficha of detalle.fichas; track ficha.id) {
-          <a class="ficha-link" routerLink="/app/inventario" [queryParams]="{id: ficha.id}">
-            <span><strong>#{{ ficha.id }} · {{ ficha.marca }} {{ ficha.modelo }}</strong><small>{{ ficha.color }} · {{ ficha.chasisCompleto }}</small></span><span>Abrir ficha →</span>
-          </a>
-        } @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
-        @if (auth.can('FICHAS_REGISTRAR')) { <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId: llegada.id}">Registrar ficha para esta llegada →</a> }
-      </div>
-    }
-  </section>
+    <section class="panel"><div class="panel-heading"><div class="panel-icon">▰</div><div><h2>Guías registradas</h2><p>Ordenadas de la más reciente a la más antigua · 10 por página</p></div></div>
+      <form class="search-form" (ngSubmit)="buscarGuia()"><label for="numeroGuiaBusqueda">Buscar guía</label>
+        <input id="numeroGuiaBusqueda" name="numeroGuiaBusqueda" type="search" maxlength="120" [(ngModel)]="numeroGuia" (ngModelChange)="alCambiarGuia()" placeholder="Escribe el número de guía" />
+        <button type="submit" class="search-button" [disabled]="searchBusy()">Buscar</button></form>
+      @if (searchError()) { <p class="message error" role="alert">{{searchError()}}</p> }
+      @if (paginaLlegadas(); as pagina) {
+        <div class="table-wrap"><table><thead><tr><th>Número de guía</th><th>Registro</th><th>Recibidas</th><th>Registró</th><th><span class="sr-only">Acción</span></th></tr></thead><tbody>
+          @for (llegada of pagina.items; track llegada.id) { <tr><td><strong>{{llegada.numeroGuia}}</strong></td><td>{{llegada.fechaLlegada | date:'dd/MM/yyyy, HH:mm'}}</td><td><span class="quantity">{{llegada.cantidadRecibida}} / {{llegada.cantidadDeclarada}}</span></td><td>{{llegada.receptorUsuario}}</td><td class="row-action"><button type="button" class="view-button" [attr.aria-label]="'Ver guía ' + llegada.numeroGuia" (click)="abrir(llegada)">Ver</button></td></tr> }
+          @empty { <tr><td colspan="5" class="empty-row">No hay guías registradas para este filtro.</td></tr> }
+        </tbody></table></div>
+        <div class="list-footer"><span>{{pagina.totalElementos}} {{pagina.totalElementos === 1 ? 'guía' : 'guías'}} · Página {{pagina.pagina + 1}} de {{pagina.totalPaginas || 1}}</span>
+          @if (pagina.totalPaginas > 1) { <nav class="guide-pages" aria-label="Páginas de llegadas"><button type="button" (click)="listar(pagina.pagina - 1)" [disabled]="searchBusy() || pagina.pagina === 0">Anterior</button>
+            <button type="button" (click)="listar(pagina.pagina + 1)" [disabled]="searchBusy() || pagina.pagina + 1 >= pagina.totalPaginas">Siguiente</button></nav> }</div>
+      } @else if (searchBusy()) { <p class="loading" role="status">Cargando guías…</p> }
+    </section>
   }
+
+  @if (nuevaAbierta()) { <div class="im-overlay" (click)="cerrarNueva()"><section class="im-dialog arrival-dialog" role="dialog" aria-modal="true" aria-labelledby="nueva-llegada-titulo" (click)="$event.stopPropagation()">
+    <header class="im-dialog-header"><div><span class="eyebrow">RECEPCIÓN</span><h2 id="nueva-llegada-titulo">Nueva llegada</h2><p>Transcribe los datos de la guía y adjunta una foto legible de todas sus páginas.</p></div><button type="button" class="im-dialog-close" aria-label="Cerrar formulario" (click)="cerrarNueva()">✕</button></header>
+    <form (ngSubmit)="registrar()" #llegadaForm="ngForm">
+      <label for="numeroGuia">Número de guía <span class="required">*</span></label><input id="numeroGuia" name="numeroGuia" type="text" maxlength="120" required [(ngModel)]="form.numeroGuia" [attr.aria-invalid]="fieldErrors().numeroGuia ? true : null" placeholder="Ej. TG01-38337" />
+      @if (fieldErrors().numeroGuia) { <small class="field-error">{{fieldErrors().numeroGuia}}</small> }
+      <div class="fields-row"><div><label for="declarada">Cantidad en la guía <span class="required">*</span></label><input id="declarada" name="declarada" type="number" min="1" step="1" required [(ngModel)]="form.cantidadDeclarada" [attr.aria-invalid]="fieldErrors().cantidadDeclarada ? true : null" />
+        @if (fieldErrors().cantidadDeclarada) { <small class="field-error">{{fieldErrors().cantidadDeclarada}}</small> }</div>
+        <div><label for="recibida">Cantidad recibida <span class="required">*</span></label><input id="recibida" name="recibida" type="number" min="1" step="1" required [(ngModel)]="form.cantidadRecibida" [attr.aria-invalid]="fieldErrors().cantidadRecibida ? true : null" />
+        @if (fieldErrors().cantidadRecibida) { <small class="field-error">{{fieldErrors().cantidadRecibida}}</small> }</div></div>
+      <label for="imagenes">Fotos de la guía <span class="required">*</span></label><div class="upload-box"><input id="imagenes" name="imagenes" type="file" accept="image/jpeg,image/png" multiple (change)="seleccionarImagenes($event)" [attr.aria-invalid]="fieldErrors().imagenes ? true : null" />
+        <small>JPG o PNG · máximo 3 fotos · hasta 5 MB cada una. Si la guía tiene varias páginas, adjúntalas juntas.</small>
+        @for (imagen of imagenes; track $index) { <span class="chosen-file">▰ {{imagen.name}}</span> }
+      </div>@if (fieldErrors().imagenes) { <small class="field-error">{{fieldErrors().imagenes}}</small> }
+      <label for="observacion">Observación</label><textarea id="observacion" name="observacion" rows="3" maxlength="1000" [(ngModel)]="form.observacion" placeholder="Diferencias, daños u otra información de recepción"></textarea>
+      @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
+      <div class="dialog-actions"><button type="button" class="secondary-button" (click)="cerrarNueva()" [disabled]="busy()">Cancelar</button><button type="submit" class="primary-button" [disabled]="busy()">{{busy() ? 'Guardando…' : 'Registrar llegada'}}</button></div>
+    </form>
+  </section></div> }
+
+  @if (detalleAbierto()) { <div class="im-overlay" (click)="cerrarDetalle()"><section class="im-dialog detail-dialog" role="dialog" aria-modal="true" aria-labelledby="detalle-llegada-titulo" (click)="$event.stopPropagation()">
+    <header class="im-dialog-header"><div><span class="eyebrow">GUÍA REGISTRADA</span><h2 id="detalle-llegada-titulo">{{detail()?.llegada?.numeroGuia || 'Cargando detalle…'}}</h2><p>Recepción, fotos y fichas vinculadas</p></div><button type="button" class="im-dialog-close" aria-label="Cerrar detalle" (click)="cerrarDetalle()">✕</button></header>
+    @if (fotosError()) { <p class="message error" role="alert">{{fotosError()}}</p> }
+    @if (detail(); as detalle) { @let llegada = detalle.llegada;
+      <div class="detail-grid"><div><span>Registrada</span><strong>{{llegada.fechaLlegada | date:'dd/MM/yyyy, HH:mm'}}</strong></div><div><span>Registró</span><strong>{{llegada.receptorUsuario}}</strong></div><div><span>Cantidades</span><strong>{{llegada.cantidadRecibida}} recibidas / {{llegada.cantidadDeclarada}} en guía</strong></div><div><span>Fichas vinculadas</span><strong>{{detalle.cantidadFichas}}</strong></div></div>
+      @if (llegada.observacion) { <p class="detail-note">{{llegada.observacion}}</p> }
+      <h3>Fotos de la guía</h3>
+      @if (fotosCargando()) { <p class="loading">Cargando fotos…</p> }
+      <div class="photo-grid">@for (foto of fotos(); track foto.id) { <a [href]="foto.url" target="_blank" rel="noopener" [attr.aria-label]="'Abrir ' + foto.nombreArchivo"><img [src]="foto.url" [alt]="'Página ' + foto.orden + ' de la guía ' + llegada.numeroGuia" /><span>Página {{foto.orden}} · {{foto.nombreArchivo}}</span></a> }</div>
+      @if (!fotosCargando() && !fotos().length && !fotosError()) { <p class="no-fichas">Este registro anterior no tiene foto digital de la guía.</p> }
+      <h3>Motocicletas vinculadas</h3><p class="detail-hint">Recibidas sin ficha: {{detalle.diferenciaInformativa}}. Es un dato informativo; no confirma conformidad.</p>
+      @for (ficha of detalle.fichas; track ficha.id) { <a class="ficha-link" routerLink="/app/inventario" [queryParams]="{id:ficha.id}" (click)="cerrarDetalle()"><span><strong>{{ficha.marca}} {{ficha.modelo}}</strong><small>{{ficha.color}} · Chasis {{ficha.chasisCompleto}}</small></span><span>Abrir ficha →</span></a> }
+      @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
+      @if (auth.can('FICHAS_REGISTRAR')) { <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId:llegada.id}" (click)="cerrarDetalle()">Registrar motocicleta de esta llegada →</a> }
+    } @else if (searchBusy()) { <p class="loading">Cargando detalle…</p> }
+  </section></div> }
 </div>

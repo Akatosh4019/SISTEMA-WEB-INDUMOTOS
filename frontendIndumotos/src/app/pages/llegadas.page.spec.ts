@@ -6,6 +6,28 @@ import { AuthService } from '../core/auth.service';
 import { LlegadasPage } from './llegadas.page';
 
 describe('LlegadasPage', () => {
+  it('exige foto y envía la guía como formulario multipart', () => {
+    TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
+      provideRouter([]),{provide:AuthService,useValue:{can:(permiso:string) => permiso === 'LLEGADAS_REGISTRAR'}}]});
+    const fixture = TestBed.createComponent(LlegadasPage);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    page.form.numeroGuia = 'TG01-38359';
+    page.form.cantidadDeclarada = 2;
+    page.form.cantidadRecibida = 2;
+    page.registrar();
+    expect(page.fieldErrors().imagenes).toContain('foto');
+    http.expectNone('/api/v1/llegadas/con-guia');
+    page.imagenes = [new File(['foto'], 'guia.jpg', {type:'image/jpeg'})];
+    page.registrar();
+    const request = http.expectOne('/api/v1/llegadas/con-guia');
+    expect(request.request.body instanceof FormData).toBe(true);
+    expect((request.request.body as FormData).get('numeroGuia')).toBe('TG01-38359');
+    expect((request.request.body as FormData).getAll('imagenes').length).toBe(1);
+    request.flush({id:5,numeroGuia:'TG01-38359'});
+    http.verify();
+  });
   it('lista todas las guías en páginas de diez y conserva el filtro', () => {
     TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
       provideRouter([]),{provide:AuthService,useValue:{can:(permiso:string) => permiso === 'INVENTARIO_CONSULTAR'}}]});
