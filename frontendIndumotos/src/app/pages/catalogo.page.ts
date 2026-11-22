@@ -8,8 +8,8 @@ interface Opcion { marca: string; modelo: string; color: string }
 @Component({
   selector: 'app-catalogo-page',
   imports: [FormsModule],
-  template: `<div class="form-page"><div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div>
-    <h1>Catálogo de motocicletas</h1><p class="lead">Define las marcas, sus modelos y los colores disponibles. Estos datos aparecerán como opciones al registrar una ficha y al hacer una solicitud.</p>
+  template: `<div class="form-page"><div class="eyebrow">ADMINISTRACIÓN · DATOS MAESTROS</div>
+    <h1>Catálogo de motocicletas</h1><p class="lead">Administración define las marcas, sus modelos y los colores disponibles. Inventarios y Comercial los eligen en sus formularios.</p>
     <section class="panel"><h2>Agregar marca, modelo y color</h2><p class="hint">Puedes escribir una marca o modelo nuevo, o elegir uno existente. Para agregar otro color al mismo modelo, conserva la marca y el modelo y cambia el color.</p><form (ngSubmit)="agregar()" #f="ngForm">
       <div class="row"><div><label for="marca">Marca</label><input id="marca" name="marca" required maxlength="120" [(ngModel)]="nueva.marca" list="marcas" /><datalist id="marcas">@for (marca of marcas(); track marca) { <option [value]="marca"></option> }</datalist></div>
       <div><label for="modelo">Modelo de esa marca</label><input id="modelo" name="modelo" required maxlength="120" [(ngModel)]="nueva.modelo" list="modelos" /><datalist id="modelos">@for (modelo of modelosDeMarca(); track modelo) { <option [value]="modelo"></option> }</datalist></div></div>
