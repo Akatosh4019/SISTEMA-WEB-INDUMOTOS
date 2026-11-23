@@ -1,6 +1,6 @@
 # Indumotos web: guía vigente de `sprint-2`
 
-Este documento describe la aplicación web y el gateway implementados hasta ahora para Sprint 1 y Sprint 2, incluidos ajustes posteriores en la misma rama. No declara terminado todo el sistema. La autoridad para datos y permisos es la API del repositorio `BACK-END-INDUMOTOS`.
+Este documento describe la aplicación web y el gateway implementados para Sprint 1 a Sprint 3 en la rama `sprint-2`. La aceptación visual y las historias sin sprint siguen pendientes. La autoridad para datos y permisos es la API del repositorio `BACK-END-INDUMOTOS`.
 
 ## Componentes y acceso
 
@@ -16,10 +16,11 @@ En **Docker**: navegador → Nginx `:4200` → gateway `:8030` por red Docker �
 ## Pantallas y uso por rol
 
 - **Todos los roles:** login, inicio con accesos según permisos, perfil y cierre de sesión. La web guarda el JWT en `sessionStorage`; el backend valida cada petición y revoca el token al salir.
-- **Administración:** Crear cuenta; Roles y permisos; Catálogo de motocicletas. Solo `ADMIN` puede agregar marcas, modelos y colores. Inventarios y Comercial seleccionan las combinaciones existentes, sin alterarlas.
+- **Administración:** Crear cuenta; Roles y permisos; Catálogo de motocicletas; Modo compañía para ver todas las tiendas y asignar personal. Solo `ADMIN` puede agregar marcas, modelos y colores. Inventarios y Comercial seleccionan las combinaciones existentes, sin alterarlas.
 - **Almacén:** Llegadas. «Nueva llegada» abre un formulario superpuesto para registrar número de guía, cantidades, observación y entre 1 y 3 fotos. Una guía nueva aparece en **Nuevas guías** como `PENDIENTE`. Puede consultar sus fotos y fichas vinculadas. También atiende solicitudes según permisos.
 - **Inventarios:** Inventario para buscar por chasis completo o últimos cuatro dígitos y filtrar marca/modelo/color, con paginación y ficha en ventana superpuesta. «Agregar motocicleta» permite elegir una guía pendiente y registrar cada unidad. La foto queda al lado del formulario con zoom, arrastre y cambio de página. Los bloques se muestran de cinco en cinco.
-- **Comercial:** Solicitudes para elegir combinaciones del catálogo, cantidades y sede de destino; Seguimiento para consultar el avance.
+- **Comercial:** Solicitudes para elegir combinaciones del catálogo, cantidades y sede de destino; Seguimiento y Modo tienda para consultar avance y stock de su sede.
+- **Facturación:** Modo tienda para consultar stock y registrar una venta verificada; Disponibilidad y datos para bloquear/habilitar una unidad y reportar diferencias.
 - **Roles operativos autorizados:** Ubicaciones e historial, asignación de chasis a solicitudes, preparación y traslados según permisos efectivos.
 
 El menú y las rutas muestran opciones conforme al perfil obtenido de `/api/v1/auth/me`. La ocultación en Angular mejora la experiencia; no sustituye el 403 del backend. La lista exacta de rutas está en `frontendIndumotos/src/app/app.routes.ts`.
