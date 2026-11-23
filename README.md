@@ -1,8 +1,11 @@
 # Sistema web Indumotos
 
-Repositorio de la aplicación web del Sprint 1.
+Repositorio de Angular y Spring Cloud Gateway para los incrementos implementados de Sprint 1 y Sprint 2 en la rama `sprint-2`.
 
-- `frontendIndumotos/`: Angular 21, pantallas, rutas y proxy de desarrollo.
-- `gatewayIndumotos/`: Spring Cloud Gateway que dirige `/api/**` al backend compartido.
+- [Guía vigente del sistema web](docs/SISTEMA_WEB_IMPLEMENTADO.md): arquitectura, pantallas por rol, flujos, Docker, pruebas y pendientes.
+- `frontendIndumotos/`: Angular 21, Nginx y `compose.yaml` para web y gateway.
+- `gatewayIndumotos/`: encaminamiento de `/api/**` a la API compartida.
 
-El backend y PostgreSQL viven en el repositorio `BACK-END-INDUMOTOS`. Para iniciar los tres procesos y conocer el alcance implementado, sigue [el README de Angular](frontendIndumotos/README.md).
+El backend, la base PostgreSQL y Flyway están en el repositorio `BACK-END-INDUMOTOS`. Inicia primero su `docker compose`, luego ejecuta `docker compose up -d --build` en `frontendIndumotos` y abre `http://127.0.0.1:4200`.
+
+El alcance documentado es el **implementado hasta ahora**. Las pruebas visuales por rol y las historias restantes siguen abiertas.
