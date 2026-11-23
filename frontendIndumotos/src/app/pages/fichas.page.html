@@ -56,7 +56,7 @@
           </article>
         } @empty { @if (detalleLlegada() && !borradoresBusy()) { <div class="all-done">No quedan motos pendientes de registrar.</div> } }
         @if (totalPaginasBloques() > 1) { <nav class="block-pages" aria-label="Páginas de motos"><button type="button" class="secondary" [disabled]="paginaBloques() === 0" (click)="cambiarPaginaBloques(paginaBloques() - 1)">Anterior</button><span>Página {{ paginaBloques() + 1 }} de {{ totalPaginasBloques() }}</span><button type="button" class="secondary" [disabled]="paginaBloques() + 1 >= totalPaginasBloques()" (click)="cambiarPaginaBloques(paginaBloques() + 1)">Siguiente</button></nav> }
-        <div class="finish-panel"><div><strong>Finalizar registro de esta guía</strong><p>Se incorporarán {{ bloques().length }} fichas al inventario en una sola operación. Verifica los borradores antes de continuar.</p></div><button type="button" (click)="finalizarRegistro()" [disabled]="!borradoresCompletos() || finalizando()">{{ finalizando() ? 'Finalizando…' : 'Finalizar registro' }}</button></div>
+        <div class="finish-panel"><div><strong>Finalizar registro de esta guía</strong><p>Se incorporarán {{ bloques().length }} fichas al inventario y se registrará su primera ubicación. Verifica los borradores antes de continuar.</p><label>Almacén que recibió la guía<select [(ngModel)]="almacenId"><option [ngValue]="0">Selecciona un almacén</option>@for (sede of almacenes(); track sede.id) { <option [ngValue]="sede.id">{{ sede.nombre }}</option> }</select></label></div><button type="button" (click)="finalizarRegistro()" [disabled]="!borradoresCompletos() || !almacenId || finalizando()">{{ finalizando() ? 'Finalizando…' : 'Finalizar registro' }}</button></div>
       </section> }
       </div>
     }

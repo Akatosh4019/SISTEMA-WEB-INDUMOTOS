@@ -12,6 +12,7 @@ describe('UbicacionesPage', () => {
     const page=fixture.componentInstance;
     page.motocicletaId=7;
     page.consultar();
+    http.expectOne('/api/v1/motocicletas/7/envio-activo').flush(null);
     http.expectOne('/api/v1/motocicletas/7/ubicacion/historial').flush([
       {id:1,destinoId:2,destinoNombre:'Almacén',tipo:'UBICACION',registrador:'admin',fecha:'2026-11-19T09:00:00Z'}
     ]);
@@ -22,6 +23,7 @@ describe('UbicacionesPage', () => {
     expect(traslado.request.method).toBe('POST');
     expect(traslado.request.body).toEqual({destinoId:3});
     traslado.flush({id:2,destinoId:3,destinoNombre:'Tienda',tipo:'TRASLADO',registrador:'admin',fecha:'2026-11-19T09:01:00Z'});
+    http.expectOne('/api/v1/motocicletas/7/envio-activo').flush(null);
     http.expectOne('/api/v1/motocicletas/7/ubicacion/historial').flush([
       {id:1,destinoId:2,destinoNombre:'Almacén',tipo:'UBICACION',registrador:'admin',fecha:'2026-11-19T09:00:00Z'},
       {id:2,destinoId:3,destinoNombre:'Tienda',tipo:'TRASLADO',registrador:'admin',fecha:'2026-11-19T09:01:00Z'}

@@ -30,13 +30,15 @@ El menú y las rutas muestran opciones conforme al perfil obtenido de `/api/v1/a
 2. Inventarios entra en «Agregar motocicleta», elige una guía pendiente y ve cantidad declarada, recibida, fichas existentes y pendientes. El número de bloques procede de `cantidadRecibida - cantidadFichas`.
 3. «Autocompletar desde fotos» lee **todas** las fotos con Tesseract local. Solo propone datos. Si reconoce 10 de 19 motos, las otras 9 se completan manualmente mirando la foto fija. Puede confundir chasis, motor o DUA; cada campo se comprueba con el documento.
 4. «Guardar borrador» persiste el bloque en PostgreSQL, separado del inventario. La etiqueta indica guardado o cambios sin guardar. Al cerrar y volver, la web recupera los borradores de la guía; no depende de `localStorage`.
-5. «Finalizar registro» se habilita cuando todos los bloques están guardados. El backend incorpora las fichas pendientes en una transacción y cambia la guía a `CONFIRMADA`. La pantalla de registro queda en consulta para esa guía. No se registra una moto que no llegó físicamente solo para cuadrar la cantidad.
+5. «Finalizar registro» se habilita cuando todos los bloques están guardados y se elige el almacén que recibió la guía. El backend incorpora las fichas pendientes, registra su primera ubicación en ese almacén y cambia la guía a `CONFIRMADA` en una transacción. La pantalla de registro queda en consulta para esa guía. No se registra una moto que no llegó físicamente solo para cuadrar la cantidad.
 
 La edición de una ficha existente usa `FICHAS_EDITAR`. El catálogo facilita elegir opciones válidas; no extrae ni corrige automáticamente un dato dudoso de OCR.
 
+Administración puede registrar almacenes y tiendas reales desde Ubicaciones. V25 precarga Almacén Puruchuco y Tienda Puruchuco como dos ubicaciones de una misma sede física. La base local anterior puede contener otras sedes identificadas como datos de prueba.
+
 ## Solicitudes y trazabilidad
 
-Comercial solicita por marca/modelo/color, cantidad y sede. Almacén prepara y asigna unidades específicas; las transiciones se registran como eventos. El seguimiento muestra estados `PENDIENTE`, `EN_PREPARACION`, `ATENDIDA`, `RECHAZADA` y `ANULADA`. Ubicaciones conserva movimientos y traslados con su historial. La anulación actual exige motivo y solo está disponible para solicitudes pendientes; su regla límite sigue pendiente de confirmación académica.
+Comercial solicita por marca/modelo/color, cantidad y tienda. Almacén prepara y asigna unidades específicas; las transiciones se registran como eventos. El seguimiento muestra estados `PENDIENTE`, `EN_PREPARACION`, `ATENDIDA`, `RECHAZADA` y `ANULADA`. `ATENDIDA` significa preparación completa, sin traslado físico. Luego almacén registra la salida de las motos asignadas; se muestran `EN_TRANSITO` y conservan su última ubicación confirmada en almacén. El comercial que solicitó las motos, o Administración, confirma la recepción de cada moto en la tienda: recién entonces se agrega el traslado al historial y cambia la ubicación confirmada. Ubicaciones muestra la última sede confirmada y el destino del envío activo. La anulación actual exige motivo y solo está disponible para solicitudes pendientes; su regla límite sigue pendiente de confirmación académica.
 
 ## Levantar en Docker
 
@@ -60,7 +62,7 @@ Abrir `http://127.0.0.1:4200`. Para revisar contenedores usar `docker compose ps
 
 Con backend local activo, en `frontendIndumotos`: `npm ci`, `npm start` y abrir `http://127.0.0.1:4200`. Para comprobar cambios: `npm run build` y `npm test -- --watch=false`. El gateway puede levantarse aparte con Maven, pero el proxy de desarrollo actual no lo atraviesa. Para probar el recorrido por gateway se usa Docker o se cambia explícitamente el destino del proxy.
 
-En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **14 pruebas**. El backend registró **81 pruebas** y Flyway V23 aplicada. Esto confirma código y arranque local; faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
+En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **15 pruebas**. El backend registró **84 pruebas** y Flyway V25 aplicada. Web, gateway y API respondieron 200 en Docker local; faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
 
 ## Pendiente
 

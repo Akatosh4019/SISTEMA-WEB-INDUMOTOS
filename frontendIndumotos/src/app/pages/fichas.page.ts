@@ -24,6 +24,7 @@ interface ResultadoOcr { fotosAnalizadas: number; sugerencias: SugerenciaOcr[] }
 interface FotoGuia { id: number; orden: number; nombreArchivo: string; url: string }
 interface EstadoRegistro { terminado: boolean; recibidas: number; registradas: number;
   borradores: (BorradorMoto & {posicion: number})[] }
+interface Sede { id: number; codigo: string; nombre: string; tipo: string }
 
 @Component({
   selector: 'app-fichas-page',
@@ -68,6 +69,8 @@ export class FichasPage implements OnInit, OnDestroy {
   readonly zoomFoto = signal(1);
   readonly opciones = signal<OpcionMotocicleta[]>([]);
   readonly marcas = signal<string[]>([]);
+  readonly almacenes = signal<Sede[]>([]);
+  almacenId = 0;
   readonly catalogoError = signal('');
   guiaBusqueda = '';
   private temporizadorGuia?: ReturnType<typeof setTimeout>;
@@ -79,6 +82,11 @@ export class FichasPage implements OnInit, OnDestroy {
   searchId: number | null = null;
 
   ngOnInit(): void {
+    if (this.auth.can('FICHAS_REGISTRAR')) this.http.get<Sede[]>('/api/v1/ubicaciones').subscribe({
+      next: sedes => this.almacenes.set(sedes.filter(sede => sede.tipo === 'ALMACEN' &&
+        !sede.codigo?.startsWith('DEMO_'))),
+      error: err => this.error.set(apiError(err))
+    });
     if (this.auth.can('FICHAS_REGISTRAR') || this.auth.can('FICHAS_EDITAR')) this.cargarCatalogo();
     if (this.auth.can('FICHAS_REGISTRAR') && this.auth.can('INVENTARIO_CONSULTAR')) this.buscarLlegadas();
     this.route.queryParamMap.subscribe(params => {
@@ -215,6 +223,7 @@ export class FichasPage implements OnInit, OnDestroy {
 
   seleccionarLlegada(llegada: LlegadaOpcion): void {
     this.limpiarFotos();
+    this.almacenId = 0;
     this.form.llegadaId = llegada.id; this.llegadaSeleccionada.set(llegada);
     this.cargarFotos(llegada.id);
     this.guiaBusqueda = llegada.numeroGuia;
@@ -255,8 +264,10 @@ export class FichasPage implements OnInit, OnDestroy {
   finalizarRegistro(): void {
     const llegada = this.llegadaSeleccionada();
     if (!llegada || !this.borradoresCompletos() || this.finalizando()) return;
+    if (!this.almacenId) { this.error.set('Selecciona el almacén que recibió la guía.'); return; }
     this.finalizando.set(true); this.error.set('');
-    this.http.post<EstadoRegistro>(`/api/v1/llegadas/${llegada.id}/registro/finalizar`,{}).subscribe({
+    this.http.post<EstadoRegistro>(`/api/v1/llegadas/${llegada.id}/registro/finalizar`,
+      {almacenId:this.almacenId}).subscribe({
       next: estado => { this.finalizando.set(false); this.registroTerminado.set(estado.terminado);
         this.bloques.set([]); this.paginaBloques.set(0);
         this.http.get<DetalleLlegada>(`/api/v1/llegadas/${llegada.id}/detalle`).subscribe({

@@ -7,31 +7,41 @@ import { AuthService } from '../core/auth.service';
 interface Sede { id: number; codigo: string; nombre: string; tipo: string }
 interface Movimiento { id: number; destinoId: number; destinoNombre: string; tipo: string; registrador: string; fecha: string }
 interface Moto { id: number; marca: string; modelo: string; color: string; chasisVista: string }
+interface Envio { origen: string; destino: string; estado: string }
 
 @Component({
   selector: 'app-ubicaciones', imports: [FormsModule],
   template: `
     <header class="page-heading"><span class="eyebrow">CONTROL DE INVENTARIO</span><h1>Ubicaciones de motocicletas</h1>
     <p>Busca una motocicleta por chasis para ver dónde está. Registra su primera ubicación o el traslado a otra sede cuando se mueva físicamente.</p></header>
+    @if (access.can('PERMISOS_ASIGNAR')) {
+      <section class="panel"><div class="panel-heading"><span class="eyebrow">ADMINISTRACIÓN</span><h2>Sedes de la empresa</h2>
+        <p>Registra almacenes y tiendas reales antes de cerrar guías o solicitar envíos.</p></div>
+        <label>Código de sede<input [(ngModel)]="nuevaSede.codigo" maxlength="50" placeholder="Ej. ALM-CENTRAL"></label>
+        <label>Nombre<input [(ngModel)]="nuevaSede.nombre" maxlength="120" placeholder="Ej. Almacén central"></label>
+        <label>Tipo<select [(ngModel)]="nuevaSede.tipo"><option value="ALMACEN">Almacén</option><option value="TIENDA">Tienda</option><option value="TALLER">Taller</option><option value="DESPACHO">Despacho</option></select></label>
+        <button type="button" (click)="crearSede()" [disabled]="ocupado() || !nuevaSede.codigo.trim() || !nuevaSede.nombre.trim()">Guardar sede</button>
+        @for (sede of sedes(); track sede.id) { <p>{{sede.nombre}} · {{sede.tipo}} · {{sede.codigo}}</p> }
+      </section>
+    }
     <section class="panel"><div class="panel-heading"><span class="eyebrow">CONSULTA</span><h2>Buscar ubicación</h2></div><label>Chasis completo o últimos cuatro dígitos <input type="text" [(ngModel)]="chasis" maxlength="120"></label>
       <button type="button" (click)="buscarMotocicletas()" [disabled]="ocupado() || !chasis.trim()">Buscar motocicletas</button>
       @for (moto of coincidencias(); track moto.id) {
         <button type="button" (click)="seleccionar(moto)">{{moto.marca}} {{moto.modelo}} · {{moto.color}} · {{moto.chasisVista}}</button>
       }
       @if (seleccionada()) { <p>Motocicleta seleccionada: <strong>{{seleccionada()?.marca}} {{seleccionada()?.modelo}} · {{seleccionada()?.chasisVista}}</strong></p> }
-      @if (actual()) { <p>Última ubicación: <strong>{{actual()?.destinoNombre}}</strong></p> }
+      @if (actual()) { <p>Última ubicación confirmada: <strong>{{actual()?.destinoNombre}}</strong></p> }
+      @if (envioActivo(); as envio) { <p><strong>En tránsito</strong> desde {{envio.origen}} hacia {{envio.destino}}. La ubicación cambiará cuando la tienda confirme la recepción.</p> }
       @for (movimiento of historial(); track movimiento.id) {
         <p>{{movimiento.tipo}} · {{movimiento.destinoNombre}} · {{movimiento.fecha}} · {{movimiento.registrador}}</p>
       }
       @if (historial().length === 0 && consultado()) { <p>Todavía no se ha registrado una ubicación.</p> }
     </section>
-    @if (access.can('UBICACIONES_REGISTRAR') || access.can('TRASLADOS_REGISTRAR')) {
+    @if ((access.can('UBICACIONES_REGISTRAR') || access.can('TRASLADOS_REGISTRAR')) && !envioActivo()) {
       <section class="panel"><div class="panel-heading"><span class="eyebrow">MOVIMIENTO FÍSICO</span><h2>Registrar movimiento</h2><p>Selecciona la sede que recibirá la motocicleta.</p></div>
         <label>Destino <select [(ngModel)]="destinoId"><option [ngValue]="0">Seleccione sede</option>
           @for (sede of sedes(); track sede.id) {
-            @if (!actual() || sede.tipo === 'TIENDA' || sede.tipo === 'DESPACHO') {
-              <option [ngValue]="sede.id">{{sede.nombre}} ({{sede.tipo}})</option>
-            }
+            <option [ngValue]="sede.id">{{sede.nombre}} ({{sede.tipo}})</option>
           }
         </select></label>
         @if (access.can('UBICACIONES_REGISTRAR') && !actual()) {
@@ -52,6 +62,7 @@ export class UbicacionesPage {
   readonly access = inject(AuthService);
   readonly sedes = signal<Sede[]>([]);
   readonly actual = signal<Movimiento | null>(null);
+  readonly envioActivo = signal<Envio | null>(null);
   readonly historial = signal<Movimiento[]>([]);
   readonly error = signal('');
   readonly mensaje = signal('');
@@ -62,14 +73,26 @@ export class UbicacionesPage {
   chasis = '';
   motocicletaId = 0;
   destinoId = 0;
+  nuevaSede = {codigo:'',nombre:'',tipo:'ALMACEN'};
 
   constructor() {
     this.http.get<Sede[]>('/api/v1/ubicaciones').subscribe({next: sedes => this.sedes.set(sedes), error: err => this.error.set(apiError(err))});
   }
+  crearSede(): void {
+    const datos = {codigo:this.nuevaSede.codigo.trim(),nombre:this.nuevaSede.nombre.trim(),tipo:this.nuevaSede.tipo};
+    if (!datos.codigo || !datos.nombre || this.ocupado()) return;
+    this.ocupado.set(true); this.error.set(''); this.mensaje.set('');
+    this.http.post<Sede>('/api/v1/ubicaciones',datos).subscribe({
+      next: sede => { this.sedes.update(actual => [...actual,sede].sort((a,b) => a.nombre.localeCompare(b.nombre)));
+        this.nuevaSede = {codigo:'',nombre:'',tipo:'ALMACEN'}; this.ocupado.set(false);
+        this.mensaje.set('Sede registrada.'); },
+      error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
+    });
+  }
   buscarMotocicletas(): void {
     const chasis = this.chasis.trim();
     this.error.set(''); this.mensaje.set(''); this.seleccionada.set(null);
-    this.motocicletaId = 0; this.actual.set(null); this.historial.set([]); this.consultado.set(false); this.coincidencias.set([]);
+    this.motocicletaId = 0; this.actual.set(null); this.envioActivo.set(null); this.historial.set([]); this.consultado.set(false); this.coincidencias.set([]);
     if (chasis.length < 4) { this.error.set('Ingresa el chasis completo o sus últimos cuatro dígitos.'); return; }
     this.ocupado.set(true);
     this.http.get<{items:Moto[]}>('/api/v1/motocicletas', {params:{chasis, pagina:0, tamano:10}}).subscribe({
@@ -83,8 +106,13 @@ export class UbicacionesPage {
     this.seleccionada.set(moto); this.coincidencias.set([]); this.consultar();
   }
   consultar(): void {
-    this.actual.set(null); this.historial.set([]); this.consultado.set(false); this.error.set('');
+    this.actual.set(null); this.envioActivo.set(null); this.historial.set([]); this.consultado.set(false); this.error.set('');
     if (this.motocicletaId < 1) return;
+    const consultada = this.motocicletaId;
+    this.http.get<Envio | null>(`/api/v1/motocicletas/${consultada}/envio-activo`).subscribe({
+      next: envio => { if (this.motocicletaId === consultada) this.envioActivo.set(envio); },
+      error: err => { if (this.motocicletaId === consultada) this.error.set(apiError(err)); }
+    });
     this.ocupado.set(true);
     this.http.get<Movimiento[]>(`/api/v1/motocicletas/${this.motocicletaId}/ubicacion/historial`).subscribe({
       next: lista => { this.historial.set(lista); this.actual.set(lista.at(-1) ?? null); this.consultado.set(true); this.ocupado.set(false); },
