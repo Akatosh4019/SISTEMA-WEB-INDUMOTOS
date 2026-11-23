@@ -7,6 +7,7 @@
       <a routerLink="/app" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active"><span class="nav-icon">⌂</span> Inicio</a>
       @if (access.can('COMPANIA_CONSULTAR')) { <a routerLink="/app/compania" routerLinkActive="active"><span class="nav-icon">▦</span> Modo compañía</a> }
       @if (access.can('TIENDA_CONSULTAR') && !access.can('COMPANIA_CONSULTAR')) { <a routerLink="/app/tienda" routerLinkActive="active"><span class="nav-icon">▥</span> Modo tienda</a> }
+      @if (access.can('DISPONIBILIDAD_CONSULTAR')) { <a routerLink="/app/control-datos" routerLinkActive="active"><span class="nav-icon">◈</span> Disponibilidad y datos</a> }
       @if (access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/inventario" routerLinkActive="active"><span class="nav-icon">▣</span> Inventario</a> }
       @if (access.can('LLEGADAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/llegadas" routerLinkActive="active"><span class="nav-icon">▰</span> Llegadas</a> }
       @if (access.can('FICHAS_REGISTRAR')) { <a routerLink="/app/fichas" routerLinkActive="active"><span class="nav-icon">✚</span> Agregar motocicleta</a> }

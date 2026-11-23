@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { apiError } from '../core/api-error';
 
 interface Tienda { id:number; nombre:string; disponibles:number; vendidas:number; }
-interface Cuenta { id:number; nombreCompleto:string; nombreUsuario:string; }
+interface Cuenta { id:number; nombreCompleto:string; nombreUsuario:string; tiendaId:number|null; tiendaNombre:string|null; }
 interface Pagina<T> { items:T[]; totalElementos:number; }
 
 @Component({selector:'app-compania-page',imports:[FormsModule,RouterLink],
@@ -19,7 +19,7 @@ interface Pagina<T> { items:T[]; totalElementos:number; }
     <section class="panel"><h2>Personal de tienda</h2><p class="hint">Cada cuenta de Comercial o Facturación se limita a una tienda. Solo Administración puede cambiarla.</p>
       <div class="filters"><label>Área<select [(ngModel)]="rol" (ngModelChange)="cargarCuentas(0)"><option value="COMERCIAL">Comercial</option><option value="FACTURACION">Facturación</option></select></label>
       <label>Buscar trabajador<input [(ngModel)]="buscar" (ngModelChange)="cargarCuentas(0)" placeholder="Nombre o usuario" /></label></div>
-      <div class="filters"><label>Cuenta<select [(ngModel)]="usuarioId"><option [ngValue]="0">Seleccionar</option>@for(c of cuentas();track c.id){<option [ngValue]="c.id">{{c.nombreCompleto}} · {{c.nombreUsuario}}</option>}</select></label>
+      <div class="filters"><label>Cuenta<select [(ngModel)]="usuarioId"><option [ngValue]="0">Seleccionar</option>@for(c of cuentas();track c.id){<option [ngValue]="c.id">{{c.nombreCompleto}} · {{c.nombreUsuario}} · {{c.tiendaNombre || 'Sin tienda'}}</option>}</select></label>
       <label>Tienda<select [(ngModel)]="tiendaId"><option [ngValue]="0">Seleccionar</option>@for(t of tiendas();track t.id){<option [ngValue]="t.id">{{t.nombre}}</option>}</select></label>
       <button type="button" (click)="asignar()" [disabled]="busy() || !usuarioId || !tiendaId">Asignar</button></div>
       <div class="pager"><button type="button" class="tertiary" (click)="cargarCuentas(pagina()-1)" [disabled]="pagina()===0">Anterior</button><span>Página {{pagina()+1}} de {{totalPaginas()}}</span><button type="button" class="tertiary" (click)="cargarCuentas(pagina()+1)" [disabled]="pagina()+1>=totalPaginas()">Siguiente</button></div>
@@ -35,5 +35,5 @@ export class CompaniaPage implements OnInit {
   cargarCuentas(p:number):void { if(p<0)return; this.http.get<Pagina<Cuenta>>('/api/v1/usuarios',{params:{pagina:p,tamano:10,estado:'ACTIVO',rol:this.rol,buscar:this.buscar.trim()}}).subscribe({
     next:v=>{this.cuentas.set(v.items);this.pagina.set(p);this.total.set(v.totalElementos);this.usuarioId=0;},error:e=>this.error.set(apiError(e))}); }
   asignar():void {this.busy.set(true);this.error.set('');this.mensaje.set('');this.http.put(`/api/v1/usuarios/${this.usuarioId}/tienda`,{tiendaId:this.tiendaId}).subscribe({
-    next:()=>{this.busy.set(false);this.mensaje.set('Tienda asignada.');},error:e=>{this.busy.set(false);this.error.set(apiError(e));}});}
+    next:()=>{this.busy.set(false);this.mensaje.set('Tienda asignada.');this.cargarCuentas(this.pagina());},error:e=>{this.busy.set(false);this.error.set(apiError(e));}});}
 }
