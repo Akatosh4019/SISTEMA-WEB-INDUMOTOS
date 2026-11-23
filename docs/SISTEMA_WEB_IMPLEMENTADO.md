@@ -62,11 +62,22 @@ Abrir `http://127.0.0.1:4200`. Para revisar contenedores usar `docker compose ps
 
 Con backend local activo, en `frontendIndumotos`: `npm ci`, `npm start` y abrir `http://127.0.0.1:4200`. Para comprobar cambios: `npm run build` y `npm test -- --watch=false`. El gateway puede levantarse aparte con Maven, pero el proxy de desarrollo actual no lo atraviesa. Para probar el recorrido por gateway se usa Docker o se cambia explícitamente el destino del proxy.
 
-En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **15 pruebas**. El backend registró **84 pruebas** y Flyway V25 aplicada. Web, gateway y API respondieron 200 en Docker local; faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
+En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **17 pruebas**. El backend registró **89 pruebas** y Flyway V29 aplicada. Web, gateway y API respondieron 200 en Docker local; faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
 
 ## Pendiente
+
+### Modos laborales y registro de venta
+
+La barra lateral ofrece **Modo compañía** a Administración y **Modo tienda** a Comercial y Facturación. Administración ve el resumen de tiendas, asigna una sede a personal operativo y abre una tienda concreta. Comercial consulta su stock y solicita reposición en el módulo existente. Facturación registra la venta de una moto de su sede tras verificar el pago y la boleta/factura, indicando ambas referencias y el importe. La tabla de stock y la de ventas se paginan de diez en diez. La API impide usar otra tienda o vender dos veces. La pantalla no procesa pagos ni emite comprobantes.
+
+La relación de roles procede del resumen de entrevista 4; el momento de pérdida de disponibilidad está descrito en una transcripción automática de entrevista 5 aún no validada por el entrevistado. Sigue pendiente probar el recorrido visual con cuentas reales de cada rol y una venta autorizada; no se crearon ventas de demostración.
+
+### Sprint 3: disponibilidad y diferencias
+
+`Disponibilidad y datos` permite buscar una moto por chasis, ver su ubicación y estado, y consultar el historial de cambios manuales. Facturación puede bloquear o habilitar con motivo y reportar una diferencia de ficha. Inventarios recibe los casos pendientes, consigna fuente y valor correcto, y cierra el caso; el backend actualiza ficha y caso en una transacción. Comercial solo consulta. Las tablas son de diez por página y los permisos se comprueban en la API. No se creó un caso ficticio para la demo; la prueba visual con usuarios reales sigue pendiente.
+
 
 - Completar evidencia visual real y revisar la experiencia con trabajadores de cada rol.
 - Medir la precisión de OCR con más guías; mantener revisión manual antes de guardar.
 - Acordar con Product Owner el límite de anulación de HU-27 y cerrar tareas de modelado o documentación académica pendientes.
-- Implementar las historias posteriores al alcance actual. Android está fuera de este trabajo.
+- Priorizar por separado las historias sin sprint y validar las reglas comerciales abiertas. Android está fuera de este trabajo.
