@@ -7,7 +7,7 @@ El backlog local solo planifica **Sprint 3**. Su objetivo es disponibilidad e in
 | HU | Interfaz web y conexión con lo actual |
 | --- | --- |
 | HU-10 | Búsqueda por chasis, estado, motivo y ubicación en el panel `Disponibilidad y datos`. |
-| HU-11 | Facturación/Admin bloquea o habilita con motivo; el historial permanece visible. La venta se registra en `Modo tienda`. |
+| HU-11 | Facturación/Admin bloquea o habilita con motivo; el historial permanece visible. |
 | HU-12 | Facturación/Admin reporta una diferencia desde la moto encontrada y consulta sus casos; Inventarios ve la bandeja paginada. |
 | HU-13 | Inventarios/Admin contrasta la fuente, corrige el campo y documenta la resolución; el reportante ve el resultado. |
 
@@ -15,7 +15,7 @@ La pantalla `Disponibilidad y datos` reutiliza tabla paginada de diez, búsqueda
 
 ## Ampliación: modos laborales y registro de ventas
 
-**Modo compañía** es un panel de Administración para ver todas las tiendas y asignar personal de Comercial o Facturación a una sede. **Modo tienda** muestra solo el stock y las ventas de la tienda asignada. Comercial consulta y pide reposición; Facturación registra la venta tras verificar pago y boleta/factura, ingresando ambas referencias e importe. Esto sigue el resumen consolidado de la entrevista 4 y la regla descrita en la transcripción automática de la entrevista 5, pendiente de validación humana. La API limita la sede y evita vender dos veces la misma moto. La pantalla no cobra ni emite comprobantes; Yape o banco requieren una integración posterior acordada con la empresa. No hay checkout público en esta etapa.
+**Modo compañía** es un panel de Administración para ver todas las tiendas y asignar personal de Comercial o Facturación a una sede. Se retiró **Modo tienda** de la web a pedido del usuario. Comercial consulta Inventario y pide reposición desde Solicitudes; Facturación consulta disponibilidad y reporta diferencias. Las tablas y API internas de ventas permanecen en el backend para conservar compatibilidad con datos existentes, pero esta entrega no presenta una pantalla para registrar ventas ni un cobro en línea.
 
 ## Para aceptar estas pantallas
 

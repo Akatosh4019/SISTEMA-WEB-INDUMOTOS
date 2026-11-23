@@ -1,20 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { apiError } from '../core/api-error';
 
 interface Tienda { id:number; nombre:string; disponibles:number; vendidas:number; }
 interface Cuenta { id:number; nombreCompleto:string; nombreUsuario:string; tiendaId:number|null; tiendaNombre:string|null; }
 interface Pagina<T> { items:T[]; totalElementos:number; }
 
-@Component({selector:'app-compania-page',imports:[FormsModule,RouterLink],
+@Component({selector:'app-compania-page',imports:[FormsModule],
   template:`<div class="form-page mode-page"><span class="eyebrow">ADMINISTRACIÓN</span><h1>Modo compañía</h1>
     <p class="lead">Consulta las tiendas y asigna el personal que puede trabajar en cada una.</p>
     @if(error()) { <p class="message error" role="alert">{{error()}}</p> }
     <div class="store-grid">@for(t of tiendas();track t.id){<article class="panel store-card"><span class="eyebrow">SEDE</span><h2>{{t.nombre}}</h2>
-      <div class="stats"><div><strong>{{t.disponibles}}</strong><span>Motos disponibles</span></div><div><strong>{{t.vendidas}}</strong><span>Ventas</span></div></div>
-      <a routerLink="/app/tienda" [queryParams]="{tiendaId:t.id}">Abrir tienda →</a></article>}
+      <div class="stats"><div><strong>{{t.disponibles}}</strong><span>Motos disponibles</span></div><div><strong>{{t.vendidas}}</strong><span>Ventas registradas</span></div></div></article>}
       @empty{<section class="panel">No hay tiendas activas. Agrégalas en Ubicaciones.</section>}</div>
     <section class="panel"><h2>Personal de tienda</h2><p class="hint">Cada cuenta de Comercial o Facturación se limita a una tienda. Solo Administración puede cambiarla.</p>
       <div class="filters"><label>Área<select [(ngModel)]="rol" (ngModelChange)="cargarCuentas(0)"><option value="COMERCIAL">Comercial</option><option value="FACTURACION">Facturación</option></select></label>

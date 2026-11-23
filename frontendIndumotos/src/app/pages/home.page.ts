@@ -10,7 +10,6 @@ import { AuthService } from '../core/auth.service';
     <p class="lead">{{orientacion()}}</p>
     <div class="grid" aria-label="Accesos a módulos">
       @if (auth.can('COMPANIA_CONSULTAR')) { <a class="action-card" routerLink="/app/compania"><span class="card-symbol">▦</span><span class="card-kicker">COMPAÑÍA</span><strong>Ver tiendas</strong><span class="card-copy">Consulta stock, ventas y personal de cada sede.</span><span class="card-arrow">Abrir módulo →</span></a> }
-      @if (auth.can('TIENDA_CONSULTAR') && !auth.can('COMPANIA_CONSULTAR')) { <a class="action-card" routerLink="/app/tienda"><span class="card-symbol">▥</span><span class="card-kicker">TIENDA</span><strong>Stock y ventas</strong><span class="card-copy">Trabaja con las motos disponibles en tu sede.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('DISPONIBILIDAD_CONSULTAR')) { <a class="action-card" routerLink="/app/control-datos"><span class="card-symbol muted">◈</span><span class="card-kicker">CONTROL</span><strong>Disponibilidad y datos</strong><span class="card-copy">Consulta estados y atiende diferencias de fichas.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('LLEGADAS_REGISTRAR')) { <a class="action-card" routerLink="/app/llegadas"><span class="card-symbol">⇥</span><span class="card-kicker">RECEPCIÓN</span><strong>Registrar llegada</strong><span class="card-copy">Anota la guía y las cantidades recibidas para iniciar el registro.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('FICHAS_REGISTRAR')) { <a class="action-card" routerLink="/app/fichas"><span class="card-symbol muted">▤</span><span class="card-kicker">INVENTARIO</span><strong>Registrar ficha</strong><span class="card-copy">Asocia una motocicleta a la llegada que le corresponde.</span><span class="card-arrow">Abrir módulo →</span></a> }
@@ -29,8 +28,8 @@ export class HomePage {
     const role = this.auth.access()?.rolCodigo;
     return role === 'ALMACEN' ? 'Registra las guías recibidas, prepara las motos solicitadas y confirma los movimientos hacia su sede.'
       : role === 'INVENTARIOS' ? 'Mantén el catálogo, registra cada motocicleta de una llegada y consulta sus fichas.'
-      : role === 'COMERCIAL' ? 'Consulta el stock de tu tienda y solicita reposición de las motos que necesita la sede.'
-      : role === 'FACTURACION' ? 'Verifica el pago y el comprobante antes de registrar una venta en tu tienda.'
+      : role === 'COMERCIAL' ? 'Consulta el inventario y solicita las motos que necesita tu sede.'
+      : role === 'FACTURACION' ? 'Consulta la disponibilidad y reporta diferencias de datos para su revisión.'
       : role === 'ENSAMBLAJE' ? 'Consulta las solicitudes asignadas y registra su preparación.'
       : 'Consulta el inventario y administra las operaciones y accesos del equipo.';
   });

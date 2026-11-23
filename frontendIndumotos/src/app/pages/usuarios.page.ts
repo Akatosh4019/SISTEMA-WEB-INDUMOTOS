@@ -31,7 +31,7 @@ interface PaginaCuentas { items: Cuenta[]; pagina: number; tamano: number; total
       <div class="detail-row"><span>ALMACEN</span><strong>Registrar llegadas y preparar solicitudes</strong></div>
       <div class="detail-row"><span>INVENTARIOS</span><strong>Registrar fichas y gestionar catálogo</strong></div>
       <div class="detail-row"><span>COMERCIAL</span><strong>Crear solicitudes para sedes</strong></div>
-      <div class="detail-row"><span>FACTURACION</span><strong>Registrar ventas con pago y comprobante verificados</strong></div>
+      <div class="detail-row"><span>FACTURACION</span><strong>Consultar disponibilidad y reportar diferencias de datos</strong></div>
       <div class="detail-row"><span>ENSAMBLAJE</span><strong>Consultar y preparar solicitudes</strong></div></div>
     </section></div>
     <section class="panel accounts-panel"><div class="accounts-head"><div><h2>Cuentas creadas</h2><p class="hint">Consulta las cuentas del equipo. Se muestran hasta 10 por página.</p></div>

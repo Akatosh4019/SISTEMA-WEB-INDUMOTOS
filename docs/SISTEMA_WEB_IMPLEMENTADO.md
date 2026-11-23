@@ -19,8 +19,8 @@ En **Docker**: navegador → Nginx `:4200` → gateway `:8030` por red Docker �
 - **Administración:** Crear cuenta; Roles y permisos; Catálogo de motocicletas; Modo compañía para ver todas las tiendas y asignar personal. Solo `ADMIN` puede agregar marcas, modelos y colores. Inventarios y Comercial seleccionan las combinaciones existentes, sin alterarlas.
 - **Almacén:** Llegadas. «Nueva llegada» abre un formulario superpuesto para registrar número de guía, cantidades, observación y entre 1 y 3 fotos. Una guía nueva aparece en **Nuevas guías** como `PENDIENTE`. Puede consultar sus fotos y fichas vinculadas. También atiende solicitudes según permisos.
 - **Inventarios:** Inventario para buscar por chasis completo o últimos cuatro dígitos y filtrar marca/modelo/color, con paginación y ficha en ventana superpuesta. «Agregar motocicleta» permite elegir una guía pendiente y registrar cada unidad. La foto queda al lado del formulario con zoom, arrastre y cambio de página. Los bloques se muestran de cinco en cinco.
-- **Comercial:** Solicitudes para elegir combinaciones del catálogo, cantidades y sede de destino; Seguimiento y Modo tienda para consultar avance y stock de su sede.
-- **Facturación:** Modo tienda para consultar stock y registrar una venta verificada; Disponibilidad y datos para bloquear/habilitar una unidad y reportar diferencias.
+- **Comercial:** Solicitudes para elegir combinaciones del catálogo, cantidades y sede de destino; Seguimiento e Inventario para consultar avance y existencias.
+- **Facturación:** Disponibilidad y datos para consultar, bloquear/habilitar una unidad y reportar diferencias.
 - **Roles operativos autorizados:** Ubicaciones e historial, asignación de chasis a solicitudes, preparación y traslados según permisos efectivos.
 
 El menú y las rutas muestran opciones conforme al perfil obtenido de `/api/v1/auth/me`. La ocultación en Angular mejora la experiencia; no sustituye el 403 del backend. La lista exacta de rutas está en `frontendIndumotos/src/app/app.routes.ts`.
@@ -63,13 +63,13 @@ Abrir `http://127.0.0.1:4200`. Para revisar contenedores usar `docker compose ps
 
 Con backend local activo, en `frontendIndumotos`: `npm ci`, `npm start` y abrir `http://127.0.0.1:4200`. Para comprobar cambios: `npm run build` y `npm test -- --watch=false`. El gateway puede levantarse aparte con Maven, pero el proxy de desarrollo actual no lo atraviesa. Para probar el recorrido por gateway se usa Docker o se cambia explícitamente el destino del proxy.
 
-En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **17 pruebas**. El backend registró **89 pruebas** y Flyway V29 aplicada. Web, gateway y API respondieron 200 en Docker local; faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
+En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **16 pruebas** después de retirar la pantalla de tienda. En una ejecución anterior, el backend registró **89 pruebas** y Flyway V29 aplicada. Faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
 
 ## Pendiente
 
 ### Modos laborales y registro de venta
 
-La barra lateral ofrece **Modo compañía** a Administración y **Modo tienda** a Comercial y Facturación. Administración ve el resumen de tiendas, asigna una sede a personal operativo y abre una tienda concreta. Comercial consulta su stock y solicita reposición en el módulo existente. Facturación registra la venta de una moto de su sede tras verificar el pago y la boleta/factura, indicando ambas referencias y el importe. La tabla de stock y la de ventas se paginan de diez en diez. La API impide usar otra tienda o vender dos veces. La pantalla no procesa pagos ni emite comprobantes.
+La barra lateral ofrece **Modo compañía** a Administración para consultar el resumen de tiendas y asignar una sede al personal. Comercial consulta Inventario y solicita reposición desde Solicitudes. A pedido del usuario se retiró **Modo tienda** de la web; no hay pantalla de ventas en esta entrega. El backend conserva sus tablas y API de ventas para no perder datos ni romper migraciones. La web no procesa pagos ni emite comprobantes.
 
 La relación de roles procede del resumen de entrevista 4; el momento de pérdida de disponibilidad está descrito en una transcripción automática de entrevista 5 aún no validada por el entrevistado. Sigue pendiente probar el recorrido visual con cuentas reales de cada rol y una venta autorizada; no se crearon ventas de demostración.
 
