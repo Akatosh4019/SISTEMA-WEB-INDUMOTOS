@@ -2,6 +2,8 @@
 
 Repositorio de Angular y Spring Cloud Gateway para los incrementos implementados de Sprint 1 y Sprint 2 en la rama `sprint-2`.
 
+**Rama de trabajo de Roberto Samuel Valencia Saavedra:** `sprint-2`. Los cambios de web y gateway de este incremento se integran y revisan desde esa rama antes de publicarlos en `main`.
+
 - [Guía vigente del sistema web](docs/SISTEMA_WEB_IMPLEMENTADO.md): arquitectura, pantallas por rol, flujos, Docker, pruebas y pendientes.
 - `frontendIndumotos/`: Angular 21, Nginx y `compose.yaml` para web y gateway.
 - `gatewayIndumotos/`: encaminamiento de `/api/**` a la API compartida.
