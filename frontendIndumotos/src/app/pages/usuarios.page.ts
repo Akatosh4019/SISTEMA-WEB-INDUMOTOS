@@ -20,7 +20,7 @@ interface PaginaCuentas { items: Cuenta[]; pagina: number; tamano: number; total
       <form (ngSubmit)="guardar()" #f="ngForm">
         <label for="nombreCompleto">Nombre completo</label><input id="nombreCompleto" name="nombreCompleto" required maxlength="180" autocomplete="name" [(ngModel)]="form.nombreCompleto" />
         <label for="nombreUsuario">Nombre de usuario</label><input id="nombreUsuario" name="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="off" [(ngModel)]="form.nombreUsuario" />
-        <div class="row"><div><label for="rol">Rol</label><select id="rol" name="rol" [(ngModel)]="form.rolCodigo"><option value="ALMACEN">Almacén</option><option value="INVENTARIOS">Inventarios</option><option value="COMERCIAL">Comercial</option><option value="ENSAMBLAJE">Ensamblaje</option><option value="ADMIN">Administración</option></select></div>
+        <div class="row"><div><label for="rol">Rol</label><select id="rol" name="rol" [(ngModel)]="form.rolCodigo"><option value="ALMACEN">Almacén</option><option value="INVENTARIOS">Inventarios</option><option value="COMERCIAL">Comercial</option><option value="FACTURACION">Facturación</option><option value="ENSAMBLAJE">Ensamblaje</option><option value="ADMIN">Administración</option></select></div>
         <div><label for="clave">Contraseña inicial</label><input id="clave" name="clave" type="password" required minlength="12" maxlength="100" autocomplete="new-password" [(ngModel)]="form.clave" /></div></div>
         @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
         <button type="submit" [disabled]="busy() || !f.valid">{{busy() ? 'Creando…' : 'Crear cuenta'}}</button>
@@ -31,6 +31,7 @@ interface PaginaCuentas { items: Cuenta[]; pagina: number; tamano: number; total
       <div class="detail-row"><span>ALMACEN</span><strong>Registrar llegadas y preparar solicitudes</strong></div>
       <div class="detail-row"><span>INVENTARIOS</span><strong>Registrar fichas y gestionar catálogo</strong></div>
       <div class="detail-row"><span>COMERCIAL</span><strong>Crear solicitudes para sedes</strong></div>
+      <div class="detail-row"><span>FACTURACION</span><strong>Registrar ventas con pago y comprobante verificados</strong></div>
       <div class="detail-row"><span>ENSAMBLAJE</span><strong>Consultar y preparar solicitudes</strong></div></div>
     </section></div>
     <section class="panel accounts-panel"><div class="accounts-head"><div><h2>Cuentas creadas</h2><p class="hint">Consulta las cuentas del equipo. Se muestran hasta 10 por página.</p></div>
@@ -79,7 +80,7 @@ export class UsuariosPage implements OnInit {
   buscar(): void { this.irPagina(0); }
   limpiarBusqueda(): void { this.busqueda = ''; this.buscar(); }
   nombreRol(codigo: string): string {
-    return ({ADMIN:'Administración', ALMACEN:'Almacén', INVENTARIOS:'Inventarios', COMERCIAL:'Comercial', ENSAMBLAJE:'Ensamblaje'} as Record<string,string>)[codigo] ?? codigo;
+    return ({ADMIN:'Administración', ALMACEN:'Almacén', INVENTARIOS:'Inventarios', COMERCIAL:'Comercial', FACTURACION:'Facturación', ENSAMBLAJE:'Ensamblaje'} as Record<string,string>)[codigo] ?? codigo;
   }
   totalPaginas(resultado: PaginaCuentas): number { return Math.ceil(resultado.totalElementos / 10); }
   paginasVisibles(total: number, actual: number): number[] {
