@@ -21,3 +21,23 @@ tbody tr:hover{background:#f9fbfd}
 .form-page .account-pages button{padding:8px 11px;background:#eef2f6;color:#193d61}
 .form-page .account-pages button[aria-current=page]{background:#193d61;color:white}
 @media(max-width:680px){.accounts-head{align-items:stretch;flex-direction:column}.account-search{width:100%}th:nth-child(4),td:nth-child(4){display:none}}
+.row-action{text-align:right}
+.form-page .link-button{background:none;color:#193d61;padding:4px 6px;font-weight:700;text-decoration:underline}
+.account-detail{margin-top:20px}
+.account-detail h3{margin:20px 0 8px;font-size:14px;color:#1b293b}
+.permission-list{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0}
+.permission-list li{background:#eef2f6;color:#193d61;border-radius:6px;padding:5px 8px;font-size:12px}
+.permission-list li.denied{background:#fff0ec;color:#b7402b}
+.permission-list li.muted,.state-history li.muted{background:none;color:#718197}
+.state-form{margin-top:8px;border-top:1px solid #edf1f5}
+.state-form textarea{width:100%;box-sizing:border-box}
+.state-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.form-page .state-actions .secondary{background:#eef2f6;color:#193d61}
+.form-page .state-actions .danger{background:#b7402b}
+.message.warning{background:#fff8e6;color:#7a5a00}
+.state-history{list-style:none;padding:0;margin:0}
+.state-history li{border-left:3px solid #dce7f1;padding:6px 12px;margin-bottom:8px}
+.state-history li strong{display:block;color:#1b293b;font-size:13px}
+.state-history li span{color:#718197;font-size:12px}
+.state-history li p{margin:4px 0 0;color:#405064;font-size:13px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
