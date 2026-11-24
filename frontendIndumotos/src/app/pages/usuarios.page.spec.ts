@@ -38,7 +38,7 @@ describe('UsuariosPage', () => {
     const page=fixture.componentInstance;
     expect(fixture.nativeElement.querySelector('#nuevoTitulo')).toBeNull();
     page.abrirNuevo();
-    page.form={nombreCompleto:'Ana Lima',nombreUsuario:'ana',rolCodigo:'COMERCIAL',clave:'ClaveTemporal123',tiendaId:null};
+    page.form={nombreCompleto:'Ana Lima',nombreUsuario:'ana',rolCodigo:'COMERCIAL',clave:'ClaveTemporal123',tiendaId:null,documento:'',telefono:''};
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('#tiendaNueva')).not.toBeNull();
     page.guardar();

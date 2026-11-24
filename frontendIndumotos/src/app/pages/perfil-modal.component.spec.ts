@@ -51,4 +51,27 @@ describe('PerfilModalComponent', () => {
     expect(navigate).toHaveBeenCalledWith('/login');
     http.verify();
   });
+
+  it('actualiza el teléfono propio dentro del perfil', () => {
+    TestBed.configureTestingModule({imports:[PerfilModalComponent],providers:[
+      provideHttpClient(),provideHttpClientTesting(),provideRouter([])
+    ]});
+    const fixture=TestBed.createComponent(PerfilModalComponent);
+    const http=TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    const datos={nombreCompleto:'Ana',nombreUsuario:'ana',rolCodigo:'COMERCIAL',rolNombre:'Comercial',
+      estado:'ACTIVO',tiendaNombre:'Puruchuco',documento:'12345678',telefono:null,
+      creadoEn:'2026-11-01T00:00:00Z',actualizadoEn:'2026-11-01T00:00:00Z'};
+    http.expectOne('/api/v1/auth/perfil').flush(datos);
+    fixture.componentInstance.editar('telefono');
+    fixture.componentInstance.telefono='+51 900 000 001';
+    fixture.componentInstance.claveActual='ClaveActual123';
+    fixture.componentInstance.guardarTelefono();
+    const request=http.expectOne('/api/v1/auth/perfil/telefono');
+    expect(request.request.body).toEqual({telefono:'+51 900 000 001',claveActual:'ClaveActual123'});
+    request.flush({...datos,telefono:'+51 900 000 001'});
+    expect(fixture.componentInstance.perfil()?.telefono).toBe('+51 900 000 001');
+    expect(fixture.componentInstance.editando()).toBeNull();
+    http.verify();
+  });
 });

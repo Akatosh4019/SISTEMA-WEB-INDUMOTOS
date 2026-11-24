@@ -10,6 +10,7 @@ import { AuthService } from '../core/auth.service';
 
 interface UsuarioCreado { id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string; }
 interface Tienda { id: number; nombre: string; tipo: string; }
+interface DatosTrabajador { nombreCompleto: string; nombreUsuario: string; documento: string | null; telefono: string | null; }
 interface Cuenta { id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string; estado: string; }
 interface PaginaCuentas { items: Cuenta[]; pagina: number; tamano: number; totalElementos: number; }
 export interface EventoEstado { estadoAnterior: string; estadoNuevo: string; motivo: string; actor: string; fecha: string; }
@@ -32,6 +33,7 @@ export interface DetalleCuenta {
       <form (ngSubmit)="guardar()" #f="ngForm">
         <label for="nombreCompleto">Nombre completo</label><input id="nombreCompleto" name="nombreCompleto" required maxlength="180" autocomplete="name" [(ngModel)]="form.nombreCompleto" />
         <label for="nombreUsuario">Nombre de usuario</label><input id="nombreUsuario" name="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="off" [(ngModel)]="form.nombreUsuario" />
+        <div class="row"><div><label for="documentoNuevo">Documento de identidad</label><input id="documentoNuevo" name="documento" [(ngModel)]="form.documento" maxlength="20" pattern="[A-Za-z0-9-]{5,20}" placeholder="DNI o carné" /></div><div><label for="telefonoNuevo">Teléfono</label><input id="telefonoNuevo" name="telefono" [(ngModel)]="form.telefono" maxlength="30" pattern="[+0-9 -]{6,30}" inputmode="tel" placeholder="Número de contacto" /></div></div>
         <div class="row"><div><label for="rol">Rol</label><select id="rol" name="rol" [(ngModel)]="form.rolCodigo"><option value="ALMACEN">Almacén</option><option value="INVENTARIOS">Inventarios</option><option value="COMERCIAL">Comercial</option><option value="FACTURACION">Facturación</option><option value="ENSAMBLAJE">Ensamblaje</option><option value="ADMIN">Administración</option></select></div>
         <div><label for="clave">Contraseña inicial</label><div class="password-field"><input id="clave" name="clave" [type]="verClave() ? 'text' : 'password'" required minlength="12" maxlength="100" autocomplete="new-password" [(ngModel)]="form.clave" /><button type="button" class="password-toggle" (click)="verClave.set(!verClave())" [attr.aria-label]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="verClave()" [title]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'">@if (verClave()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a12.6 12.6 0 0 1-3.2 4.3M6.2 6.2A12.4 12.4 0 0 0 2 12c1 2.5 5 7 10 7a9.6 9.6 0 0 0 4.3-1"/></svg> } @else { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c1-2.5 5-7 10-7s9 4.5 10 7c-1 2.5-5 7-10 7S3 14.5 2 12z"/><circle cx="12" cy="12" r="3"/></svg> }</button></div></div></div>
         @if (form.rolCodigo === 'COMERCIAL' || form.rolCodigo === 'FACTURACION') { <label for="tiendaNueva">Sede de trabajo</label><select id="tiendaNueva" name="tiendaId" [(ngModel)]="form.tiendaId" required><option [ngValue]="null">Selecciona una tienda</option>@for (tienda of tiendas(); track tienda.id) { <option [ngValue]="tienda.id">{{tienda.nombre}}</option> }</select><p class="hint">La cuenta quedará vinculada a esta tienda.</p> }
@@ -64,6 +66,13 @@ export interface DetalleCuenta {
           <div class="detail-row"><span>Estado</span><strong><span class="account-state" [class.inactive]="cuenta.estado !== 'ACTIVO'">{{cuenta.estado}}</span></strong></div>
           <div class="detail-row"><span>Rol</span><strong>{{cuenta.rolNombre || nombreRol(cuenta.rolCodigo)}}</strong></div>
           <div class="detail-row"><span>Tienda</span><strong>{{cuenta.tiendaNombre || 'Sin tienda asignada'}}</strong></div>
+          @if (auth.can('USUARIOS_CREAR')) { <button type="button" class="secondary edit-worker" (click)="abrirEdicion(cuenta.id)" [disabled]="guardandoDatos()">Editar datos del trabajador</button> }
+          @if (editandoDatos()) { <form class="worker-edit" (ngSubmit)="guardarDatos(cuenta.id)" #editor="ngForm"><h3>Datos del trabajador y acceso</h3>
+            <label for="editarNombre">Nombre completo</label><input id="editarNombre" name="editarNombre" [(ngModel)]="datosForm.nombreCompleto" required maxlength="180" />
+            <label for="editarUsuario">Usuario</label><input id="editarUsuario" name="editarUsuario" [(ngModel)]="datosForm.nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" />
+            <div class="row"><div><label for="editarDocumento">Documento</label><input id="editarDocumento" name="editarDocumento" [(ngModel)]="datosForm.documento" maxlength="20" pattern="[A-Za-z0-9-]{5,20}" /></div><div><label for="editarTelefono">Teléfono</label><input id="editarTelefono" name="editarTelefono" [(ngModel)]="datosForm.telefono" maxlength="30" pattern="[+0-9 -]{6,30}" inputmode="tel" /></div></div>
+            <p class="hint">Si cambias el usuario, sus sesiones abiertas se cerrarán.</p><div class="state-actions"><button type="button" class="secondary" (click)="editandoDatos.set(false)" [disabled]="guardandoDatos()">Cancelar</button><button type="submit" [disabled]="guardandoDatos() || !editor.valid">{{guardandoDatos() ? 'Guardando…' : 'Guardar cambios'}}</button></div>
+          </form> }
           @if (auth.can('COMPANIA_CONSULTAR') && cuenta.estado === 'ACTIVO' && (cuenta.rolCodigo === 'COMERCIAL' || cuenta.rolCodigo === 'FACTURACION')) { <div class="store-assignment"><label for="tiendaCuenta">Cambiar sede de trabajo</label><select id="tiendaCuenta" [(ngModel)]="tiendaDetalle"><option [ngValue]="0">Seleccionar tienda</option>@for (tienda of tiendas(); track tienda.id) { <option [ngValue]="tienda.id">{{tienda.nombre}}</option> }</select><button type="button" class="secondary" (click)="asignarTienda(cuenta.id)" [disabled]="!tiendaDetalle || asignandoTienda()">{{asignandoTienda() ? 'Guardando…' : 'Guardar sede'}}</button></div> }
           <div class="detail-row"><span>Creada</span><strong>{{cuenta.creadoEn | date:'dd/MM/yyyy HH:mm'}}</strong></div>
           @if (cuenta.ultimoCambioEstado; as ultimo) {
@@ -125,12 +134,15 @@ export class UsuariosPage implements OnInit {
   readonly cambiando = signal(false);
   readonly verClave = signal(false);
   readonly nuevoAbierto = signal(false);
+  readonly editandoDatos = signal(false);
+  readonly guardandoDatos = signal(false);
+  datosForm = {nombreCompleto:'', nombreUsuario:'', documento:'', telefono:''};
   readonly tiendas = signal<Tienda[]>([]);
   readonly asignandoTienda = signal(false);
   tiendaDetalle = 0;
   busqueda = '';
   motivo = '';
-  form = { nombreCompleto: '', nombreUsuario: '', rolCodigo: 'ALMACEN', clave: '', tiendaId: null as number | null };
+  form = { nombreCompleto: '', nombreUsuario: '', rolCodigo: 'ALMACEN', clave: '', tiendaId: null as number | null, documento:'', telefono:'' };
 
   ngOnInit(): void {
     if (this.auth.can('USUARIOS_CREAR') || this.auth.can('COMPANIA_CONSULTAR'))
@@ -156,12 +168,28 @@ export class UsuariosPage implements OnInit {
   cerrarNuevo(): void { if (!this.busy()) { this.nuevoAbierto.set(false); this.error.set(''); this.form.clave = ''; } }
 
   verDetalle(id: number): void {
+    this.editandoDatos.set(false);
     this.seleccionId.set(id); this.detalle.set(null); this.historial.set([]); this.detalleCargando.set(true);
     this.errorDetalle.set(''); this.errorEstado.set(''); this.mensajeEstado.set('');
     this.motivo = ''; this.confirmando.set(false);
     this.http.get<DetalleCuenta>(`/api/v1/usuarios/${id}`).subscribe({
       next: cuenta => { if (this.seleccionId() !== id) return; this.detalleCargando.set(false); this.detalle.set(cuenta); this.tiendaDetalle = 0; this.cargarHistorial(id); },
       error: err => { if (this.seleccionId() !== id) return; this.detalleCargando.set(false); this.errorDetalle.set(apiError(err)); }
+    });
+  }
+  abrirEdicion(id: number): void {
+    this.errorDetalle.set('');
+    this.http.get<DatosTrabajador>(`/api/v1/usuarios/${id}/datos`).subscribe({
+      next: datos => { if (this.seleccionId() !== id) return; this.datosForm={nombreCompleto:datos.nombreCompleto,nombreUsuario:datos.nombreUsuario,documento:datos.documento ?? '',telefono:datos.telefono ?? ''}; this.editandoDatos.set(true); },
+      error: err => this.errorDetalle.set(apiError(err))
+    });
+  }
+  guardarDatos(id: number): void {
+    if (this.guardandoDatos()) return;
+    this.guardandoDatos.set(true); this.errorDetalle.set('');
+    this.http.put(`/api/v1/usuarios/${id}/datos`,this.datosForm).subscribe({
+      next: () => { this.guardandoDatos.set(false); this.editandoDatos.set(false); this.verDetalle(id); this.irPagina(this.cuentas()?.pagina ?? 0); },
+      error: err => { this.guardandoDatos.set(false); this.errorDetalle.set(apiError(err)); }
     });
   }
   @HostListener('document:keydown.escape') cerrarDetalle(): void { this.cerrarNuevo(); this.seleccionId.set(null); this.detalle.set(null); this.historial.set([]); this.confirmando.set(false); }

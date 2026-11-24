@@ -13,6 +13,8 @@ interface Perfil {
   rolNombre: string;
   estado: string;
   tiendaNombre: string | null;
+  documento: string | null;
+  telefono: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -32,11 +34,12 @@ export class PerfilModalComponent implements OnInit {
   readonly cargando = signal(true);
   readonly guardando = signal(false);
   readonly error = signal('');
-  readonly editando = signal<'usuario' | 'clave' | null>(null);
+  readonly editando = signal<'usuario' | 'clave' | 'telefono' | null>(null);
   nombreUsuario = '';
   claveActual = '';
   claveNueva = '';
   confirmarClave = '';
+  telefono = '';
 
   ngOnInit(): void {
     this.http.get<Perfil>('/api/v1/auth/perfil').subscribe({
@@ -45,13 +48,14 @@ export class PerfilModalComponent implements OnInit {
     });
   }
 
-  editar(tipo: 'usuario' | 'clave'): void {
+  editar(tipo: 'usuario' | 'clave' | 'telefono'): void {
     this.error.set('');
     this.editando.set(tipo);
     this.nombreUsuario = this.perfil()?.nombreUsuario ?? '';
     this.claveActual = '';
     this.claveNueva = '';
     this.confirmarClave = '';
+    this.telefono = this.perfil()?.telefono ?? '';
   }
 
   cancelarEdicion(): void {
@@ -93,6 +97,20 @@ export class PerfilModalComponent implements OnInit {
       claveActual: this.claveActual, claveNueva: this.claveNueva
     }).subscribe({
       next: () => this.volverAlLogin('Contraseña actualizada. Ingresa de nuevo.'),
+      error: err => { this.error.set(apiError(err)); this.guardando.set(false); }
+    });
+  }
+
+  guardarTelefono(): void {
+    if (this.guardando()) return;
+    this.error.set('');
+    const telefono = this.telefono.trim();
+    if (!this.claveActual || (telefono && !/^[+0-9 -]{6,30}$/.test(telefono))) {
+      this.error.set('Escribe tu contraseña actual y revisa el teléfono.'); return;
+    }
+    this.guardando.set(true);
+    this.http.put<Perfil>('/api/v1/auth/perfil/telefono', {telefono, claveActual: this.claveActual}).subscribe({
+      next: perfil => { this.perfil.set(perfil); this.claveActual = ''; this.editando.set(null); this.guardando.set(false); },
       error: err => { this.error.set(apiError(err)); this.guardando.set(false); }
     });
   }

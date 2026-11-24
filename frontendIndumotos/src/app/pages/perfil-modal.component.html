@@ -14,6 +14,8 @@
         <tr><th scope="row">Usuario</th><td>{{p.nombreUsuario}}</td></tr>
         <tr><th scope="row">Área o rol</th><td>{{p.rolNombre}}</td></tr>
         <tr><th scope="row">Sede asignada</th><td>{{p.tiendaNombre || 'Sin sede asignada'}}</td></tr>
+        <tr><th scope="row">Documento</th><td>{{p.documento || 'Sin registrar'}}</td></tr>
+        <tr><th scope="row">Teléfono</th><td>{{p.telefono || 'Sin registrar'}}</td></tr>
         <tr><th scope="row">Estado</th><td><span class="perfil-activo">{{p.estado}}</span></td></tr>
         <tr><th scope="row">Cuenta creada</th><td>{{p.creadoEn | date:'dd/MM/yyyy'}}</td></tr>
       </tbody></table>
@@ -25,6 +27,7 @@
           <div class="perfil-opciones" role="group" aria-label="Dato que deseas cambiar">
             <button type="button" [class.elegida]="editando()==='usuario'" [disabled]="guardando()" (click)="editar('usuario')">Nombre de usuario</button>
             <button type="button" [class.elegida]="editando()==='clave'" [disabled]="guardando()" (click)="editar('clave')">Contraseña</button>
+            <button type="button" [class.elegida]="editando()==='telefono'" [disabled]="guardando()" (click)="editar('telefono')">Teléfono</button>
           </div>
           @if (editando()==='usuario') {
             <form (ngSubmit)="guardarUsuario()">
@@ -36,7 +39,7 @@
               <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
                 <button type="submit" class="perfil-guardar" [disabled]="guardando()">{{guardando() ? 'Guardando…' : 'Guardar usuario'}}</button></div>
             </form>
-          } @else {
+          } @else if (editando()==='clave') {
             <form (ngSubmit)="guardarClave()">
               <label for="perfil-clave-actual">Contraseña actual</label>
               <input id="perfil-clave-actual" name="claveActual" [(ngModel)]="claveActual" type="password" required autocomplete="current-password" />
@@ -47,6 +50,15 @@
               <p class="perfil-ayuda">Al guardar se cerrará tu sesión para proteger la cuenta.</p>
               <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
                 <button type="submit" class="perfil-guardar" [disabled]="guardando()">{{guardando() ? 'Guardando…' : 'Cambiar contraseña'}}</button></div>
+            </form>
+          } @else {
+            <form (ngSubmit)="guardarTelefono()">
+              <label for="perfil-telefono">Teléfono de contacto</label>
+              <input id="perfil-telefono" name="telefono" [(ngModel)]="telefono" maxlength="30" pattern="[+0-9 -]{6,30}" inputmode="tel" autocomplete="tel" />
+              <label for="perfil-clave-telefono">Contraseña actual</label>
+              <input id="perfil-clave-telefono" name="claveActual" [(ngModel)]="claveActual" type="password" required autocomplete="current-password" />
+              <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
+                <button type="submit" class="perfil-guardar" [disabled]="guardando()">{{guardando() ? 'Guardando…' : 'Guardar teléfono'}}</button></div>
             </form>
           }
         </div>
