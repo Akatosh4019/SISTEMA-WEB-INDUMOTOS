@@ -1,0 +1,57 @@
+<div class="perfil-fondo" (click)="cerrarVentana()">
+  <section class="perfil-modal" role="dialog" aria-modal="true" aria-labelledby="perfil-titulo" (click)="$event.stopPropagation()">
+    <header class="perfil-encabezado">
+      <div><span class="perfil-etiqueta">MI CUENTA</span><h2 id="perfil-titulo">Datos del usuario</h2>
+        <p>Consulta tu información y actualiza tus credenciales cuando sea necesario.</p></div>
+      <button type="button" class="perfil-cerrar" (click)="cerrarVentana()" [disabled]="guardando()" aria-label="Cerrar perfil">✕</button>
+    </header>
+
+    @if (cargando()) { <p class="perfil-estado" role="status">Cargando perfil…</p> }
+    @if (perfil(); as p) {
+      <div class="perfil-identidad"><span class="perfil-avatar" aria-hidden="true">{{p.nombreUsuario.slice(0, 2).toUpperCase()}}</span>
+        <div><strong>{{p.nombreCompleto}}</strong><span>{{p.rolNombre}}</span></div></div>
+      <table class="perfil-tabla"><tbody>
+        <tr><th scope="row">Usuario</th><td>{{p.nombreUsuario}}</td></tr>
+        <tr><th scope="row">Área o rol</th><td>{{p.rolNombre}}</td></tr>
+        <tr><th scope="row">Sede asignada</th><td>{{p.tiendaNombre || 'Sin sede asignada'}}</td></tr>
+        <tr><th scope="row">Estado</th><td><span class="perfil-activo">{{p.estado}}</span></td></tr>
+        <tr><th scope="row">Cuenta creada</th><td>{{p.creadoEn | date:'dd/MM/yyyy'}}</td></tr>
+      </tbody></table>
+      @if (!editando()) {
+        <div class="perfil-pie"><span>Tu contraseña nunca se muestra en pantalla.</span>
+          <button type="button" class="perfil-editar" (click)="editar('usuario')">Editar datos</button></div>
+      } @else {
+        <div class="perfil-edicion">
+          <div class="perfil-opciones" role="group" aria-label="Dato que deseas cambiar">
+            <button type="button" [class.elegida]="editando()==='usuario'" [disabled]="guardando()" (click)="editar('usuario')">Nombre de usuario</button>
+            <button type="button" [class.elegida]="editando()==='clave'" [disabled]="guardando()" (click)="editar('clave')">Contraseña</button>
+          </div>
+          @if (editando()==='usuario') {
+            <form (ngSubmit)="guardarUsuario()">
+              <label for="perfil-usuario">Nuevo nombre de usuario</label>
+              <input id="perfil-usuario" name="nombreUsuario" [(ngModel)]="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="username" />
+              <label for="perfil-clave-usuario">Contraseña actual</label>
+              <input id="perfil-clave-usuario" name="claveActual" [(ngModel)]="claveActual" type="password" required autocomplete="current-password" />
+              <p class="perfil-ayuda">Al guardar se cerrará tu sesión. Luego ingresa con el nombre nuevo.</p>
+              <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
+                <button type="submit" class="perfil-guardar" [disabled]="guardando()">{{guardando() ? 'Guardando…' : 'Guardar usuario'}}</button></div>
+            </form>
+          } @else {
+            <form (ngSubmit)="guardarClave()">
+              <label for="perfil-clave-actual">Contraseña actual</label>
+              <input id="perfil-clave-actual" name="claveActual" [(ngModel)]="claveActual" type="password" required autocomplete="current-password" />
+              <label for="perfil-clave-nueva">Contraseña nueva</label>
+              <input id="perfil-clave-nueva" name="claveNueva" [(ngModel)]="claveNueva" type="password" required minlength="12" maxlength="100" autocomplete="new-password" />
+              <label for="perfil-clave-confirmar">Confirmar contraseña nueva</label>
+              <input id="perfil-clave-confirmar" name="confirmarClave" [(ngModel)]="confirmarClave" type="password" required autocomplete="new-password" />
+              <p class="perfil-ayuda">Al guardar se cerrará tu sesión para proteger la cuenta.</p>
+              <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
+                <button type="submit" class="perfil-guardar" [disabled]="guardando()">{{guardando() ? 'Guardando…' : 'Cambiar contraseña'}}</button></div>
+            </form>
+          }
+        </div>
+      }
+    }
+    @if (error()) { <p class="perfil-error" role="alert">{{error()}}</p> }
+  </section>
+</div>

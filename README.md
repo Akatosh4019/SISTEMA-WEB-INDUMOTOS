@@ -28,9 +28,13 @@ Abre [http://127.0.0.1:4200/login](http://127.0.0.1:4200/login). En Docker, Ngin
 
 ## Pruebas y documentación
 
-Desde `frontendIndumotos`, ejecuta `npm ci`, `npm run build` y `npm test -- --watch=false` con una versión de Node compatible con Angular 21. En la última ejecución observada, la web compiló y pasaron **21 pruebas**. Falta la revisión visual con cuentas de cada rol y datos autorizados.
+Desde `frontendIndumotos`, ejecuta `npm ci`, `npm run build` y `npm test -- --watch=false` con una versión de Node compatible con Angular 21. En la última ejecución observada, la web compiló y pasaron **23 pruebas**. Falta la revisión visual con cuentas de cada rol y datos autorizados.
 
 - [Guía completa de la web](docs/SISTEMA_WEB_IMPLEMENTADO.md): pantallas, flujos, Docker y pendientes.
 - [Guion de demostración en vivo](docs/GUIA_DEMO_EN_VIVO.md): recorrido por roles desde la guía hasta la recepción.
 - `frontendIndumotos/`: aplicación Angular, Nginx y Docker Compose.
 - `gatewayIndumotos/`: Spring Cloud Gateway.
+
+## Perfil del usuario
+
+Pulsa tu nombre en la parte inferior del menú lateral. La ventana muestra nombre completo, usuario, rol, sede, estado y fecha de creación. El enlace discreto **Editar datos** permite cambiar nombre de usuario o contraseña tras confirmar la contraseña actual. El sistema cierra la sesión al guardar para que ingreses con las credenciales nuevas.
