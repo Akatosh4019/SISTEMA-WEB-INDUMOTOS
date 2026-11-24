@@ -73,11 +73,24 @@ En la última ejecución observada de `sprint-2`, la compilación Angular termin
 
 Administración asigna la sede al crear o editar una cuenta de Comercial o Facturación en **Cuentas**. Comercial consulta Inventario y solicita reposición desde Solicitudes. A pedido del usuario se retiró **Modo tienda** de la web; no hay pantalla de ventas en esta entrega. El backend conserva sus tablas y API de ventas para no perder datos ni romper migraciones. La web no procesa pagos ni emite comprobantes.
 
-La relación de roles procede del resumen de entrevista 4; el momento de pérdida de disponibilidad está descrito en una transcripción automática de entrevista 5 aún no validada por el entrevistado. Sigue pendiente probar el recorrido visual con cuentas reales de cada rol y una venta autorizada; no se crearon ventas de demostración.
+La relación de roles procede del resumen de entrevista 4; el momento de pérdida de disponibilidad está descrito en una transcripción automática de entrevista 5 aún no validada por el entrevistado. Sigue pendiente probar el recorrido visual con cuentas reales de cada rol y una venta autorizada. El perfil demo del backend incluye ocho ventas ficticias solo para mostrar Reportes.
+
+### Mejoras de la revisión del 23/11 (aporte de Luciana Gutiérrez)
+
+Las pantallas de gestión siguen un mismo patrón: **tabla** con buscador que filtra mientras se escribe, filtros, **pie de tabla** con paginación y acciones por fila (ver, editar, activar/desactivar o anular) en **ventanas modales**. Los estilos compartidos están en `styles.css` (clases `im-*`).
+
+- **Catálogo:** tabla de marca, modelo y color con estado Activo/Inactivo. Un modelo desactivado ya no aparece en nuevas solicitudes.
+- **Ubicaciones:** tabla de sedes; Administración agrega, edita y activa/desactiva en modales. El movimiento de motos se pasó a Seguimiento.
+- **Seguimiento:** pestaña **Recorrido de motocicletas** con una línea de tiempo por moto (llegada, ubicación, asignación, en camino, recepción, venta), con origen, destino, fecha y responsable, y botón para registrar un movimiento. La pestaña **Preparación de solicitudes** conserva el flujo anterior, y los motivos de rechazo, anulación o retiro se piden en una ventana propia en lugar de `window.prompt`.
+- **Solicitudes:** tabla con búsqueda, filtro por estado y total; "+ Nueva solicitud" y **Editar** (solo pendientes propias o de Administración) en modal; **Ver** muestra las líneas, el historial de estados y las ediciones; **Anular** pide motivo.
+- **Inventario:** cada fila muestra si la moto está Disponible, Asignada, En camino, Vendida, Bloqueada o En revisión. La pestaña de control se llama **Bloqueos y diferencias de datos** para distinguirla del listado.
+- **Reportes:** nueva pantalla para Administración con motos vendidas, importe, precio promedio, gráfico por día o mes, modelos más y menos vendidos, ventas por tienda y stock por modelo (7 días, 30 días o 12 meses).
+- **Roles:** un único archivo (`core/roles.ts`) con los nombres de la base de datos. Se corrigió que Facturación no apareciera en el menú lateral ni en Roles y permisos.
+- **Sesión:** dura una hora (el backend la define).
 
 ### Sprint 3: disponibilidad y diferencias
 
-`Inventario → Disponibilidad y diferencias` permite buscar una moto por chasis, ver su ubicación y estado, y consultar el historial de cambios manuales. Facturación puede bloquear o habilitar con motivo y reportar una diferencia de ficha. Inventarios recibe los casos pendientes, consigna fuente y valor correcto, y cierra el caso; el backend actualiza ficha y caso en una transacción. Comercial solo consulta. Las tablas son de diez por página y los permisos se comprueban en la API. No se creó un caso ficticio para la demo; la prueba visual con usuarios reales sigue pendiente.
+`Inventario → Bloqueos y diferencias de datos` permite buscar una moto por chasis, ver su ubicación y estado, y consultar el historial de cambios manuales. Facturación puede bloquear o habilitar con motivo y reportar una diferencia de ficha. Inventarios recibe los casos pendientes, consigna fuente y valor correcto, y cierra el caso; el backend actualiza ficha y caso en una transacción. Comercial solo consulta. Las tablas son de diez por página y los permisos se comprueban en la API. No se creó un caso ficticio para la demo; la prueba visual con usuarios reales sigue pendiente.
 
 
 - Completar evidencia visual real y revisar la experiencia con trabajadores de cada rol.
