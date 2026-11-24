@@ -1,0 +1,40 @@
+<div class="form-page">
+  <div class="eyebrow">ADMINISTRACIÓN · DATOS MAESTROS</div>
+  <h1>Catálogo de motocicletas</h1>
+  <p class="lead">Organiza las marcas, modelos y colores disponibles para los formularios del sistema.</p>
+  <section class="panel" aria-labelledby="agregar-titulo">
+    <h2 id="agregar-titulo">Agregar marca, modelo y color</h2>
+    <p class="hint">Selecciona una marca y modelo existentes o escribe nuevos valores. Cada color forma una combinación del catálogo.</p>
+    <form (ngSubmit)="agregar()" #f="ngForm">
+      <div class="row">
+        <div><label for="marca">Marca</label><input id="marca" name="marca" required maxlength="120" [(ngModel)]="nueva.marca" list="marcas" /><datalist id="marcas">@for (marca of marcas(); track marca) { <option [value]="marca"></option> }</datalist></div>
+        <div><label for="modelo">Modelo de esa marca</label><input id="modelo" name="modelo" required maxlength="120" [(ngModel)]="nueva.modelo" list="modelos" /><datalist id="modelos">@for (modelo of modelosDeMarca(); track modelo) { <option [value]="modelo"></option> }</datalist></div>
+      </div>
+      <label for="color">Color disponible para ese modelo</label><input id="color" name="color" required maxlength="120" [(ngModel)]="nueva.color" />
+      @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
+      <button type="submit" [disabled]="busy() || cargando() || cambiando() !== null || !f.valid">{{busy() ? 'Guardando…' : 'Agregar color al modelo'}}</button>
+    </form>
+  </section>
+  <section class="panel catalogo-list" aria-labelledby="listado-titulo">
+    <div class="list-heading"><div><h2 id="listado-titulo">Combinaciones del catálogo</h2><p>Deshabilitar una combinación la retira de nuevas selecciones y conserva los registros existentes.</p></div><span class="total">{{opciones().length}} combinaciones</span></div>
+    @if (mensaje()) { <p class="message success" role="status">{{mensaje()}}</p> }
+    <div class="filters">
+      <div><label for="catalogo-busqueda">Buscar en el catálogo</label><input id="catalogo-busqueda" type="search" placeholder="Marca, modelo o color" [ngModel]="filtro()" (ngModelChange)="filtro.set($event)" /></div>
+      <div><label for="catalogo-estado">Estado</label><select id="catalogo-estado" [ngModel]="estado()" (ngModelChange)="estado.set($event)"><option value="TODOS">Todos los estados</option><option value="HABILITADO">Habilitados</option><option value="DESHABILITADO">Deshabilitados</option></select></div>
+    </div>
+    @if (errorListado()) { <p class="message error" role="alert">{{errorListado()}}</p><button type="button" (click)="cargar()" [disabled]="cambiando() !== null || cargando()">Reintentar</button> }
+    @if (cargando()) { <p role="status">Cargando catálogo…</p> }
+    @else {
+      <div class="table-wrap"><table><caption>Marca, modelo, color y estado de cada combinación</caption><thead><tr><th scope="col">Marca</th><th scope="col">Modelo</th><th scope="col">Color</th><th scope="col">Estado</th><th scope="col" class="actions">Acciones</th></tr></thead><tbody>
+        @for (opcion of filas(); track opcion.id) {
+          <tr [class.inactive]="!opcion.habilitado">
+            <td data-label="Marca"><strong>{{opcion.marca}}</strong></td><td data-label="Modelo">{{opcion.modelo}}</td><td data-label="Color">{{opcion.color}}</td>
+            <td data-label="Estado"><span class="state" [class.disabled-state]="!opcion.habilitado"><svg viewBox="0 0 24 24" aria-hidden="true">@if (opcion.habilitado) { <path d="m5 12 4 4L19 6"/> } @else { <circle cx="12" cy="12" r="8"/><path d="m6 6 12 12"/> }</svg>{{opcion.habilitado ? 'Habilitado' : 'Deshabilitado'}}</span></td>
+            <td data-label="Acciones" class="actions"><button class="state-action" type="button" [disabled]="cambiando() !== null || busy()" (click)="cambiarEstado(opcion)" [attr.aria-label]="(opcion.habilitado ? 'Deshabilitar ' : 'Habilitar ') + opcion.marca + ' ' + opcion.modelo + ' ' + opcion.color">{{cambiando() === opcion.id ? 'Guardando…' : opcion.habilitado ? 'Deshabilitar' : 'Habilitar'}}</button></td>
+          </tr>
+        } @empty { <tr><td colspan="5" class="empty">{{opciones().length ? 'No hay combinaciones para estos filtros.' : 'No hay combinaciones registradas.'}}</td></tr> }
+      </tbody></table></div>
+      <p class="list-total" role="status">{{filas().length}} de {{opciones().length}} combinaciones</p>
+    }
+  </section>
+</div>
