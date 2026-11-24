@@ -23,7 +23,7 @@ interface Opcion { marca: string; modelo: string; color: string }
         @for (modelo of marca.modelos; track modelo.nombre) { <div class="model"><strong>{{modelo.nombre}}</strong><span>{{modelo.colores.join(' · ')}}</span></div> }
       </div> } @empty { <p>No hay combinaciones registradas.</p> }
     </section></div>`,
-  styles: [`.catalogo-list{margin-top:20px}.brand{padding:16px 0;border-top:1px solid #e5e9ee}.brand h3{margin:0 0 10px;color:#193d61}.model{display:flex;justify-content:space-between;gap:16px;padding:8px 0;color:#405064}.model span{color:#6a788b;text-align:right}@media(max-width:600px){.model{display:grid;gap:3px}.model span{text-align:left}}`]
+  styles: [`.catalogo-list{margin-top:20px}.brand{padding:16px 0;border-top:1px solid var(--im-border)}.brand h3{margin:0 0 10px;color:var(--im-accent)}.model{display:flex;justify-content:space-between;gap:16px;padding:8px 0;color:var(--im-ink)}.model span{color:var(--im-muted);text-align:right}@media(max-width:600px){.model{display:grid;gap:3px}.model span{text-align:left}}`]
 })
 export class CatalogoPage {
   private readonly http = inject(HttpClient);

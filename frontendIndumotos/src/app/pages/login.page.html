@@ -1,6 +1,6 @@
 <main class="login-layout">
   <section class="brand-panel" aria-label="Indumotos">
-    <div class="brand-lockup"><span class="brand-mark">IM</span><span>INDUMOTOS</span></div>
+    <div class="brand-lockup"><img src="indumotos-logo.png" alt="Indumotos" width="281" height="186" /></div>
     <div class="brand-story">
       <div class="eyebrow">OPERACIÓN DE INVENTARIO</div>
       <h1>El control empieza<br>con cada unidad.</h1>
@@ -12,11 +12,12 @@
   </section>
 
   <section class="form-panel">
+    <app-theme-toggle />
     <div class="form-wrap">
-      <div class="mobile-brand"><span class="brand-mark">IM</span> INDUMOTOS</div>
+      <div class="mobile-brand"><img src="indumotos-logo.png" alt="Indumotos" width="281" height="186" /></div>
       <div class="step-label"><span class="step-dot"></span> ACCESO AL SISTEMA</div>
       <h2>Bienvenido de nuevo</h2>
-      <p class="intro">Ingresa tus credenciales para continuar con tu jornada.</p>
+      <p class="intro">Ingresa tu usuario y contraseña para continuar.</p>
 
       <form (ngSubmit)="entrar()" #loginForm="ngForm">
         <label for="nombreUsuario">Usuario</label>

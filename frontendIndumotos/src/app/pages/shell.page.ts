@@ -2,10 +2,11 @@ import { Component, HostListener, computed, inject, signal } from '@angular/core
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { PerfilModalComponent } from './perfil-modal.component';
+import { ThemeToggleComponent } from '../core/theme-toggle.component';
 
 @Component({
   selector: 'app-shell-page',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, PerfilModalComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, PerfilModalComponent, ThemeToggleComponent],
   templateUrl: './shell.page.html',
   styleUrl: './shell.page.css'
 })

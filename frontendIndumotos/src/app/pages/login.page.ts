@@ -3,10 +3,11 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { ThemeToggleComponent } from '../core/theme-toggle.component';
 
 @Component({
   selector: 'app-login-page',
-  imports: [FormsModule],
+  imports: [FormsModule, ThemeToggleComponent],
   templateUrl: './login.page.html',
   styleUrl: './login.page.css'
 })

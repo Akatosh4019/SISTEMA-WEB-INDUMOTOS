@@ -1,12 +1,19 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, HostListener, OnInit, inject, output, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, inject, output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { apiError } from '../core/api-error';
+import { DatosPersonales, datosPersonalesValidos } from '../core/datos-personales';
 
 interface Perfil {
+  nombres?: string | null;
+  apellidos?: string | null;
+  correo?: string | null;
+  telefono?: string | null;
+  dni?: string | null;
   nombreCompleto: string;
   nombreUsuario: string;
   rolCodigo: string;
@@ -23,31 +30,54 @@ interface Perfil {
   templateUrl: './perfil-modal.component.html',
   styleUrl: './perfil-modal.component.css'
 })
-export class PerfilModalComponent implements OnInit {
+export class PerfilModalComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly document = inject(DOCUMENT);
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly previousFocus = this.document.activeElement as HTMLElement | null;
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   readonly cerrar = output<void>();
   readonly perfil = signal<Perfil | null>(null);
   readonly cargando = signal(true);
   readonly guardando = signal(false);
   readonly error = signal('');
-  readonly editando = signal<'usuario' | 'clave' | null>(null);
+  readonly editando = signal<'datos' | 'usuario' | 'clave' | null>(null);
+  readonly mensaje = signal('');
+  datos: DatosPersonales = { nombres: '', apellidos: '', correo: '', telefono: '', dni: '' };
   nombreUsuario = '';
   claveActual = '';
   claveNueva = '';
   confirmarClave = '';
 
   ngOnInit(): void {
-    this.http.get<Perfil>('/api/v1/auth/perfil').subscribe({
+    this.http.get<Perfil>('/api/v1/auth/perfil').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: perfil => { this.perfil.set(perfil); this.cargando.set(false); },
       error: err => { this.error.set(apiError(err)); this.cargando.set(false); }
     });
   }
 
-  editar(tipo: 'usuario' | 'clave'): void {
+  ngAfterViewInit(): void { this.element.nativeElement.querySelector<HTMLButtonElement>('.perfil-cerrar')?.focus(); }
+  ngOnDestroy(): void { this.previousFocus?.focus(); }
+
+  @HostListener('keydown', ['$event'])
+  keepFocus(event: KeyboardEvent): void {
+    if (event.key !== 'Tab') return;
+    const controls = Array.from(this.element.nativeElement.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href]'));
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && this.document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && this.document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
+
+  editar(tipo: 'datos' | 'usuario' | 'clave'): void {
+    if (this.guardando()) return;
     this.error.set('');
+    this.mensaje.set('');
     this.editando.set(tipo);
+    const perfil = this.perfil();
+    this.datos = { nombres: perfil?.nombres ?? '', apellidos: perfil?.apellidos ?? '',
+      correo: perfil?.correo ?? '', telefono: perfil?.telefono ?? '', dni: perfil?.dni ?? '' };
     this.nombreUsuario = this.perfil()?.nombreUsuario ?? '';
     this.claveActual = '';
     this.claveNueva = '';
@@ -75,6 +105,23 @@ export class PerfilModalComponent implements OnInit {
       nombreUsuario: nombre, claveActual: this.claveActual
     }).subscribe({
       next: () => this.volverAlLogin('Nombre de usuario actualizado. Ingresa de nuevo.'),
+      error: err => { this.error.set(apiError(err)); this.guardando.set(false); }
+    });
+  }
+
+  guardarDatos(): void {
+    if (this.guardando()) return;
+    this.error.set('');
+    if (!datosPersonalesValidos(this.datos)) {
+      this.error.set('Completa tus nombres, apellidos, correo válido, teléfono de 9 dígitos y DNI de 8 dígitos.'); return;
+    }
+    this.guardando.set(true);
+    const datos = Object.fromEntries(Object.entries(this.datos).map(([campo, valor]) => [campo, valor.trim()]));
+    this.http.put<Perfil>('/api/v1/auth/perfil/datos', datos).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: perfil => {
+        this.perfil.set(perfil); this.guardando.set(false); this.editando.set(null);
+        this.mensaje.set('Tus datos se guardaron correctamente.');
+      },
       error: err => { this.error.set(apiError(err)); this.guardando.set(false); }
     });
   }

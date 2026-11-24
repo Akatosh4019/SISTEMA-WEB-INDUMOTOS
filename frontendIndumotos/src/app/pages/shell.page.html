@@ -1,7 +1,7 @@
 <div class="app-layout">
   @if (menuOpen()) { <button class="sidebar-backdrop" type="button" aria-label="Cerrar menú" (click)="closeMenu()"></button> }
   <aside class="sidebar" [class.open]="menuOpen()" id="indumotos-menu">
-    <a routerLink="/app" class="logo" (click)="closeMenu()"><span class="logo-mark">IM</span><span>INDUMOTOS</span></a>
+    <a routerLink="/app" class="logo" (click)="closeMenu()" aria-label="Indumotos, ir al inicio"><img src="indumotos-logo.png" alt="Indumotos" width="281" height="186" /></a>
     <div class="nav-label">OPERACIONES</div>
     <nav aria-label="Navegación principal" (click)="closeMenu()">
       <a routerLink="/app" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active"><span class="nav-icon">⌂</span> Inicio</a>
@@ -28,6 +28,7 @@
     <header class="topbar">
       <button class="menu-toggle" type="button" [attr.aria-expanded]="menuOpen()" aria-controls="indumotos-menu" aria-label="Abrir menú" (click)="menuOpen.set(!menuOpen())">☰</button>
       <div class="topbar-title">Indumotos <span>/ Gestión de motocicletas</span></div>
+      <app-theme-toggle />
     </header>
     <main class="content">@if (logoutError()) { <p role="alert">{{logoutError()}}</p> }<router-outlet /></main>
   </div>

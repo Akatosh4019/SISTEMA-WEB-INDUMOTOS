@@ -1,8 +1,8 @@
 <div class="perfil-fondo" (click)="cerrarVentana()">
   <section class="perfil-modal" role="dialog" aria-modal="true" aria-labelledby="perfil-titulo" (click)="$event.stopPropagation()">
     <header class="perfil-encabezado">
-      <div><span class="perfil-etiqueta">MI CUENTA</span><h2 id="perfil-titulo">Datos del usuario</h2>
-        <p>Consulta tu información y actualiza tus credenciales cuando sea necesario.</p></div>
+      <div><span class="perfil-etiqueta">MI CUENTA</span><h2 id="perfil-titulo">{{editando() === 'datos' ? 'Editar mis datos' : editando() === 'clave' ? 'Cambiar contraseña' : editando() === 'usuario' ? 'Cambiar nombre de usuario' : 'Datos del usuario'}}</h2>
+        <p>{{editando() ? 'Actualiza lo que necesites y guarda los cambios.' : 'Revisa tus datos personales y la información de tu cuenta.'}}</p></div>
       <button type="button" class="perfil-cerrar" (click)="cerrarVentana()" [disabled]="guardando()" aria-label="Cerrar perfil">✕</button>
     </header>
 
@@ -10,23 +10,38 @@
     @if (perfil(); as p) {
       <div class="perfil-identidad"><span class="perfil-avatar" aria-hidden="true">{{p.nombreUsuario.slice(0, 2).toUpperCase()}}</span>
         <div><strong>{{p.nombreCompleto}}</strong><span>{{p.rolNombre}}</span></div></div>
-      <table class="perfil-tabla"><tbody>
+      @if (!editando()) { <table class="perfil-tabla"><tbody>
+        <tr><th scope="row">Nombres</th><td>{{p.nombres || 'Sin registrar'}}</td></tr>
+        <tr><th scope="row">Apellidos</th><td>{{p.apellidos || 'Sin registrar'}}</td></tr>
+        <tr><th scope="row">Correo</th><td>{{p.correo || 'Sin registrar'}}</td></tr>
+        <tr><th scope="row">Teléfono</th><td>{{p.telefono || 'Sin registrar'}}</td></tr>
+        <tr><th scope="row">DNI</th><td>{{p.dni || 'Sin registrar'}}</td></tr>
         <tr><th scope="row">Usuario</th><td>{{p.nombreUsuario}}</td></tr>
         <tr><th scope="row">Área o rol</th><td>{{p.rolNombre}}</td></tr>
         <tr><th scope="row">Sede asignada</th><td>{{p.tiendaNombre || 'Sin sede asignada'}}</td></tr>
         <tr><th scope="row">Estado</th><td><span class="perfil-activo">{{p.estado}}</span></td></tr>
-        <tr><th scope="row">Cuenta creada</th><td>{{p.creadoEn | date:'dd/MM/yyyy'}}</td></tr>
-      </tbody></table>
+        <tr><th scope="row">Cuenta creada</th><td>{{p.creadoEn | date:'dd/MM/yyyy':'-0500'}}</td></tr>
+      </tbody></table> }
       @if (!editando()) {
-        <div class="perfil-pie"><span>Tu contraseña nunca se muestra en pantalla.</span>
-          <button type="button" class="perfil-editar" (click)="editar('usuario')">Editar datos</button></div>
+        <p class="perfil-ayuda">Tu rol y sede los administra la empresa. Tu contraseña nunca se muestra en pantalla.</p>
+        <div class="perfil-pie">
+          <button type="button" class="perfil-guardar" (click)="editar('datos')">Editar mis datos</button>
+          <button type="button" class="perfil-cancelar" (click)="editar('clave')">Cambiar contraseña</button></div>
       } @else {
         <div class="perfil-edicion">
-          <div class="perfil-opciones" role="group" aria-label="Dato que deseas cambiar">
-            <button type="button" [class.elegida]="editando()==='usuario'" [disabled]="guardando()" (click)="editar('usuario')">Nombre de usuario</button>
-            <button type="button" [class.elegida]="editando()==='clave'" [disabled]="guardando()" (click)="editar('clave')">Contraseña</button>
-          </div>
-          @if (editando()==='usuario') {
+          @if (editando()==='datos') {
+            <form (ngSubmit)="guardarDatos()" #datosForm="ngForm">
+              <div class="perfil-campos"><div><label for="perfil-nombres">Nombres</label><input id="perfil-nombres" name="nombres" [(ngModel)]="datos.nombres" required maxlength="80" autocomplete="given-name" /></div>
+                <div><label for="perfil-apellidos">Apellidos</label><input id="perfil-apellidos" name="apellidos" [(ngModel)]="datos.apellidos" required maxlength="80" autocomplete="family-name" /></div></div>
+              <label for="perfil-correo">Correo electrónico</label><input id="perfil-correo" name="correo" type="email" email required maxlength="254" autocomplete="email" [(ngModel)]="datos.correo" />
+              <div class="perfil-campos"><div><label for="perfil-telefono">Teléfono</label><input id="perfil-telefono" name="telefono" type="tel" required pattern="[0-9]{9}" maxlength="9" inputmode="numeric" autocomplete="tel-national" [(ngModel)]="datos.telefono" aria-describedby="perfil-digitos" /></div>
+                <div><label for="perfil-dni">DNI</label><input id="perfil-dni" name="dni" required pattern="[0-9]{8}" maxlength="8" inputmode="numeric" [(ngModel)]="datos.dni" aria-describedby="perfil-digitos" /></div></div>
+              <p id="perfil-digitos" class="perfil-ayuda">Teléfono: 9 dígitos. DNI: 8 dígitos. Escribe solo números, sin espacios.</p>
+              <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
+                <button type="submit" class="perfil-guardar" [disabled]="guardando() || !datosForm.valid">{{guardando() ? 'Guardando…' : 'Guardar mis datos'}}</button></div>
+            </form>
+            <button type="button" class="perfil-editar" [disabled]="guardando()" (click)="editar('usuario')">Cambiar nombre de usuario</button>
+          } @else if (editando()==='usuario') {
             <form (ngSubmit)="guardarUsuario()">
               <label for="perfil-usuario">Nuevo nombre de usuario</label>
               <input id="perfil-usuario" name="nombreUsuario" [(ngModel)]="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="username" />
@@ -53,5 +68,6 @@
       }
     }
     @if (error()) { <p class="perfil-error" role="alert">{{error()}}</p> }
+    @if (mensaje()) { <p class="perfil-exito" role="status">{{mensaje()}}</p> }
   </section>
 </div>

@@ -36,7 +36,7 @@ describe('UsuariosPage', () => {
     await new Promise(resolve=>setTimeout(resolve,300));
     http.expectOne(req=>req.url==='/api/v1/usuarios').flush({items:[],pagina:0,tamano:10,totalElementos:0});
     const page=fixture.componentInstance;
-    page.form={nombreCompleto:'Ana Lima',nombreUsuario:'ana',rolCodigo:'COMERCIAL',clave:'ClaveTemporal123',tiendaId:null};
+    page.form={nombres:'Ana',apellidos:'Lima',correo:'ana@example.com',telefono:'987654321',dni:'01234567',nombreUsuario:'ana',rolCodigo:'COMERCIAL',clave:'ClaveTemporal123',tiendaId:null};
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('#tiendaNueva')).not.toBeNull();
     page.guardar();
@@ -45,6 +45,7 @@ describe('UsuariosPage', () => {
     page.guardar();
     const request=http.expectOne('/api/v1/usuarios');
     expect(request.request.body.tiendaId).toBe(4);
+    expect(request.request.body).toMatchObject({nombres:'Ana',apellidos:'Lima',nombreCompleto:'Ana Lima',correo:'ana@example.com',telefono:'987654321',dni:'01234567'});
     request.flush({id:9,nombreCompleto:'Ana Lima',nombreUsuario:'ana',rolCodigo:'COMERCIAL'});
     await new Promise(resolve=>setTimeout(resolve,300));
     http.expectOne(req=>req.url==='/api/v1/usuarios').flush({items:[],pagina:0,tamano:10,totalElementos:0});

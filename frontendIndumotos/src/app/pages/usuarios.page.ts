@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { apiError } from '../core/api-error';
 import { AuthService } from '../core/auth.service';
+import { datosPersonalesValidos } from '../core/datos-personales';
 
 interface UsuarioCreado { id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string; }
 interface Tienda { id: number; nombre: string; tipo: string; }
@@ -15,6 +16,7 @@ interface PaginaCuentas { items: Cuenta[]; pagina: number; tamano: number; total
 export interface EventoEstado { estadoAnterior: string; estadoNuevo: string; motivo: string; actor: string; fecha: string; }
 interface Excepcion { codigo: string; porRol: boolean; excepcion: string; permitido: boolean; }
 export interface DetalleCuenta {
+  nombres?: string | null; apellidos?: string | null; correo?: string | null; telefono?: string | null; dni?: string | null;
   id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string; rolNombre: string; estado: string;
   tiendaNombre: string | null; creadoEn: string; actualizadoEn: string; permisosEfectivos: string[];
   excepciones: Excepcion[]; ultimoCambioEstado: EventoEstado | null;
@@ -26,9 +28,15 @@ export interface DetalleCuenta {
   template: `<div class="form-page">
     <div class="eyebrow">ADMINISTRACIÓN DE ACCESOS</div><h1>Cuentas del equipo</h1>
     <p class="lead">Crea una cuenta individual para cada trabajador, consulta su estado y permisos vigentes, y desactívala o reactívala sin perder su historial.</p>
-    @if (puedeCrear()) { <div class="grid"><section class="panel"><h2>Datos del trabajador</h2><p class="hint">La contraseña se enviará al servidor para guardarla de forma segura.</p>
+    @if (puedeCrear()) { <div class="grid"><section class="panel"><h2>Crear cuenta</h2><p class="hint">Completa todos los campos. El trabajador podrá revisar y corregir sus datos desde su perfil.</p>
       <form (ngSubmit)="guardar()" #f="ngForm">
-        <label for="nombreCompleto">Nombre completo</label><input id="nombreCompleto" name="nombreCompleto" required maxlength="180" autocomplete="name" [(ngModel)]="form.nombreCompleto" />
+        <h3 class="form-section-title">Datos del trabajador</h3>
+        <div class="row"><div><label for="nombres">Nombres</label><input id="nombres" name="nombres" required pattern=".*\\S.*" maxlength="80" autocomplete="given-name" [(ngModel)]="form.nombres" /></div>
+          <div><label for="apellidos">Apellidos</label><input id="apellidos" name="apellidos" required pattern=".*\\S.*" maxlength="80" autocomplete="family-name" [(ngModel)]="form.apellidos" /></div></div>
+        <label for="correo">Correo electrónico</label><input id="correo" name="correo" type="email" required email maxlength="254" autocomplete="email" [(ngModel)]="form.correo" placeholder="nombre@correo.com" />
+        <div class="row"><div><label for="telefono">Teléfono</label><input id="telefono" name="telefono" type="tel" required pattern="[0-9]{9}" maxlength="9" autocomplete="tel-national" inputmode="numeric" [(ngModel)]="form.telefono" aria-describedby="telefono-ayuda" /><small id="telefono-ayuda" class="field-help">9 dígitos, sin espacios.</small></div>
+          <div><label for="dni">DNI</label><input id="dni" name="dni" type="text" required pattern="[0-9]{8}" maxlength="8" inputmode="numeric" [(ngModel)]="form.dni" aria-describedby="dni-ayuda" /><small id="dni-ayuda" class="field-help">8 dígitos.</small></div></div>
+        <h3 class="form-section-title">Acceso al sistema</h3>
         <label for="nombreUsuario">Nombre de usuario</label><input id="nombreUsuario" name="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="off" [(ngModel)]="form.nombreUsuario" />
         <div class="row"><div><label for="rol">Rol</label><select id="rol" name="rol" [(ngModel)]="form.rolCodigo"><option value="ALMACEN">Almacén</option><option value="INVENTARIOS">Inventarios</option><option value="COMERCIAL">Comercial</option><option value="FACTURACION">Facturación</option><option value="ENSAMBLAJE">Ensamblaje</option><option value="ADMIN">Administración</option></select></div>
         <div><label for="clave">Contraseña inicial</label><div class="password-field"><input id="clave" name="clave" [type]="verClave() ? 'text' : 'password'" required minlength="12" maxlength="100" autocomplete="new-password" [(ngModel)]="form.clave" /><button type="button" class="password-toggle" (click)="verClave.set(!verClave())" [attr.aria-label]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="verClave()" [title]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'">@if (verClave()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a12.6 12.6 0 0 1-3.2 4.3M6.2 6.2A12.4 12.4 0 0 0 2 12c1 2.5 5 7 10 7a9.6 9.6 0 0 0 4.3-1"/></svg> } @else { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c1-2.5 5-7 10-7s9 4.5 10 7c-1 2.5-5 7-10 7S3 14.5 2 12z"/><circle cx="12" cy="12" r="3"/></svg> }</button></div></div></div>
@@ -36,14 +44,14 @@ export interface DetalleCuenta {
         @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
         <button type="submit" [disabled]="busy() || !f.valid">{{busy() ? 'Creando…' : 'Crear cuenta'}}</button>
       </form>
-      @if (created(); as usuario) { <p class="message success" role="status">Cuenta {{usuario.nombreUsuario}} creada con ID #{{usuario.id}}.</p> }
-    </section><section class="panel"><h2>Roles iniciales</h2><p class="hint">El servidor comprobará el rol y los permisos de quien crea la cuenta.</p>
-      <div class="detail"><div class="detail-row"><span>ADMIN</span><strong>Administrar cuentas y accesos</strong></div>
-      <div class="detail-row"><span>ALMACEN</span><strong>Registrar llegadas y preparar solicitudes</strong></div>
-      <div class="detail-row"><span>INVENTARIOS</span><strong>Registrar fichas y gestionar catálogo</strong></div>
-      <div class="detail-row"><span>COMERCIAL</span><strong>Crear solicitudes para sedes</strong></div>
-      <div class="detail-row"><span>FACTURACION</span><strong>Consultar disponibilidad y reportar diferencias de datos</strong></div>
-      <div class="detail-row"><span>ENSAMBLAJE</span><strong>Consultar y preparar solicitudes</strong></div></div>
+      @if (created(); as usuario) { <p class="message success" role="status">Cuenta {{usuario.nombreUsuario}} creada correctamente.</p> }
+    </section><section class="panel"><h2>Funciones de cada área</h2><p class="hint">Elige el rol que corresponde al trabajo de la persona.</p>
+      <div class="detail"><div class="detail-row"><span>Administración</span><strong>Administrar cuentas y accesos</strong></div>
+      <div class="detail-row"><span>Almacén</span><strong>Registrar llegadas y preparar solicitudes</strong></div>
+      <div class="detail-row"><span>Inventarios</span><strong>Registrar fichas y gestionar catálogo</strong></div>
+      <div class="detail-row"><span>Comercial</span><strong>Crear solicitudes para sedes</strong></div>
+      <div class="detail-row"><span>Facturación</span><strong>Consultar disponibilidad y reportar diferencias de datos</strong></div>
+      <div class="detail-row"><span>Ensamblaje</span><strong>Consultar y preparar solicitudes</strong></div></div>
     </section></div> }
     <section class="panel accounts-panel"><div class="accounts-head"><div><h2>Cuentas creadas</h2><p class="hint">Consulta las cuentas del equipo. Se muestran hasta 10 por página.</p></div>
       <div class="account-search"><label for="buscarCuenta">Buscar cuenta</label><div class="search-controls"><input id="buscarCuenta" name="buscarCuenta" type="text" [(ngModel)]="busqueda" (ngModelChange)="buscar()" placeholder="Nombre o usuario" maxlength="180" /><button type="button" class="clear-search" (click)="limpiarBusqueda()" [disabled]="!busqueda" aria-label="Limpiar búsqueda" title="Limpiar búsqueda">✕</button></div></div></div>
@@ -69,6 +77,11 @@ export interface DetalleCuenta {
         <div class="detail">
           <div class="detail-row"><span>Estado</span><strong><span class="account-state" [class.inactive]="cuenta.estado !== 'ACTIVO'">{{cuenta.estado}}</span></strong></div>
           <div class="detail-row"><span>Rol</span><strong>{{cuenta.rolNombre || nombreRol(cuenta.rolCodigo)}}</strong></div>
+          <div class="detail-row"><span>Nombres</span><strong>{{cuenta.nombres || 'Sin registrar'}}</strong></div>
+          <div class="detail-row"><span>Apellidos</span><strong>{{cuenta.apellidos || 'Sin registrar'}}</strong></div>
+          <div class="detail-row"><span>Correo</span><strong>{{cuenta.correo || 'Sin registrar'}}</strong></div>
+          <div class="detail-row"><span>Teléfono</span><strong>{{cuenta.telefono || 'Sin registrar'}}</strong></div>
+          <div class="detail-row"><span>DNI</span><strong>{{cuenta.dni || 'Sin registrar'}}</strong></div>
           <div class="detail-row"><span>Tienda</span><strong>{{cuenta.tiendaNombre || 'Sin tienda asignada'}}</strong></div>
           @if (auth.can('COMPANIA_CONSULTAR') && cuenta.estado === 'ACTIVO' && (cuenta.rolCodigo === 'COMERCIAL' || cuenta.rolCodigo === 'FACTURACION')) { <div class="store-assignment"><label for="tiendaCuenta">Cambiar sede de trabajo</label><select id="tiendaCuenta" [(ngModel)]="tiendaDetalle"><option [ngValue]="0">Seleccionar tienda</option>@for (tienda of tiendas(); track tienda.id) { <option [ngValue]="tienda.id">{{tienda.nombre}}</option> }</select><button type="button" class="secondary" (click)="asignarTienda(cuenta.id)" [disabled]="!tiendaDetalle || asignandoTienda()">{{asignandoTienda() ? 'Guardando…' : 'Guardar sede'}}</button></div> }
           <div class="detail-row"><span>Creada</span><strong>{{cuenta.creadoEn | date:'dd/MM/yyyy HH:mm'}}</strong></div>
@@ -135,7 +148,7 @@ export class UsuariosPage implements OnInit {
   tiendaDetalle = 0;
   busqueda = '';
   motivo = '';
-  form = { nombreCompleto: '', nombreUsuario: '', rolCodigo: 'ALMACEN', clave: '', tiendaId: null as number | null };
+  form = { nombres: '', apellidos: '', correo: '', telefono: '', dni: '', nombreUsuario: '', rolCodigo: 'ALMACEN', clave: '', tiendaId: null as number | null };
 
   ngOnInit(): void {
     if (this.auth.can('USUARIOS_CREAR') || this.auth.can('COMPANIA_CONSULTAR'))
@@ -217,16 +230,17 @@ export class UsuariosPage implements OnInit {
   }
 
   guardar(): void {
+    if (this.busy()) return;
     this.created.set(null); this.error.set('');
-    if (!this.form.nombreCompleto.trim() || !this.form.nombreUsuario.trim() || this.form.clave.length < 12) {
-      this.error.set('Completa los datos y usa una contraseña de al menos 12 caracteres.'); return;
+    if (!datosPersonalesValidos(this.form) || !/^[A-Za-z0-9._-]{3,80}$/.test(this.form.nombreUsuario.trim()) || this.form.clave.length < 12 || this.form.clave.length > 100) {
+      this.error.set('Revisa los datos personales y usa una contraseña de 12 a 100 caracteres.'); return;
     }
     if ((this.form.rolCodigo === 'COMERCIAL' || this.form.rolCodigo === 'FACTURACION') && !this.form.tiendaId) {
       this.error.set('Selecciona la sede de trabajo.'); return;
     }
     this.busy.set(true);
     const tiendaId = this.form.rolCodigo === 'COMERCIAL' || this.form.rolCodigo === 'FACTURACION' ? this.form.tiendaId : null;
-    this.http.post<UsuarioCreado>('/api/v1/usuarios', {...this.form, tiendaId}).subscribe({
+    this.http.post<UsuarioCreado>('/api/v1/usuarios', {...this.form, correo: this.form.correo.trim(), nombreCompleto: `${this.form.nombres.trim()} ${this.form.apellidos.trim()}`, tiendaId}).subscribe({
       next: value => { this.created.set(value); this.form.clave = ''; this.busy.set(false); this.busqueda = ''; this.irPagina(0); },
       error: err => { this.error.set(apiError(err)); this.busy.set(false); }
     });
