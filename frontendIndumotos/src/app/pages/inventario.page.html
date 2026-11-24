@@ -20,11 +20,12 @@
       <div><label for="modelo">Modelo</label><input id="modelo" name="modelo" [(ngModel)]="filtros.modelo" (ngModelChange)="alCambiarFiltro()" maxlength="120" placeholder="Ej. RZ 250" /></div>
       <div><label for="color">Color</label><input id="color" name="color" [(ngModel)]="filtros.color" (ngModelChange)="alCambiarFiltro()" maxlength="120" placeholder="Ej. ROJO" /></div>
     </div> }
-    @if (filtros.chasis || filtros.marca || filtros.modelo || filtros.color) { <div class="actions"><button type="button" class="secondary" (click)="limpiar()" [disabled]="loading()">Limpiar búsqueda</button></div> }
+    @if (filtros.chasis || filtros.marca || filtros.modelo || filtros.color) { <div class="actions"><button type="button" class="secondary" (click)="limpiar()">Limpiar búsqueda</button></div> }
   </form>
 </section>
 
 @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+@if (loading()) { <p role="status">Buscando motocicletas…</p> }
 @if (page(); as resultado) {
   <section class="panel results" aria-labelledby="resultados-titulo">
     <div class="results-heading"><div><div class="eyebrow">RESULTADOS</div><h2 id="resultados-titulo">Motocicletas encontradas</h2></div><span class="count">{{ resultado.totalElementos }} {{ resultado.totalElementos === 1 ? 'unidad' : 'unidades' }}</span></div>

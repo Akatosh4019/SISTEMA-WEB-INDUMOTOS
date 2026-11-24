@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { InventarioPage } from './inventario.page';
 import { AuthService } from '../core/auth.service';
+import { vi } from 'vitest';
 
 describe('InventarioPage', () => {
   let http: HttpTestingController;
@@ -49,6 +50,97 @@ describe('InventarioPage', () => {
     page.buscar();
     expect(page.error()).toContain('cuatro dígitos');
     http.expectNone('/api/v1/motocicletas?pagina=0&tamano=10&chasis=042');
+  });
+
+  it('busca automáticamente al escribir y el envío manual no duplica solicitudes', () => {
+    vi.useFakeTimers();
+    try {
+      const input = fixture.nativeElement.querySelector('#chasis') as HTMLInputElement;
+      input.value = '0042';
+      input.dispatchEvent(new Event('input'));
+      vi.advanceTimersByTime(299);
+      http.expectNone(req => req.url === '/api/v1/motocicletas');
+      vi.advanceTimersByTime(1);
+      http.expectOne(req => req.params.get('chasis') === '0042')
+        .flush({items:[],pagina:0,tamano:10,totalElementos:0,totalPaginas:0});
+      page.filtros.chasis = '0001';
+      page.alCambiarFiltro();
+      (fixture.nativeElement.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit', {cancelable:true}));
+      http.expectOne(req => req.params.get('chasis') === '0001')
+        .flush({items:[],pagina:0,tamano:10,totalElementos:0,totalPaginas:0});
+      vi.advanceTimersByTime(500);
+      http.expectNone(req => req.url === '/api/v1/motocicletas');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('invalida la consulta anterior al escribir un chasis incompleto', () => {
+    vi.useFakeTimers();
+    try {
+      page.filtros.chasis = '0042';
+      page.buscar();
+      const anterior = http.expectOne(req => req.params.get('chasis') === '0042');
+      page.filtros.chasis = '004';
+      page.alCambiarFiltro();
+      expect(anterior.cancelled).toBe(true);
+      expect(page.page()).toBeNull();
+      expect(page.loading()).toBe(false);
+      vi.advanceTimersByTime(300);
+      expect(page.error()).toContain('cuatro dígitos');
+      http.expectNone(req => req.url === '/api/v1/motocicletas');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('limpiar cancela el temporizador y restaura todos los resultados una sola vez', () => {
+    vi.useFakeTimers();
+    try {
+      page.filtros = {chasis:'0042',marca:'RONCO',modelo:'RZ 250',color:'ROJO'};
+      page.alCambiarFiltro();
+      page.limpiar();
+      const request = http.expectOne('/api/v1/motocicletas?pagina=0&tamano=10');
+      request.flush({items:[],pagina:0,tamano:10,totalElementos:22,totalPaginas:3});
+      vi.advanceTimersByTime(500);
+      http.expectNone(req => req.url === '/api/v1/motocicletas');
+      expect(page.filtros).toEqual({chasis:'',marca:'',modelo:'',color:''});
+      expect(page.page()?.totalElementos).toBe(22);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('permite limpiar una consulta en curso e ignora sus resultados anteriores', () => {
+    page.filtros.chasis = '0042';
+    page.buscar();
+    const anterior = http.expectOne(req => req.params.get('chasis') === '0042');
+    fixture.detectChanges();
+    const limpiar = fixture.nativeElement.querySelector('.actions button') as HTMLButtonElement;
+    expect(limpiar.disabled).toBe(false);
+    limpiar.click();
+    expect(anterior.cancelled).toBe(true);
+    http.expectOne('/api/v1/motocicletas?pagina=0&tamano=10')
+      .flush({items:[],pagina:0,tamano:10,totalElementos:22,totalPaginas:3});
+    expect(page.page()?.totalElementos).toBe(22);
+  });
+
+  it('cancela solicitudes y temporizadores al salir del componente', () => {
+    vi.useFakeTimers();
+    try {
+      page.filtros.chasis = '0042';
+      page.buscar();
+      const pendiente = http.expectOne(req => req.params.get('chasis') === '0042');
+      fixture.destroy();
+      expect(pendiente.cancelled).toBe(true);
+      vi.advanceTimersByTime(500);
+      http.expectNone(req => req.url === '/api/v1/motocicletas');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('no ejecuta una búsqueda automática pendiente después de salir', () => {
+    vi.useFakeTimers();
+    try {
+      page.filtros.chasis = '0042';
+      page.alCambiarFiltro();
+      fixture.destroy();
+      vi.advanceTimersByTime(500);
+      http.expectNone(req => req.url === '/api/v1/motocicletas');
+    } finally { vi.useRealTimers(); }
   });
 
   it('muestra ausencia de resultados al buscar el chasis completo', () => {
