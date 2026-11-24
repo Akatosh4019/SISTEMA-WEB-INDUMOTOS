@@ -35,6 +35,7 @@ export class PerfilModalComponent implements OnInit {
   readonly guardando = signal(false);
   readonly error = signal('');
   readonly editando = signal<'usuario' | 'clave' | 'telefono' | null>(null);
+  readonly usuarioConfirmado = signal(false);
   nombreUsuario = '';
   claveActual = '';
   claveNueva = '';
@@ -51,6 +52,7 @@ export class PerfilModalComponent implements OnInit {
   editar(tipo: 'usuario' | 'clave' | 'telefono'): void {
     this.error.set('');
     this.editando.set(tipo);
+    this.usuarioConfirmado.set(false);
     this.nombreUsuario = this.perfil()?.nombreUsuario ?? '';
     this.claveActual = '';
     this.claveNueva = '';
@@ -61,6 +63,7 @@ export class PerfilModalComponent implements OnInit {
   cancelarEdicion(): void {
     if (this.guardando()) return;
     this.editando.set(null);
+    this.usuarioConfirmado.set(false);
     this.error.set('');
     this.claveActual = '';
     this.claveNueva = '';
@@ -71,7 +74,7 @@ export class PerfilModalComponent implements OnInit {
     if (this.guardando()) return;
     this.error.set('');
     const nombre = this.nombreUsuario.trim();
-    if (!/^[A-Za-z0-9._-]{3,80}$/.test(nombre) || !this.claveActual) {
+    if (!this.usuarioConfirmado() || !/^[A-Za-z0-9._-]{3,80}$/.test(nombre) || !this.claveActual) {
       this.error.set('Revisa el nombre de usuario y escribe tu contraseña actual.'); return;
     }
     this.guardando.set(true);
@@ -79,6 +82,18 @@ export class PerfilModalComponent implements OnInit {
       nombreUsuario: nombre, claveActual: this.claveActual
     }).subscribe({
       next: () => this.volverAlLogin('Nombre de usuario actualizado. Ingresa de nuevo.'),
+      error: err => { this.error.set(apiError(err)); this.guardando.set(false); }
+    });
+  }
+
+  confirmarUsuario(): void {
+    if (this.guardando() || !this.claveActual) {
+      this.error.set('Escribe tu contraseña actual para continuar.'); return;
+    }
+    this.error.set('');
+    this.guardando.set(true);
+    this.http.post<void>('/api/v1/auth/perfil/confirmar-clave', {claveActual: this.claveActual}).subscribe({
+      next: () => { this.usuarioConfirmado.set(true); this.guardando.set(false); },
       error: err => { this.error.set(apiError(err)); this.guardando.set(false); }
     });
   }

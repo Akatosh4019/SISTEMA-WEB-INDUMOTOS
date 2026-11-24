@@ -23,6 +23,7 @@ describe('PerfilModalComponent', () => {
     fixture.nativeElement.querySelector('.perfil-editar').click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('#perfil-clave-usuario')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#perfil-usuario')).toBeNull();
     http.verify();
   });
 
@@ -41,8 +42,11 @@ describe('PerfilModalComponent', () => {
       rolCodigo: 'ADMIN', rolNombre: 'Administrador', estado: 'ACTIVO', tiendaNombre: null,
       creadoEn: '2026-11-01T00:00:00Z', actualizadoEn: '2026-11-01T00:00:00Z'});
     fixture.componentInstance.editar('usuario');
-    fixture.componentInstance.nombreUsuario = 'ana_nueva';
     fixture.componentInstance.claveActual = 'clave-actual';
+    fixture.componentInstance.confirmarUsuario();
+    http.expectOne('/api/v1/auth/perfil/confirmar-clave').flush(null, {status: 204, statusText: 'No Content'});
+    expect(fixture.componentInstance.usuarioConfirmado()).toBe(true);
+    fixture.componentInstance.nombreUsuario = 'ana_nueva';
     fixture.componentInstance.guardarUsuario();
     const request = http.expectOne('/api/v1/auth/perfil/usuario');
     expect(request.request.body).toEqual({nombreUsuario: 'ana_nueva', claveActual: 'clave-actual'});

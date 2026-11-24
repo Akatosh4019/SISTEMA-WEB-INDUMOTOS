@@ -15,6 +15,7 @@ export class ShellPage {
   readonly access = this.auth;
   readonly menuOpen = signal(false);
   readonly profileOpen = signal(false);
+  readonly profileMenuOpen = signal(false);
   readonly username = computed(() => this.auth.access()?.nombreUsuario || this.auth.username() || 'Usuario');
   readonly roleName = computed(() => {
     const role = this.auth.access()?.rolCodigo;
@@ -31,10 +32,17 @@ export class ShellPage {
   }
 
   @HostListener('document:keydown.escape')
-  closeMenu(): void { this.menuOpen.set(false); }
+  closeMenu(): void { this.menuOpen.set(false); this.profileMenuOpen.set(false); }
+
+  abrirPerfil(): void {
+    this.profileMenuOpen.set(false);
+    this.profileOpen.set(true);
+    this.menuOpen.set(false);
+  }
 
   salir(): void {
     if (this.logoutBusy()) return;
+    this.profileMenuOpen.set(false);
     this.logoutError.set('');
     this.logoutBusy.set(true);
     this.auth.closeSession().subscribe({

@@ -30,15 +30,23 @@
             <button type="button" [class.elegida]="editando()==='telefono'" [disabled]="guardando()" (click)="editar('telefono')">Teléfono</button>
           </div>
           @if (editando()==='usuario') {
-            <form (ngSubmit)="guardarUsuario()">
-              <label for="perfil-usuario">Nuevo nombre de usuario</label>
-              <input id="perfil-usuario" name="nombreUsuario" [(ngModel)]="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="username" />
-              <label for="perfil-clave-usuario">Contraseña actual</label>
-              <input id="perfil-clave-usuario" name="claveActual" [(ngModel)]="claveActual" type="password" required autocomplete="current-password" />
-              <p class="perfil-ayuda">Al guardar se cerrará tu sesión. Luego ingresa con el nombre nuevo.</p>
-              <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
-                <button type="submit" class="perfil-guardar" [disabled]="guardando()">{{guardando() ? 'Guardando…' : 'Guardar usuario'}}</button></div>
-            </form>
+            @if (!usuarioConfirmado()) {
+              <form (ngSubmit)="confirmarUsuario()">
+                <p class="perfil-ayuda">Confirma tu identidad antes de editar el nombre de usuario.</p>
+                <label for="perfil-clave-usuario">Contraseña actual</label>
+                <input id="perfil-clave-usuario" name="claveActual" [(ngModel)]="claveActual" type="password" required autocomplete="current-password" />
+                <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
+                  <button type="submit" class="perfil-guardar" [disabled]="guardando()">{{guardando() ? 'Verificando…' : 'Confirmar contraseña'}}</button></div>
+              </form>
+            } @else {
+              <form (ngSubmit)="guardarUsuario()">
+                <label for="perfil-usuario">Nuevo nombre de usuario</label>
+                <input id="perfil-usuario" name="nombreUsuario" [(ngModel)]="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="username" />
+                <p class="perfil-ayuda">Al guardar se cerrará tu sesión. Luego ingresa con el nombre nuevo.</p>
+                <div class="perfil-acciones"><button type="button" class="perfil-cancelar" [disabled]="guardando()" (click)="cancelarEdicion()">Cancelar</button>
+                  <button type="submit" class="perfil-guardar" [disabled]="guardando()">{{guardando() ? 'Guardando…' : 'Guardar usuario'}}</button></div>
+              </form>
+            }
           } @else if (editando()==='clave') {
             <form (ngSubmit)="guardarClave()">
               <label for="perfil-clave-actual">Contraseña actual</label>
