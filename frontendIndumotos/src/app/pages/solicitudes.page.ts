@@ -51,7 +51,7 @@ export class SolicitudesPage implements OnInit {
   private readonly http = inject(HttpClient);
   readonly access = inject(AuthService);
   readonly solicitudes = signal<Solicitud[]>([]);
-  readonly sedes = signal<{id:number; nombre:string}[]>([]);
+  readonly sedes = signal<{id:number; codigo:string; nombre:string; tipo:string}[]>([]);
   readonly opciones = signal<OpcionMotocicleta[]>([]);
   readonly marcas = signal<string[]>([]);
   readonly cargando = signal(false);
@@ -69,8 +69,10 @@ export class SolicitudesPage implements OnInit {
         next: opciones => { this.opciones.set(opciones); this.marcas.set([...new Set(opciones.map(o => o.marca))]); },
         error: err => this.error.set(apiError(err))
       });
-      this.http.get<{id:number; nombre:string}[]>('/api/v1/ubicaciones').subscribe({
-        next: sedes => this.sedes.set(sedes), error: err => this.error.set(apiError(err))
+      this.http.get<{id:number; codigo:string; nombre:string; tipo:string}[]>('/api/v1/ubicaciones').subscribe({
+        next: sedes => this.sedes.set(sedes.filter(sede => sede.tipo === 'TIENDA' &&
+          !sede.codigo?.startsWith('DEMO_'))),
+        error: err => this.error.set(apiError(err))
       });
     }
   }

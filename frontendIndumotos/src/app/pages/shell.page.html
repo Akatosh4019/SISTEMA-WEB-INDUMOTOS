@@ -5,19 +5,22 @@
     <div class="nav-label">OPERACIONES</div>
     <nav aria-label="Navegación principal" (click)="closeMenu()">
       <a routerLink="/app" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active"><span class="nav-icon">⌂</span> Inicio</a>
-      @if (access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/inventario" routerLinkActive="active"><span class="nav-icon">▣</span> Inventario</a> }
+      @if (access.can('INVENTARIO_CONSULTAR') || access.can('DISPONIBILIDAD_CONSULTAR')) { <a routerLink="/app/inventario" routerLinkActive="active"><span class="nav-icon">▣</span> Inventario</a> }
       @if (access.can('LLEGADAS_REGISTRAR') || access.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/llegadas" routerLinkActive="active"><span class="nav-icon">▰</span> Llegadas</a> }
       @if (access.can('FICHAS_REGISTRAR')) { <a routerLink="/app/fichas" routerLinkActive="active"><span class="nav-icon">✚</span> Agregar motocicleta</a> }
       @if (access.can('CATALOGO_GESTIONAR')) { <a routerLink="/app/catalogo" routerLinkActive="active"><span class="nav-icon">▤</span> Catálogo de motocicletas</a> }
       @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/solicitudes" routerLinkActive="active"><span class="nav-icon">☷</span> Solicitudes</a> }
       @if (access.can('UBICACIONES_CONSULTAR')) { <a routerLink="/app/ubicaciones" routerLinkActive="active"><span class="nav-icon">⌖</span> Ubicaciones</a> }
       @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/seguimiento" routerLinkActive="active"><span class="nav-icon">↗</span> Seguimiento</a> }
-      @if (access.can('USUARIOS_CREAR')) { <a routerLink="/app/usuarios" routerLinkActive="active"><span class="nav-icon">✚</span> Crear cuenta</a> }
+      @if (access.can('USUARIOS_CREAR') || access.can('USUARIOS_CONSULTAR')) { <a routerLink="/app/usuarios" routerLinkActive="active"><span class="nav-icon">✚</span> Cuentas</a> }
       @if (access.can('PERMISOS_ASIGNAR')) { <a routerLink="/app/permisos" routerLinkActive="active"><span class="nav-icon">♙</span> Roles y permisos</a> }
     </nav>
     <div class="sidebar-bottom">
-      <div class="profile-avatar" aria-hidden="true">{{ initials() }}</div>
-      <div class="profile-text"><strong>{{ username() }}</strong><span>{{ roleName() }}</span></div>
+      <button type="button" class="profile-trigger" (click)="profileOpen.set(true); closeMenu()" aria-label="Ver mi perfil">
+        <span class="profile-avatar" aria-hidden="true">{{ initials() }}</span>
+        <span class="profile-text"><strong>{{ username() }}</strong><span>{{ roleName() }}</span></span>
+        <span class="profile-chevron" aria-hidden="true">›</span>
+      </button>
       <button class="logout-button" type="button" (click)="salir()" [disabled]="logoutBusy()">{{ logoutBusy() ? 'Saliendo…' : 'Cerrar sesión' }}</button>
     </div>
   </aside>
@@ -28,4 +31,5 @@
     </header>
     <main class="content">@if (logoutError()) { <p role="alert">{{logoutError()}}</p> }<router-outlet /></main>
   </div>
+  @if (profileOpen()) { <app-perfil-modal (cerrar)="profileOpen.set(false)" /> }
 </div>

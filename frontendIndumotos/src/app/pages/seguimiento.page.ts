@@ -9,12 +9,14 @@ interface Solicitud { id: number; estado: string; lineas: Linea[]; solicitante: 
 interface Evento { id: number; estado: string; fecha: string; registrador: string; motivo: string | null }
 interface Unidad { asociacionId: number; chasis: string }
 interface Candidata { motocicletaId: number; chasis: string; modelo: string; color: string }
+interface Envio { motocicletaId: number; chasis: string; origen: string; destino: string;
+  estado: string; despachadoEn: string; recibidoEn: string | null }
 
 @Component({
   selector: 'app-seguimiento', imports: [FormsModule],
   template: `
     <header class="page-heading"><span class="eyebrow">OPERACIÓN DE ALMACÉN</span><h1>Preparación de solicitudes</h1>
-    <p>Selecciona una solicitud, inicia la preparación y asigna los chasis de cada línea. Confirma cuando estén completas todas las cantidades solicitadas.</p></header>
+    <p>Selecciona una solicitud, asigna las motos y confirma la preparación. Almacén registra la salida y la tienda confirma la recepción física.</p></header>
     <section class="panel"><div class="panel-heading"><span class="eyebrow">PASO 1</span><h2>Elegir solicitud</h2></div><label>Solicitud <select [(ngModel)]="solicitudId"><option [ngValue]="0">Selecciona una solicitud</option>
       @for (item of solicitudes(); track item.id) { <option [ngValue]="item.id">{{item.solicitante}} · {{item.estado}} · {{item.lineas[0]?.marca}} {{item.lineas[0]?.modelo}}</option> }
       </select></label>
@@ -38,6 +40,22 @@ interface Candidata { motocicletaId: number; chasis: string; modelo: string; col
           <p>{{evento.estado}} · {{evento.fecha}} · {{evento.registrador}} {{evento.motivo || ''}}</p>
         }
       </section>
+      @if (s.estado === 'ATENDIDA' || envios().length) {
+        <section class="panel"><div class="panel-heading"><span class="eyebrow">ENTREGA FÍSICA</span><h2>Salida y recepción</h2>
+          <p>La ubicación confirmada cambia únicamente cuando la tienda confirma que recibió las motos.</p></div>
+          @if (access.can('TRASLADOS_REGISTRAR') && s.estado === 'ATENDIDA' && !envios().length) {
+            <button type="button" (click)="despachar()" [disabled]="ocupado()">Registrar salida de almacén</button>
+          }
+          @if (!envios().length) { <p>La preparación está confirmada; aún no se registra la salida física.</p> }
+          @for (envio of envios(); track envio.motocicletaId) {
+            <p><strong>{{envio.chasis}}</strong> · {{envio.origen}} → {{envio.destino}} · {{envio.estado === 'EN_TRANSITO' ? 'En tránsito' : 'Recibida en tienda' }}
+              @if (access.can('RECEPCIONES_CONFIRMAR') && envio.estado === 'EN_TRANSITO' &&
+                (s.solicitante.toLowerCase() === access.username().toLowerCase() || access.access()?.rolCodigo === 'ADMIN')) {
+                <button type="button" (click)="recibir(envio.motocicletaId)" [disabled]="ocupado()">Confirmar recepción</button>
+              }</p>
+          }
+        </section>
+      }
       @if (access.can('UNIDADES_ASIGNAR')) {
         <section class="panel"><div class="panel-heading"><span class="eyebrow">PASO 3 · ASIGNACIÓN</span><h2>Unidades solicitadas</h2><p>Asigna un chasis disponible por cada unidad pedida antes de confirmar.</p></div>
           @for (linea of s.lineas; track linea.id) {
@@ -76,6 +94,7 @@ export class SeguimientoPage {
   readonly eventos = signal<Evento[]>([]);
   readonly unidades = signal<Record<number,Unidad[]>>({});
   readonly candidatas = signal<Candidata[]>([]);
+  readonly envios = signal<Envio[]>([]);
   readonly error = signal('');
   readonly mensaje = signal('');
   readonly ocupado = signal(false);
@@ -95,15 +114,37 @@ export class SeguimientoPage {
   }
 
   consultar(): void {
-    this.ocupado.set(true); this.error.set(''); this.solicitud.set(null);
+    this.ocupado.set(true); this.error.set(''); this.solicitud.set(null); this.envios.set([]);
     this.http.get<Solicitud>(`/api/v1/solicitudes/${this.solicitudId}`).subscribe({
-      next: s => { this.solicitud.set(s); this.ocupado.set(false); this.historial(); },
+      next: s => { this.solicitud.set(s); this.ocupado.set(false); this.historial(); this.cargarEnvios(); },
       error: err => { this.error.set(apiError(err)); this.ocupado.set(false); }
     });
   }
   historial(): void {
     this.http.get<Evento[]>(`/api/v1/solicitudes/${this.solicitudId}/seguimiento`).subscribe({
       next: lista => this.eventos.set(lista), error: err => this.error.set(apiError(err))
+    });
+  }
+  cargarEnvios(): void {
+    this.http.get<Envio[]>(`/api/v1/solicitudes/${this.solicitudId}/envios`).subscribe({
+      next: lista => this.envios.set(lista), error: err => this.error.set(apiError(err))
+    });
+  }
+  despachar(): void {
+    if (this.ocupado()) return;
+    this.ocupado.set(true); this.error.set('');
+    this.http.post<Envio[]>(`/api/v1/solicitudes/${this.solicitudId}/envios/despacho`,{}).subscribe({
+      next: lista => { this.envios.set(lista); this.ocupado.set(false); this.mensaje.set('Salida registrada. Las motos figuran en tránsito.'); },
+      error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
+    });
+  }
+  recibir(motocicletaId: number): void {
+    if (this.ocupado()) return;
+    this.ocupado.set(true); this.error.set('');
+    this.http.post<Envio[]>(`/api/v1/solicitudes/${this.solicitudId}/envios/recepcion`,
+      {motocicletaId}).subscribe({
+      next: lista => { this.envios.set(lista); this.ocupado.set(false); this.mensaje.set('Recepción confirmada y ubicaciones actualizadas.'); },
+      error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
     });
   }
   avanzar(estado: string): void {

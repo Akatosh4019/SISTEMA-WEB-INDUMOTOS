@@ -13,6 +13,7 @@ describe('FichasPage', () => {
     const fixture = TestBed.createComponent(FichasPage);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+    http.expectOne('/api/v1/ubicaciones').flush([{id:3,nombre:'Almacén central',tipo:'ALMACEN'}]);
     http.expectOne('/api/v1/catalogo-motocicletas').flush([]);
     const guia = {id:7,numeroGuia:'TG01-38337',fechaLlegada:'2026-11-20T09:00:00Z',
       receptorUsuario:'almacen',cantidadDeclarada:19,cantidadRecibida:19};
@@ -73,6 +74,7 @@ describe('FichasPage', () => {
     const fixture = TestBed.createComponent(FichasPage);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+    http.expectOne('/api/v1/ubicaciones').flush([{id:3,nombre:'Almacén central',tipo:'ALMACEN'}]);
     http.expectOne('/api/v1/catalogo-motocicletas').flush([]);
     const guia = {id:8,numeroGuia:'TG01-38359',fechaLlegada:'2026-11-20T09:00:00Z',
       receptorUsuario:'almacen',cantidadDeclarada:2,cantidadRecibida:2};
@@ -89,9 +91,11 @@ describe('FichasPage', () => {
     http.expectNone('/api/v1/llegadas/8/registro/finalizar');
     fixture.componentInstance.bloques()[1] = {...borrador,chasisCompleto:'L2BB33221VMD12132',guardada:true,error:'',fieldErrors:{}};
     expect(fixture.componentInstance.borradoresCompletos()).toBe(true);
+    fixture.componentInstance.almacenId = 3;
     fixture.componentInstance.finalizarRegistro();
     const cierre = http.expectOne('/api/v1/llegadas/8/registro/finalizar');
     expect(cierre.request.method).toBe('POST');
+    expect(cierre.request.body).toEqual({almacenId:3});
     cierre.flush({terminado:true,recibidas:2,registradas:2,borradores:[]});
     http.expectOne('/api/v1/llegadas/8/detalle').flush({llegada:guia,fichas:[],cantidadFichas:2,diferenciaInformativa:0});
     expect(fixture.componentInstance.registroTerminado()).toBe(true);

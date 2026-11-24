@@ -14,7 +14,7 @@ import { AuthService } from '../core/auth.service';
       @if (auth.can('CATALOGO_GESTIONAR')) { <a class="action-card" routerLink="/app/catalogo"><span class="card-symbol muted">▤</span><span class="card-kicker">CATÁLOGO</span><strong>Agregar marca, modelo y color</strong><span class="card-copy">Prepara las opciones que usarán Inventarios y Comercial.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('SOLICITUDES_CREAR')) { <a class="action-card" routerLink="/app/solicitudes"><span class="card-symbol muted">☷</span><span class="card-kicker">COMERCIAL</span><strong>Solicitar motocicletas</strong><span class="card-copy">Elige modelos, cantidades y la sede que los recibirá.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('SOLICITUDES_AVANZAR')) { <a class="action-card" routerLink="/app/seguimiento"><span class="card-symbol muted">↗</span><span class="card-kicker">PREPARACIÓN</span><strong>Atender solicitudes</strong><span class="card-copy">Asigna los chasis y confirma cuando esté todo preparado.</span><span class="card-arrow">Abrir módulo →</span></a> }
-      @if (auth.can('INVENTARIO_CONSULTAR')) { <a class="action-card" routerLink="/app/inventario"><span class="card-symbol muted">⌕</span><span class="card-kicker">CONSULTA</span><strong>Buscar motocicletas</strong><span class="card-copy">Busca por chasis o filtra el inventario por marca, modelo y color.</span><span class="card-arrow">Abrir módulo →</span></a> }
+      @if (auth.can('INVENTARIO_CONSULTAR') || auth.can('DISPONIBILIDAD_CONSULTAR')) { <a class="action-card" routerLink="/app/inventario"><span class="card-symbol muted">⌕</span><span class="card-kicker">CONSULTA</span><strong>Inventario de motocicletas</strong><span class="card-copy">Consulta fichas, disponibilidad y diferencias según tu rol.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('USUARIOS_CREAR')) { <a class="action-card" routerLink="/app/usuarios"><span class="card-symbol muted">♙</span><span class="card-kicker">ADMINISTRACIÓN</span><strong>Crear cuenta</strong><span class="card-copy">Registra una cuenta individual para un trabajador autorizado.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('PERMISOS_ASIGNAR')) { <a class="action-card" routerLink="/app/permisos"><span class="card-symbol muted">◇</span><span class="card-kicker">ACCESO</span><strong>Roles y permisos</strong><span class="card-copy">Consulta y ajusta el acceso de una cuenta.</span><span class="card-arrow">Abrir módulo →</span></a> }
     </div>`,
@@ -26,7 +26,8 @@ export class HomePage {
     const role = this.auth.access()?.rolCodigo;
     return role === 'ALMACEN' ? 'Registra las guías recibidas, prepara las motos solicitadas y confirma los movimientos hacia su sede.'
       : role === 'INVENTARIOS' ? 'Mantén el catálogo, registra cada motocicleta de una llegada y consulta sus fichas.'
-      : role === 'COMERCIAL' ? 'Solicita las motocicletas que necesita cada sede y consulta el estado de tus pedidos.'
+      : role === 'COMERCIAL' ? 'Consulta el inventario y solicita las motos que necesita tu sede.'
+      : role === 'FACTURACION' ? 'Consulta la disponibilidad y reporta diferencias de datos para su revisión.'
       : role === 'ENSAMBLAJE' ? 'Consulta las solicitudes asignadas y registra su preparación.'
       : 'Consulta el inventario y administra las operaciones y accesos del equipo.';
   });
@@ -34,6 +35,7 @@ export class HomePage {
     const role = this.auth.access()?.rolCodigo;
     return role === 'ADMIN' ? 'Administrador' : role === 'ALMACEN' ? 'Almacén'
       : role === 'INVENTARIOS' ? 'Inventarios' : role === 'COMERCIAL' ? 'Comercial'
+      : role === 'FACTURACION' ? 'Facturación'
       : role === 'ENSAMBLAJE' ? 'Ensamblaje' : role?.replaceAll('_', ' ') || 'Usuario';
   });
 }

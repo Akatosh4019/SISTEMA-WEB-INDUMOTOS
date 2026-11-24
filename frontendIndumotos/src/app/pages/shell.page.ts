@@ -1,10 +1,11 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { PerfilModalComponent } from './perfil-modal.component';
 
 @Component({
   selector: 'app-shell-page',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, PerfilModalComponent],
   templateUrl: './shell.page.html',
   styleUrl: './shell.page.css'
 })
@@ -13,6 +14,7 @@ export class ShellPage {
   private readonly router = inject(Router);
   readonly access = this.auth;
   readonly menuOpen = signal(false);
+  readonly profileOpen = signal(false);
   readonly username = computed(() => this.auth.access()?.nombreUsuario || this.auth.username() || 'Usuario');
   readonly roleName = computed(() => {
     const role = this.auth.access()?.rolCodigo;
