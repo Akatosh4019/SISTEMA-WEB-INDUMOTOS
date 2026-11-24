@@ -12,6 +12,8 @@ Esta es la web Angular y el gateway del sistema Indumotos. El trabajo está en l
 
 El menú muestra las opciones permitidas a cada rol; la API valida cada acción. Las listas extensas se paginan. **Modo tienda** y la pantalla de registro de ventas se retiraron de esta entrega. No existe compra ni cobro en línea en la web actual.
 
+**Aporte incorporado de Luciana Gutiérrez:** botón para mostrar u ocultar la contraseña; detalle, permisos e historial de cuentas con opción de desactivar o reactivar; y motivo, responsable e indicador de si una moto se puede ofrecer en **Disponibilidad y datos**.
+
 ## Abrir la web en Docker
 
 Primero inicia la API desde la raíz del repositorio backend con `docker compose up -d --build api`. Después, desde este repositorio:
@@ -26,7 +28,7 @@ Abre [http://127.0.0.1:4200/login](http://127.0.0.1:4200/login). En Docker, Ngin
 
 ## Pruebas y documentación
 
-Desde `frontendIndumotos`, ejecuta `npm ci`, `npm run build` y `npm test -- --watch=false` con una versión de Node compatible con Angular 21. En la última ejecución observada, la web compiló y pasaron **16 pruebas**. Falta la revisión visual con cuentas de cada rol y datos autorizados.
+Desde `frontendIndumotos`, ejecuta `npm ci`, `npm run build` y `npm test -- --watch=false` con una versión de Node compatible con Angular 21. En la última ejecución observada, la web compiló y pasaron **20 pruebas**. Falta la revisión visual con cuentas de cada rol y datos autorizados.
 
 - [Guía completa de la web](docs/SISTEMA_WEB_IMPLEMENTADO.md): pantallas, flujos, Docker y pendientes.
 - [Guion de demostración en vivo](docs/GUIA_DEMO_EN_VIVO.md): recorrido por roles desde la guía hasta la recepción.

@@ -25,6 +25,8 @@ En **Docker**: navegador → Nginx `:4200` → gateway `:8030` por red Docker �
 
 El menú y las rutas muestran opciones conforme al perfil obtenido de `/api/v1/auth/me`. La ocultación en Angular mejora la experiencia; no sustituye el 403 del backend. La lista exacta de rutas está en `frontendIndumotos/src/app/app.routes.ts`.
 
+**Aporte de Luciana Gutiérrez integrado en `sprint-2`:** el login y el formulario de cuentas permiten mostrar u ocultar la contraseña. Administración consulta detalle, permisos e historial de cada cuenta y puede desactivarla o reactivarla con motivo. En Disponibilidad y datos se muestra el responsable, el motivo y si la moto se puede ofrecer; una diferencia pendiente aparece como `EN_REVISION`.
+
 ## Llegadas y registro de motos
 
 1. Almacén carga la guía. La lista «Nuevas guías» muestra las `PENDIENTE`; «Guías confirmadas» muestra las `CONFIRMADA`. Cada lista se filtra por número de guía y se pagina de 10 en 10 en el backend.
@@ -63,7 +65,7 @@ Abrir `http://127.0.0.1:4200`. Para revisar contenedores usar `docker compose ps
 
 Con backend local activo, en `frontendIndumotos`: `npm ci`, `npm start` y abrir `http://127.0.0.1:4200`. Para comprobar cambios: `npm run build` y `npm test -- --watch=false`. El gateway puede levantarse aparte con Maven, pero el proxy de desarrollo actual no lo atraviesa. Para probar el recorrido por gateway se usa Docker o se cambia explícitamente el destino del proxy.
 
-En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **16 pruebas** después de retirar la pantalla de tienda. En una ejecución anterior, el backend registró **89 pruebas** y Flyway V29 aplicada. Faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
+En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **20 pruebas**; el backend pasó **101 pruebas** y Flyway V30 se aplicó en PostgreSQL local. Faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
 
 ## Pendiente
 
