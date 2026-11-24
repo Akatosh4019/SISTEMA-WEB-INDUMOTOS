@@ -1,5 +1,6 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { nombreRol } from '../core/roles';
 import { AuthService } from '../core/auth.service';
 import { PerfilModalComponent } from './perfil-modal.component';
 
@@ -16,12 +17,7 @@ export class ShellPage {
   readonly menuOpen = signal(false);
   readonly profileOpen = signal(false);
   readonly username = computed(() => this.auth.access()?.nombreUsuario || this.auth.username() || 'Usuario');
-  readonly roleName = computed(() => {
-    const role = this.auth.access()?.rolCodigo;
-    return role === 'ADMIN' ? 'Administrador' : role === 'ALMACEN' ? 'Almacén'
-      : role === 'INVENTARIOS' ? 'Inventarios' : role === 'COMERCIAL' ? 'Comercial'
-      : role === 'ENSAMBLAJE' ? 'Ensamblaje' : role?.replaceAll('_', ' ') || 'Cargando perfil';
-  });
+  readonly roleName = computed(() => nombreRol(this.auth.access()?.rolCodigo, 'Cargando perfil'));
   readonly initials = computed(() => this.username().slice(0, 2).toUpperCase());
   readonly logoutError = signal('');
   readonly logoutBusy = signal(false);

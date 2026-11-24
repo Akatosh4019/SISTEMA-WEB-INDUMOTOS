@@ -6,6 +6,7 @@ import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { apiError } from '../core/api-error';
+import { ROLES, nombreRol } from '../core/roles';
 import { AuthService } from '../core/auth.service';
 
 interface UsuarioCreado { id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string; }
@@ -30,7 +31,7 @@ export interface DetalleCuenta {
       <form (ngSubmit)="guardar()" #f="ngForm">
         <label for="nombreCompleto">Nombre completo</label><input id="nombreCompleto" name="nombreCompleto" required maxlength="180" autocomplete="name" [(ngModel)]="form.nombreCompleto" />
         <label for="nombreUsuario">Nombre de usuario</label><input id="nombreUsuario" name="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="off" [(ngModel)]="form.nombreUsuario" />
-        <div class="row"><div><label for="rol">Rol</label><select id="rol" name="rol" [(ngModel)]="form.rolCodigo"><option value="ALMACEN">Almacén</option><option value="INVENTARIOS">Inventarios</option><option value="COMERCIAL">Comercial</option><option value="FACTURACION">Facturación</option><option value="ENSAMBLAJE">Ensamblaje</option><option value="ADMIN">Administración</option></select></div>
+        <div class="row"><div><label for="rol">Rol</label><select id="rol" name="rol" [(ngModel)]="form.rolCodigo">@for (rol of roles; track rol.codigo) { <option [value]="rol.codigo">{{rol.nombre}}</option> }</select></div>
         <div><label for="clave">Contraseña inicial</label><div class="password-field"><input id="clave" name="clave" [type]="verClave() ? 'text' : 'password'" required minlength="12" maxlength="100" autocomplete="new-password" [(ngModel)]="form.clave" /><button type="button" class="password-toggle" (click)="verClave.set(!verClave())" [attr.aria-label]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="verClave()" [title]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'">@if (verClave()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a12.6 12.6 0 0 1-3.2 4.3M6.2 6.2A12.4 12.4 0 0 0 2 12c1 2.5 5 7 10 7a9.6 9.6 0 0 0 4.3-1"/></svg> } @else { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c1-2.5 5-7 10-7s9 4.5 10 7c-1 2.5-5 7-10 7S3 14.5 2 12z"/><circle cx="12" cy="12" r="3"/></svg> }</button></div></div></div>
         @if (form.rolCodigo === 'COMERCIAL' || form.rolCodigo === 'FACTURACION') { <label for="tiendaNueva">Sede de trabajo</label><select id="tiendaNueva" name="tiendaId" [(ngModel)]="form.tiendaId" required><option [ngValue]="null">Selecciona una tienda</option>@for (tienda of tiendas(); track tienda.id) { <option [ngValue]="tienda.id">{{tienda.nombre}}</option> }</select><p class="hint">La cuenta quedará vinculada a esta tienda.</p> }
         @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
@@ -203,9 +204,8 @@ export class UsuariosPage implements OnInit {
     });
   }
   limpiarBusqueda(): void { this.busqueda = ''; this.buscar(); }
-  nombreRol(codigo: string): string {
-    return ({ADMIN:'Administración', ALMACEN:'Almacén', INVENTARIOS:'Inventarios', COMERCIAL:'Comercial', FACTURACION:'Facturación', ENSAMBLAJE:'Ensamblaje'} as Record<string,string>)[codigo] ?? codigo;
-  }
+  readonly roles = ROLES;
+  nombreRol(codigo: string): string { return nombreRol(codigo); }
   totalPaginas(resultado: PaginaCuentas): number { return Math.ceil(resultado.totalElementos / 10); }
   paginasVisibles(total: number, actual: number): number[] {
     const inicio = Math.max(0, Math.min(actual - 2, total - 5));

@@ -3,6 +3,7 @@ import { Component, DestroyRef, HostListener, OnInit, inject, signal } from '@an
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { EMPTY, Subject, catchError, debounceTime, switchMap, tap } from 'rxjs';
+import { ROLES, nombreRol } from '../core/roles';
 import { apiError } from '../core/api-error';
 
 interface Permiso { codigo: string; porRol: boolean; excepcion: string | null; permitido: boolean; }
@@ -36,7 +37,7 @@ interface PaginaCuentas { items: Cuenta[]; pagina: number; totalElementos: numbe
       @if (accesos(); as cuenta) {
         <div class="access-summary"><div><span>Rol actual</span><strong>{{nombreRol(cuenta.rolCodigo)}}</strong></div><div><span>Estado</span><strong>{{seleccionada()?.estado}}</strong></div></div>
         <label class="edit-toggle"><input type="checkbox" [checked]="editando()" [disabled]="busy()" (change)="alternarEdicion()" /><span><strong>Habilitar edición</strong><small>{{editando() ? 'Puedes cambiar el rol y las excepciones de esta cuenta.' : 'El acceso está en modo de consulta.'}}</small></span></label>
-        @if (editando()) { <form class="role-form" (ngSubmit)="cambiarRol()"><label for="nuevoRol">Asignar rol</label><div class="inline-controls"><select id="nuevoRol" name="nuevoRol" [(ngModel)]="nuevoRol" [disabled]="busy()"><option value="ADMIN">Administración</option><option value="ALMACEN">Almacén</option><option value="INVENTARIOS">Inventarios</option><option value="COMERCIAL">Comercial</option><option value="ENSAMBLAJE">Ensamblaje</option></select><button type="submit" [disabled]="busy() || nuevoRol === cuenta.rolCodigo">Guardar rol</button></div></form> }
+        @if (editando()) { <form class="role-form" (ngSubmit)="cambiarRol()"><label for="nuevoRol">Asignar rol</label><div class="inline-controls"><select id="nuevoRol" name="nuevoRol" [(ngModel)]="nuevoRol" [disabled]="busy()">@for (rol of roles; track rol.codigo) { <option [value]="rol.codigo">{{rol.nombre}}</option> }</select><button type="submit" [disabled]="busy() || nuevoRol === cuenta.rolCodigo">Guardar rol</button></div></form> }
         <div class="permission-head"><h3>Permisos efectivos</h3><p class="hint">Los permisos del rol aparecen como heredados. Una excepción afecta solo a esta cuenta.</p></div>
         <div class="permission-list">@for (permiso of cuenta.permisos; track permiso.codigo) { <div class="permission-line"><div><strong>{{nombrePermiso(permiso.codigo)}}</strong><small>{{permiso.codigo}} · {{permiso.excepcion ? 'Excepción: ' + permiso.excepcion : permiso.porRol ? 'Heredado del rol' : 'No incluido en el rol'}}</small></div><span class="pill" [class.no]="!permiso.permitido">{{permiso.permitido ? 'Permitido' : 'Denegado'}}</span>
           @if (editando()) { <div class="permission-actions"><button type="button" class="tertiary" [disabled]="busy() || permiso.excepcion === 'PERMITIR' || (cuenta.rolCodigo !== 'ADMIN' && (permiso.codigo === 'USUARIOS_CREAR' || permiso.codigo === 'PERMISOS_ASIGNAR'))" (click)="guardarExcepcion(permiso, 'PERMITIR')">Permitir</button><button type="button" class="tertiary" [disabled]="busy() || permiso.excepcion === 'DENEGAR'" (click)="guardarExcepcion(permiso, 'DENEGAR')">Denegar</button>@if (permiso.excepcion) { <button type="button" class="text-button" [disabled]="busy()" (click)="retirarExcepcion(permiso)">Restablecer</button> }</div> }
@@ -97,9 +98,8 @@ export class PermisosPage implements OnInit {
     this.error.set(''); this.success.set('');
   }
   alternarEdicion(): void { this.editando.update(value => !value); this.error.set(''); this.success.set(''); }
-  nombreRol(codigo: string): string {
-    return ({ADMIN:'Administración', ALMACEN:'Almacén', INVENTARIOS:'Inventarios', COMERCIAL:'Comercial', ENSAMBLAJE:'Ensamblaje'} as Record<string,string>)[codigo] ?? codigo;
-  }
+  readonly roles = ROLES;
+  nombreRol(codigo: string): string { return nombreRol(codigo); }
   nombrePermiso(codigo: string): string { return codigo.replaceAll('_', ' ').toLowerCase().replace(/^./, letra => letra.toUpperCase()); }
   cambiarRol(): void {
     const cuenta = this.accesos();
