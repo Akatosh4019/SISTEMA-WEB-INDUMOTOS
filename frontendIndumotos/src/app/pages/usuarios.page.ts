@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, debounceTime, switchMap, tap } from 'rxjs';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { apiError } from '../core/api-error';
@@ -57,9 +57,11 @@ export interface DetalleCuenta {
           <button type="button" (click)="irPagina(resultado.pagina + 1)" [disabled]="listando() || resultado.pagina + 1 >= totalPaginas(resultado)">Siguiente</button></nav> }</div>
       }
     </section>
-    @if (errorDetalle()) { <p class="message error" role="alert">{{errorDetalle()}}</p> }
-    @if (detalle(); as cuenta) {
-      <section class="panel account-detail" aria-labelledby="detalleTitulo">
+    @if (seleccionId() !== null) { <div class="account-overlay" (click)="cerrarDetalle()">
+      <section class="panel account-detail" role="dialog" aria-modal="true" aria-labelledby="detalleTitulo" (click)="$event.stopPropagation()">
+      @if (detalleCargando()) { <p role="status">Cargando detalle de la cuenta…</p> }
+      @if (errorDetalle()) { <p class="message error" role="alert">{{errorDetalle()}}</p><button type="button" class="secondary" (click)="cerrarDetalle()">Cerrar</button> }
+      @if (detalle(); as cuenta) {
         <div class="accounts-head"><div><h2 id="detalleTitulo">{{cuenta.nombreCompleto}}</h2><p class="hint">Usuario {{cuenta.nombreUsuario}} · ID #{{cuenta.id}}</p></div>
           <button type="button" class="clear-search" (click)="cerrarDetalle()" aria-label="Cerrar detalle" title="Cerrar detalle">✕</button></div>
         <div class="detail">
@@ -98,8 +100,9 @@ export interface DetalleCuenta {
           @for (evento of historial(); track $index) { <li><strong>{{evento.estadoAnterior}} → {{evento.estadoNuevo}}</strong><span>{{evento.fecha | date:'dd/MM/yyyy HH:mm'}} · {{evento.actor}}</span><p>{{evento.motivo}}</p></li> }
           @empty { <li class="muted">Sin cambios de estado registrados.</li> }
         </ol>
+      }
       </section>
-    }
+    </div> }
     </div>`,
   styleUrl: './usuarios.page.css'
 })
@@ -115,6 +118,8 @@ export class UsuariosPage implements OnInit {
   readonly listando = signal(false);
   readonly errorLista = signal('');
   readonly detalle = signal<DetalleCuenta | null>(null);
+  readonly seleccionId = signal<number | null>(null);
+  readonly detalleCargando = signal(false);
   readonly historial = signal<EventoEstado[]>([]);
   readonly errorDetalle = signal('');
   readonly errorEstado = signal('');
@@ -146,14 +151,15 @@ export class UsuariosPage implements OnInit {
   buscar(): void { this.irPagina(0); }
 
   verDetalle(id: number): void {
+    this.seleccionId.set(id); this.detalle.set(null); this.historial.set([]); this.detalleCargando.set(true);
     this.errorDetalle.set(''); this.errorEstado.set(''); this.mensajeEstado.set('');
     this.motivo = ''; this.confirmando.set(false);
     this.http.get<DetalleCuenta>(`/api/v1/usuarios/${id}`).subscribe({
-      next: cuenta => { this.detalle.set(cuenta); this.cargarHistorial(id); },
-      error: err => { this.detalle.set(null); this.errorDetalle.set(apiError(err)); }
+      next: cuenta => { if (this.seleccionId() !== id) return; this.detalleCargando.set(false); this.detalle.set(cuenta); this.cargarHistorial(id); },
+      error: err => { if (this.seleccionId() !== id) return; this.detalleCargando.set(false); this.errorDetalle.set(apiError(err)); }
     });
   }
-  cerrarDetalle(): void { this.detalle.set(null); this.historial.set([]); this.confirmando.set(false); }
+  @HostListener('document:keydown.escape') cerrarDetalle(): void { this.seleccionId.set(null); this.detalle.set(null); this.historial.set([]); this.confirmando.set(false); }
   pedirConfirmacion(): void {
     this.errorEstado.set('');
     if (!this.motivo.trim()) { this.errorEstado.set('Escribe el motivo del cambio.'); return; }

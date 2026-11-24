@@ -20,6 +20,29 @@ describe('HU-16 y HU-17: cuentas', () => {
     return { fixture, page: fixture.componentInstance, http: TestBed.inject(HttpTestingController) };
   }
 
+  it('abre Ver detalle en una ventana visible y permite cerrarla con Escape', async () => {
+    const { fixture, http } = crear(['USUARIOS_CONSULTAR']);
+    fixture.detectChanges();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    http.expectOne(req => req.url === '/api/v1/usuarios').flush({ items: [
+      { id: 2, nombreCompleto: 'Miguel Rojas', nombreUsuario: 'miguel', rolCodigo: 'INVENTARIOS', estado: 'ACTIVO' }
+    ], pagina: 0, tamano: 10, totalElementos: 1 });
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('button.link-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog).toBeTruthy();
+    expect(dialog.textContent).toContain('Cargando detalle');
+    http.expectOne('/api/v1/usuarios/2').flush(detalle('ACTIVO'));
+    http.expectOne('/api/v1/usuarios/2/estado/historial').flush([]);
+    fixture.detectChanges();
+    expect(dialog.textContent).toContain('Miguel Rojas');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeNull();
+    http.verify();
+  });
+
   it('consulta la cuenta y la desactiva solo después de confirmar con motivo', () => {
     const { fixture, page, http } = crear(['USUARIOS_CONSULTAR', 'USUARIOS_DESACTIVAR']);
     page.verDetalle(2);

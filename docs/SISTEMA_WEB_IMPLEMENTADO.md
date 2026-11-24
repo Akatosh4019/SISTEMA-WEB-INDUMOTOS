@@ -65,7 +65,7 @@ Abrir `http://127.0.0.1:4200`. Para revisar contenedores usar `docker compose ps
 
 Con backend local activo, en `frontendIndumotos`: `npm ci`, `npm start` y abrir `http://127.0.0.1:4200`. Para comprobar cambios: `npm run build` y `npm test -- --watch=false`. El gateway puede levantarse aparte con Maven, pero el proxy de desarrollo actual no lo atraviesa. Para probar el recorrido por gateway se usa Docker o se cambia explícitamente el destino del proxy.
 
-En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **20 pruebas**; el backend pasó **101 pruebas** y Flyway V30 se aplicó en PostgreSQL local. Faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
+En la última ejecución observada de `sprint-2`, la compilación Angular terminó y pasaron **21 pruebas**, incluida la apertura del detalle de cuentas en una ventana superpuesta; el backend pasó **101 pruebas** y Flyway V30 se aplicó en PostgreSQL local. Faltan pruebas visuales por cada rol y una finalización de guía real autorizada. No se han inventado capturas ni datos de llegada para esta documentación.
 
 ## Pendiente
 
