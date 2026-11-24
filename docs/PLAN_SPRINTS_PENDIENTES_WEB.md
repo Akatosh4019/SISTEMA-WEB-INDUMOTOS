@@ -6,16 +6,16 @@ El backlog local solo planifica **Sprint 3**. Su objetivo es disponibilidad e in
 
 | HU | Interfaz web y conexión con lo actual |
 | --- | --- |
-| HU-10 | Búsqueda por chasis, estado, motivo y ubicación en el panel `Disponibilidad y datos`. |
+| HU-10 | Búsqueda por chasis, estado, motivo y ubicación en el vista `Inventario → Disponibilidad y diferencias`. |
 | HU-11 | Facturación/Admin bloquea o habilita con motivo; el historial permanece visible. |
 | HU-12 | Facturación/Admin reporta una diferencia desde la moto encontrada y consulta sus casos; Inventarios ve la bandeja paginada. |
 | HU-13 | Inventarios/Admin contrasta la fuente, corrige el campo y documenta la resolución; el reportante ve el resultado. |
 
-La pantalla `Disponibilidad y datos` reutiliza tabla paginada de diez, búsqueda por chasis con espera breve y panel superpuesto. Facturación consulta, bloquea/habilita y reporta; Inventarios ve pendientes y resuelve mediante corrección de ficha. El backend decide permisos y valida transiciones. La web recupera datos desde `/api/**` por gateway en Docker; no guarda estados comerciales solo en el navegador. Falta revisión visual y un caso real autorizado.
+La vista `Inventario → Disponibilidad y diferencias` reutiliza tabla paginada de diez, búsqueda por chasis con espera breve y panel superpuesto. Facturación consulta, bloquea/habilita y reporta; Inventarios ve pendientes y resuelve mediante corrección de ficha. El backend decide permisos y valida transiciones. La web recupera datos desde `/api/**` por gateway en Docker; no guarda estados comerciales solo en el navegador. Falta revisión visual y un caso real autorizado.
 
 ## Ampliación: modos laborales y registro de ventas
 
-**Modo compañía** es un panel de Administración para ver todas las tiendas y asignar personal de Comercial o Facturación a una sede. Se retiró **Modo tienda** de la web a pedido del usuario. Comercial consulta Inventario y pide reposición desde Solicitudes; Facturación consulta disponibilidad y reporta diferencias. Las tablas y API internas de ventas permanecen en el backend para conservar compatibilidad con datos existentes, pero esta entrega no presenta una pantalla para registrar ventas ni un cobro en línea.
+Administración asigna la sede al personal de Comercial o Facturación desde **Cuentas**, al crear o editar la cuenta. Se retiró **Modo tienda** de la web a pedido del usuario. Comercial consulta Inventario y pide reposición desde Solicitudes; Facturación consulta disponibilidad y reporta diferencias. Las tablas y API internas de ventas permanecen en el backend para conservar compatibilidad con datos existentes, pero esta entrega no presenta una pantalla para registrar ventas ni un cobro en línea.
 
 ## Para aceptar estas pantallas
 

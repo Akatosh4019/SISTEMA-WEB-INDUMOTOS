@@ -16,16 +16,16 @@ En **Docker**: navegador → Nginx `:4200` → gateway `:8030` por red Docker �
 ## Pantallas y uso por rol
 
 - **Todos los roles:** login, inicio con accesos según permisos, perfil y cierre de sesión. La web guarda el JWT en `sessionStorage`; el backend valida cada petición y revoca el token al salir.
-- **Administración:** Crear cuenta; Roles y permisos; Catálogo de motocicletas; Modo compañía para ver todas las tiendas y asignar personal. Solo `ADMIN` puede agregar marcas, modelos y colores. Inventarios y Comercial seleccionan las combinaciones existentes, sin alterarlas.
+- **Administración:** Crear cuenta; Roles y permisos; Catálogo de motocicletas; Cuentas para asignar la tienda al crear o editar personal. Solo `ADMIN` puede agregar marcas, modelos y colores. Inventarios y Comercial seleccionan las combinaciones existentes, sin alterarlas.
 - **Almacén:** Llegadas. «Nueva llegada» abre un formulario superpuesto para registrar número de guía, cantidades, observación y entre 1 y 3 fotos. Una guía nueva aparece en **Nuevas guías** como `PENDIENTE`. Puede consultar sus fotos y fichas vinculadas. También atiende solicitudes según permisos.
 - **Inventarios:** Inventario para buscar por chasis completo o últimos cuatro dígitos y filtrar marca/modelo/color, con paginación y ficha en ventana superpuesta. «Agregar motocicleta» permite elegir una guía pendiente y registrar cada unidad. La foto queda al lado del formulario con zoom, arrastre y cambio de página. Los bloques se muestran de cinco en cinco.
 - **Comercial:** Solicitudes para elegir combinaciones del catálogo, cantidades y sede de destino; Seguimiento e Inventario para consultar avance y existencias.
-- **Facturación:** Disponibilidad y datos para consultar, bloquear/habilitar una unidad y reportar diferencias.
+- **Facturación:** Inventario → Disponibilidad y diferencias para consultar, bloquear/habilitar una unidad y reportar diferencias.
 - **Roles operativos autorizados:** Ubicaciones e historial, asignación de chasis a solicitudes, preparación y traslados según permisos efectivos.
 
 El menú y las rutas muestran opciones conforme al perfil obtenido de `/api/v1/auth/me`. La ocultación en Angular mejora la experiencia; no sustituye el 403 del backend. La lista exacta de rutas está en `frontendIndumotos/src/app/app.routes.ts`.
 
-**Aporte de Luciana Gutiérrez integrado en `sprint-2`:** el login y el formulario de cuentas permiten mostrar u ocultar la contraseña. Administración consulta detalle, permisos e historial de cada cuenta y puede desactivarla o reactivarla con motivo. En Disponibilidad y datos se muestra el responsable, el motivo y si la moto se puede ofrecer; una diferencia pendiente aparece como `EN_REVISION`.
+**Aporte de Luciana Gutiérrez integrado en `sprint-2`:** el login y el formulario de cuentas permiten mostrar u ocultar la contraseña. Administración consulta detalle, permisos e historial de cada cuenta y puede desactivarla o reactivarla con motivo. En Inventario → Disponibilidad y diferencias se muestra el responsable, el motivo y si la moto se puede ofrecer; una diferencia pendiente aparece como `EN_REVISION`.
 
 ## Llegadas y registro de motos
 
@@ -71,13 +71,13 @@ En la última ejecución observada de `sprint-2`, la compilación Angular termin
 
 ### Modos laborales y registro de venta
 
-La barra lateral ofrece **Modo compañía** a Administración para consultar el resumen de tiendas y asignar una sede al personal. Comercial consulta Inventario y solicita reposición desde Solicitudes. A pedido del usuario se retiró **Modo tienda** de la web; no hay pantalla de ventas en esta entrega. El backend conserva sus tablas y API de ventas para no perder datos ni romper migraciones. La web no procesa pagos ni emite comprobantes.
+Administración asigna la sede al crear o editar una cuenta de Comercial o Facturación en **Cuentas**. Comercial consulta Inventario y solicita reposición desde Solicitudes. A pedido del usuario se retiró **Modo tienda** de la web; no hay pantalla de ventas en esta entrega. El backend conserva sus tablas y API de ventas para no perder datos ni romper migraciones. La web no procesa pagos ni emite comprobantes.
 
 La relación de roles procede del resumen de entrevista 4; el momento de pérdida de disponibilidad está descrito en una transcripción automática de entrevista 5 aún no validada por el entrevistado. Sigue pendiente probar el recorrido visual con cuentas reales de cada rol y una venta autorizada; no se crearon ventas de demostración.
 
 ### Sprint 3: disponibilidad y diferencias
 
-`Disponibilidad y datos` permite buscar una moto por chasis, ver su ubicación y estado, y consultar el historial de cambios manuales. Facturación puede bloquear o habilitar con motivo y reportar una diferencia de ficha. Inventarios recibe los casos pendientes, consigna fuente y valor correcto, y cierra el caso; el backend actualiza ficha y caso en una transacción. Comercial solo consulta. Las tablas son de diez por página y los permisos se comprueban en la API. No se creó un caso ficticio para la demo; la prueba visual con usuarios reales sigue pendiente.
+`Inventario → Disponibilidad y diferencias` permite buscar una moto por chasis, ver su ubicación y estado, y consultar el historial de cambios manuales. Facturación puede bloquear o habilitar con motivo y reportar una diferencia de ficha. Inventarios recibe los casos pendientes, consigna fuente y valor correcto, y cierra el caso; el backend actualiza ficha y caso en una transacción. Comercial solo consulta. Las tablas son de diez por página y los permisos se comprueban en la API. No se creó un caso ficticio para la demo; la prueba visual con usuarios reales sigue pendiente.
 
 
 - Completar evidencia visual real y revisar la experiencia con trabajadores de cada rol.

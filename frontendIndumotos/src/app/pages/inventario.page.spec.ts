@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { InventarioPage } from './inventario.page';
+import { AuthService } from '../core/auth.service';
 
 describe('InventarioPage', () => {
   let http: HttpTestingController;
@@ -15,6 +16,8 @@ describe('InventarioPage', () => {
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])]
     });
     fixture = TestBed.createComponent(InventarioPage);
+    TestBed.inject(AuthService).access.set({usuarioId: 1, nombreUsuario: 'inventarios', rolCodigo: 'INVENTARIOS',
+      permisos: [{codigo: 'INVENTARIO_CONSULTAR', permitido: true}]});
     http = TestBed.inject(HttpTestingController);
     page = fixture.componentInstance;
     fixture.detectChanges();
@@ -70,5 +73,15 @@ describe('InventarioPage', () => {
     page.cerrarFicha(); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeNull();
     expect(page.page()).not.toBeNull();
+  });
+
+  it('deja el control de disponibilidad dentro de Inventario', () => {
+    TestBed.inject(AuthService).access.set({usuarioId:1,nombreUsuario:'admin',rolCodigo:'ADMIN',
+      permisos:[{codigo:'INVENTARIO_CONSULTAR',permitido:true},{codigo:'DISPONIBILIDAD_CONSULTAR',permitido:true}]});
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Disponibilidad y diferencias');
+    page.vista.set('control');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-control-datos-page')).not.toBeNull();
   });
 });

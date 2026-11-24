@@ -9,6 +9,7 @@ import { apiError } from '../core/api-error';
 import { AuthService } from '../core/auth.service';
 
 interface UsuarioCreado { id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string; }
+interface Tienda { id: number; nombre: string; tipo: string; }
 interface Cuenta { id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string; estado: string; }
 interface PaginaCuentas { items: Cuenta[]; pagina: number; tamano: number; totalElementos: number; }
 export interface EventoEstado { estadoAnterior: string; estadoNuevo: string; motivo: string; actor: string; fecha: string; }
@@ -31,6 +32,7 @@ export interface DetalleCuenta {
         <label for="nombreUsuario">Nombre de usuario</label><input id="nombreUsuario" name="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="off" [(ngModel)]="form.nombreUsuario" />
         <div class="row"><div><label for="rol">Rol</label><select id="rol" name="rol" [(ngModel)]="form.rolCodigo"><option value="ALMACEN">Almacén</option><option value="INVENTARIOS">Inventarios</option><option value="COMERCIAL">Comercial</option><option value="FACTURACION">Facturación</option><option value="ENSAMBLAJE">Ensamblaje</option><option value="ADMIN">Administración</option></select></div>
         <div><label for="clave">Contraseña inicial</label><div class="password-field"><input id="clave" name="clave" [type]="verClave() ? 'text' : 'password'" required minlength="12" maxlength="100" autocomplete="new-password" [(ngModel)]="form.clave" /><button type="button" class="password-toggle" (click)="verClave.set(!verClave())" [attr.aria-label]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="verClave()" [title]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'">@if (verClave()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a12.6 12.6 0 0 1-3.2 4.3M6.2 6.2A12.4 12.4 0 0 0 2 12c1 2.5 5 7 10 7a9.6 9.6 0 0 0 4.3-1"/></svg> } @else { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c1-2.5 5-7 10-7s9 4.5 10 7c-1 2.5-5 7-10 7S3 14.5 2 12z"/><circle cx="12" cy="12" r="3"/></svg> }</button></div></div></div>
+        @if (form.rolCodigo === 'COMERCIAL' || form.rolCodigo === 'FACTURACION') { <label for="tiendaNueva">Sede de trabajo</label><select id="tiendaNueva" name="tiendaId" [(ngModel)]="form.tiendaId" required><option [ngValue]="null">Selecciona una tienda</option>@for (tienda of tiendas(); track tienda.id) { <option [ngValue]="tienda.id">{{tienda.nombre}}</option> }</select><p class="hint">La cuenta quedará vinculada a esta tienda.</p> }
         @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
         <button type="submit" [disabled]="busy() || !f.valid">{{busy() ? 'Creando…' : 'Crear cuenta'}}</button>
       </form>
@@ -68,6 +70,7 @@ export interface DetalleCuenta {
           <div class="detail-row"><span>Estado</span><strong><span class="account-state" [class.inactive]="cuenta.estado !== 'ACTIVO'">{{cuenta.estado}}</span></strong></div>
           <div class="detail-row"><span>Rol</span><strong>{{cuenta.rolNombre || nombreRol(cuenta.rolCodigo)}}</strong></div>
           <div class="detail-row"><span>Tienda</span><strong>{{cuenta.tiendaNombre || 'Sin tienda asignada'}}</strong></div>
+          @if (auth.can('COMPANIA_CONSULTAR') && cuenta.estado === 'ACTIVO' && (cuenta.rolCodigo === 'COMERCIAL' || cuenta.rolCodigo === 'FACTURACION')) { <div class="store-assignment"><label for="tiendaCuenta">Cambiar sede de trabajo</label><select id="tiendaCuenta" [(ngModel)]="tiendaDetalle"><option [ngValue]="0">Seleccionar tienda</option>@for (tienda of tiendas(); track tienda.id) { <option [ngValue]="tienda.id">{{tienda.nombre}}</option> }</select><button type="button" class="secondary" (click)="asignarTienda(cuenta.id)" [disabled]="!tiendaDetalle || asignandoTienda()">{{asignandoTienda() ? 'Guardando…' : 'Guardar sede'}}</button></div> }
           <div class="detail-row"><span>Creada</span><strong>{{cuenta.creadoEn | date:'dd/MM/yyyy HH:mm'}}</strong></div>
           @if (cuenta.ultimoCambioEstado; as ultimo) {
             <div class="detail-row"><span>Último cambio</span><strong>{{ultimo.estadoNuevo === 'ACTIVO' ? 'Reactivada' : 'Desactivada'}} por {{ultimo.actor}} el {{ultimo.fecha | date:'dd/MM/yyyy HH:mm'}}: {{ultimo.motivo}}</strong></div>
@@ -109,7 +112,7 @@ export interface DetalleCuenta {
 export class UsuariosPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly busquedas = new Subject<{pagina:number; buscar:string}>();
   readonly busy = signal(false);
   readonly error = signal('');
@@ -127,11 +130,16 @@ export class UsuariosPage implements OnInit {
   readonly confirmando = signal(false);
   readonly cambiando = signal(false);
   readonly verClave = signal(false);
+  readonly tiendas = signal<Tienda[]>([]);
+  readonly asignandoTienda = signal(false);
+  tiendaDetalle = 0;
   busqueda = '';
   motivo = '';
-  form = { nombreCompleto: '', nombreUsuario: '', rolCodigo: 'ALMACEN', clave: '' };
+  form = { nombreCompleto: '', nombreUsuario: '', rolCodigo: 'ALMACEN', clave: '', tiendaId: null as number | null };
 
   ngOnInit(): void {
+    if (this.auth.can('USUARIOS_CREAR') || this.auth.can('COMPANIA_CONSULTAR'))
+      this.http.get<Tienda[]>('/api/v1/ubicaciones').subscribe({next: v => this.tiendas.set(v.filter(t => t.tipo === 'TIENDA'))});
     this.busquedas.pipe(
       debounceTime(250),
       tap(() => { this.listando.set(true); this.errorLista.set(''); }),
@@ -155,7 +163,7 @@ export class UsuariosPage implements OnInit {
     this.errorDetalle.set(''); this.errorEstado.set(''); this.mensajeEstado.set('');
     this.motivo = ''; this.confirmando.set(false);
     this.http.get<DetalleCuenta>(`/api/v1/usuarios/${id}`).subscribe({
-      next: cuenta => { if (this.seleccionId() !== id) return; this.detalleCargando.set(false); this.detalle.set(cuenta); this.cargarHistorial(id); },
+      next: cuenta => { if (this.seleccionId() !== id) return; this.detalleCargando.set(false); this.detalle.set(cuenta); this.tiendaDetalle = 0; this.cargarHistorial(id); },
       error: err => { if (this.seleccionId() !== id) return; this.detalleCargando.set(false); this.errorDetalle.set(apiError(err)); }
     });
   }
@@ -186,6 +194,14 @@ export class UsuariosPage implements OnInit {
       error: err => this.errorDetalle.set(apiError(err))
     });
   }
+  asignarTienda(id: number): void {
+    if (!this.tiendaDetalle || this.asignandoTienda()) return;
+    this.asignandoTienda.set(true); this.errorDetalle.set('');
+    this.http.put(`/api/v1/usuarios/${id}/tienda`, {tiendaId: this.tiendaDetalle}).subscribe({
+      next: () => { this.asignandoTienda.set(false); this.verDetalle(id); this.irPagina(this.cuentas()?.pagina ?? 0); },
+      error: err => { this.asignandoTienda.set(false); this.errorDetalle.set(apiError(err)); }
+    });
+  }
   limpiarBusqueda(): void { this.busqueda = ''; this.buscar(); }
   nombreRol(codigo: string): string {
     return ({ADMIN:'Administración', ALMACEN:'Almacén', INVENTARIOS:'Inventarios', COMERCIAL:'Comercial', FACTURACION:'Facturación', ENSAMBLAJE:'Ensamblaje'} as Record<string,string>)[codigo] ?? codigo;
@@ -205,8 +221,12 @@ export class UsuariosPage implements OnInit {
     if (!this.form.nombreCompleto.trim() || !this.form.nombreUsuario.trim() || this.form.clave.length < 12) {
       this.error.set('Completa los datos y usa una contraseña de al menos 12 caracteres.'); return;
     }
+    if ((this.form.rolCodigo === 'COMERCIAL' || this.form.rolCodigo === 'FACTURACION') && !this.form.tiendaId) {
+      this.error.set('Selecciona la sede de trabajo.'); return;
+    }
     this.busy.set(true);
-    this.http.post<UsuarioCreado>('/api/v1/usuarios', this.form).subscribe({
+    const tiendaId = this.form.rolCodigo === 'COMERCIAL' || this.form.rolCodigo === 'FACTURACION' ? this.form.tiendaId : null;
+    this.http.post<UsuarioCreado>('/api/v1/usuarios', {...this.form, tiendaId}).subscribe({
       next: value => { this.created.set(value); this.form.clave = ''; this.busy.set(false); this.busqueda = ''; this.irPagina(0); },
       error: err => { this.error.set(apiError(err)); this.busy.set(false); }
     });

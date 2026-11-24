@@ -1,6 +1,13 @@
 <div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div>
 <h1>Inventario</h1>
-<p class="lead">Busca una motocicleta ya registrada por chasis, marca, modelo o color. Abre su ficha para consultar los datos de la guía y la DUA.</p>
+<p class="lead">Consulta las fichas, revisa la disponibilidad y atiende diferencias según los permisos de tu rol.</p>
+@if (auth.can('INVENTARIO_CONSULTAR') && auth.can('DISPONIBILIDAD_CONSULTAR')) {
+  <nav class="inventory-tabs" aria-label="Vistas del inventario">
+    <button type="button" [class.active]="vista()==='listado'" [attr.aria-current]="vista()==='listado' ? 'page' : null" (click)="vista.set('listado')">Listado de motos</button>
+    <button type="button" [class.active]="vista()==='control'" [attr.aria-current]="vista()==='control' ? 'page' : null" (click)="vista.set('control')">Disponibilidad y diferencias</button>
+  </nav>
+}
+@if (vista()==='listado' && auth.can('INVENTARIO_CONSULTAR')) {
 @if (auth.can('FICHAS_REGISTRAR')) { <a class="new-record" routerLink="/app/fichas" [queryParams]="{nuevo: 1}">+ Agregar motocicleta</a> }
 
 <section class="panel" aria-labelledby="filtros-titulo">
@@ -36,3 +43,5 @@
   </section>
 }
 @if (fichaAbierta(); as id) { <app-ficha-dialog [id]="id" (cerrar)="fichaAbierta.set(null)" /> }
+}
+@if (vista()==='control' && auth.can('DISPONIBILIDAD_CONSULTAR')) { <app-control-datos-page /> }
