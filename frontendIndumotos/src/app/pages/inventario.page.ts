@@ -24,6 +24,9 @@ interface PaginaMotocicletas {
 }
 
 type Filtros = { chasis: string; marca: string; modelo: string; color: string };
+interface EstadoResumen { id: number; estado: string; puedeOfrecerse: boolean }
+const ESTADOS: Record<string, string> = { DISPONIBLE: 'Disponible', ASIGNADA: 'Asignada a solicitud', EN_TRANSITO: 'En camino',
+  VENDIDA: 'Vendida', BLOQUEADA: 'Bloqueada', EN_REVISION: 'En revisión', SIN_UBICACION: 'Sin ubicación' };
 
 @Component({
   selector: 'app-inventario-page',
@@ -41,6 +44,7 @@ export class InventarioPage implements OnInit {
   readonly fichaAbierta = signal<number | null>(null);
   readonly filtrosAbiertos = signal(false);
   readonly vista = signal<'listado' | 'control'>('listado');
+  readonly estados = signal<Record<number, EstadoResumen>>({});
   filtros: Filtros = { chasis: '', marca: '', modelo: '', color: '' };
   private aplicados: Filtros = { ...this.filtros };
   private temporizador?: ReturnType<typeof setTimeout>;
@@ -90,6 +94,18 @@ export class InventarioPage implements OnInit {
     if (actual && pagina >= 0 && pagina < actual.totalPaginas) this.cargar(pagina);
   }
 
+  nombreEstado(estado: string): string { return ESTADOS[estado] ?? estado; }
+
+  /** Muestra en cada fila si la moto se puede ofrecer; solo para cuentas que consultan disponibilidad. */
+  private cargarEstados(items: ResumenMotocicleta[]): void {
+    if (!items.length || !this.auth.can('DISPONIBILIDAD_CONSULTAR')) return;
+    const ids = items.map(item => item.id).join(',');
+    this.http.get<EstadoResumen[]>('/api/v1/disponibilidad/estados', { params: { ids } }).subscribe({
+      next: lista => this.estados.update(actual => ({ ...actual, ...Object.fromEntries(lista.map(e => [e.id, e])) })),
+      error: () => { /* El estado es informativo: si falla, la lista sigue disponible. */ }
+    });
+  }
+
   paginasVisibles(total: number, actual: number): number[] {
     const inicio = Math.max(0, Math.min(actual - 2, total - 5));
     return Array.from({ length: Math.min(5, total - inicio) }, (_, indice) => inicio + indice);
@@ -104,7 +120,7 @@ export class InventarioPage implements OnInit {
       if (valor) params = params.set(campo, valor);
     }
     this.http.get<PaginaMotocicletas>('/api/v1/motocicletas', { params }).subscribe({
-      next: resultado => { if (consulta !== this.consulta) return; this.page.set(resultado); this.loading.set(false); },
+      next: resultado => { if (consulta !== this.consulta) return; this.page.set(resultado); this.loading.set(false); this.cargarEstados(resultado.items); },
       error: error => {
         if (consulta !== this.consulta) return;
         this.page.set(null);

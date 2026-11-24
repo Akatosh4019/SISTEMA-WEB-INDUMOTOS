@@ -16,7 +16,7 @@ const campos=[{id:'marca',nombre:'Marca'},{id:'modelo',nombre:'Modelo'},{id:'col
   {id:'dua',nombre:'DUA'},{id:'itemDua',nombre:'Ítem DUA'}];
 
 @Component({selector:'app-control-datos-page',imports:[FormsModule,DatePipe],
-  template:`<div class="form-page control-page"><h2>Disponibilidad y diferencias</h2>
+  template:`<div class="form-page control-page"><h2>Bloqueos y diferencias de datos</h2>
     <p class="lead">Busca una moto por chasis. Facturación registra diferencias o bloqueos; Inventarios investiga y corrige.</p>
     <section class="panel"><h2>Buscar motocicleta</h2><p class="hint">Escribe al menos cuatro caracteres del chasis. El resultado muestra su estado y ubicación confirmada.</p>
       <label for="buscarChasis">Chasis<input id="buscarChasis" [(ngModel)]="chasis" (ngModelChange)="buscarCambio()" placeholder="Chasis completo o fragmento" maxlength="120" /></label>

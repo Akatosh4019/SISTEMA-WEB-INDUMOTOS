@@ -1,93 +1,175 @@
+import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { apiError } from '../core/api-error';
 import { AuthService } from '../core/auth.service';
 
 interface Linea { id: number; marca: string; modelo: string; color: string; cantidad: number }
-interface Solicitud { id: number; estado: string; lineas: Linea[]; solicitante: string }
+interface Solicitud { id: number; estado: string; lineas: Linea[]; solicitante: string; destinoNombre?: string }
 interface Evento { id: number; estado: string; fecha: string; registrador: string; motivo: string | null }
 interface Unidad { asociacionId: number; chasis: string }
 interface Candidata { motocicletaId: number; chasis: string; modelo: string; color: string }
 interface Envio { motocicletaId: number; chasis: string; origen: string; destino: string;
   estado: string; despachadoEn: string; recibidoEn: string | null }
+interface Moto { id: number; marca: string; modelo: string; color: string; chasisVista: string }
+interface Sede { id: number; nombre: string; tipo: string }
+interface PasoRecorrido { tipo: string; titulo: string; detalle: string | null; origen: string | null;
+  destino: string | null; responsable: string; fecha: string }
+interface Recorrido { moto: { id: number; marca: string; modelo: string; color: string; chasis: string };
+  ubicacionActual: string | null; enCamino: { origen: string; destino: string; desde: string } | null;
+  vendida: boolean; eventos: PasoRecorrido[] }
+type Motivo = { accion: 'RECHAZADA' | 'ANULAR' | 'RETIRAR'; titulo: string; linea?: number; asociacion?: number };
+
+const ESTADOS: Record<string, string> = { PENDIENTE: 'Pendiente', EN_PREPARACION: 'En preparación', ATENDIDA: 'Atendida',
+  RECHAZADA: 'Rechazada', ANULADA: 'Anulada' };
 
 @Component({
-  selector: 'app-seguimiento', imports: [FormsModule],
-  template: `
-    <header class="page-heading"><span class="eyebrow">OPERACIÓN DE ALMACÉN</span><h1>Preparación de solicitudes</h1>
-    <p>Selecciona una solicitud, asigna las motos y confirma la preparación. Almacén registra la salida y la tienda confirma la recepción física.</p></header>
-    <section class="panel"><div class="panel-heading"><span class="eyebrow">PASO 1</span><h2>Elegir solicitud</h2></div><label>Solicitud <select [(ngModel)]="solicitudId"><option [ngValue]="0">Selecciona una solicitud</option>
-      @for (item of solicitudes(); track item.id) { <option [ngValue]="item.id">{{item.solicitante}} · {{item.estado}} · {{item.lineas[0]?.marca}} {{item.lineas[0]?.modelo}}</option> }
-      </select></label>
-      <button type="button" (click)="consultar()" [disabled]="solicitudId < 1 || ocupado()">Ver seguimiento</button>
-      @if (hayMas()) { <button type="button" (click)="cargarSolicitudes()" [disabled]="ocupado()">Cargar más solicitudes</button> }
-    </section>
-    @if (solicitud(); as s) {
-      <section class="panel"><div class="panel-heading"><span class="eyebrow">PASO 2 · SEGUIMIENTO</span><h2>Solicitud <span class="badge">{{s.estado}}</span></h2><p>Solicitada por {{s.solicitante}}</p></div>
-        @if (access.can('SOLICITUDES_AVANZAR')) {
-          @if (s.estado === 'PENDIENTE') { <button type="button" (click)="avanzar('EN_PREPARACION')">Iniciar preparación</button> }
-          @if (s.estado === 'EN_PREPARACION') { <button type="button" (click)="avanzar('ATENDIDA')">Confirmar preparación</button> }
-          @if (s.estado === 'PENDIENTE' || s.estado === 'EN_PREPARACION') {
-            <button type="button" (click)="avanzar('RECHAZADA')">Rechazar</button>
-          }
-        }
-        @if (access.can('SOLICITUDES_ANULAR') && s.estado === 'PENDIENTE') {
-          <button type="button" (click)="anular()">Anular solicitud</button>
-        }
-        <h3>Historial de cambios</h3>
-        @for (evento of eventos(); track evento.id) {
-          <p>{{evento.estado}} · {{evento.fecha}} · {{evento.registrador}} {{evento.motivo || ''}}</p>
+  selector: 'app-seguimiento', imports: [FormsModule, DatePipe],
+  template: `<div class="im-page">
+    <header class="page-heading"><div><span class="eyebrow">TRAZABILIDAD</span><h1>Seguimiento</h1>
+      <p>Revisa el recorrido completo de cada motocicleta, desde su llegada hasta su venta, y atiende la preparación de las solicitudes.</p></div></header>
+    <nav class="im-tabs" aria-label="Vistas de seguimiento">
+      @if (access.can('UBICACIONES_CONSULTAR')) { <button type="button" [class.active]="vistaActual() === 'recorrido'" (click)="vista.set('recorrido')">Recorrido de motocicletas</button> }
+      @if (access.can('SOLICITUDES_CONSULTAR')) { <button type="button" [class.active]="vistaActual() === 'solicitudes'" (click)="vista.set('solicitudes')">Preparación de solicitudes</button> }
+    </nav>
+    @if (error() && !motivoAbierto() && !movimientoAbierto()) { <p class="im-alert error" role="alert">{{error()}}</p> }
+    @if (mensaje()) { <p class="im-alert ok" role="status">{{mensaje()}}</p> }
+
+    @if (vistaActual() === 'recorrido') {
+      <section class="im-card"><h2 class="card-title">Buscar motocicleta</h2>
+        <div class="im-toolbar"><div class="im-search"><input type="search" aria-label="Chasis de la motocicleta" placeholder="Escribe el chasis completo o sus últimos 4 dígitos" [(ngModel)]="chasis" (ngModelChange)="alEscribirChasis()" maxlength="120" /></div></div>
+        @if (buscando()) { <p class="muted">Buscando…</p> }
+        @if (coincidencias().length) {
+          <div class="im-table-wrap"><table class="im-table"><thead><tr><th>Moto</th><th>Color</th><th>Chasis</th><th class="num"></th></tr></thead><tbody>
+            @for (moto of coincidencias(); track moto.id) { <tr><td><strong>{{moto.marca}} {{moto.modelo}}</strong></td><td>{{moto.color}}</td><td>{{moto.chasisVista}}</td>
+              <td><div class="actions"><button type="button" class="im-btn small" (click)="seleccionar(moto)">Ver recorrido</button></div></td></tr> }
+          </tbody></table></div>
         }
       </section>
-      @if (s.estado === 'ATENDIDA' || envios().length) {
-        <section class="panel"><div class="panel-heading"><span class="eyebrow">ENTREGA FÍSICA</span><h2>Salida y recepción</h2>
-          <p>La ubicación confirmada cambia únicamente cuando la tienda confirma que recibió las motos.</p></div>
-          @if (access.can('TRASLADOS_REGISTRAR') && s.estado === 'ATENDIDA' && !envios().length) {
-            <button type="button" (click)="despachar()" [disabled]="ocupado()">Registrar salida de almacén</button>
-          }
-          @if (!envios().length) { <p>La preparación está confirmada; aún no se registra la salida física.</p> }
-          @for (envio of envios(); track envio.motocicletaId) {
-            <p><strong>{{envio.chasis}}</strong> · {{envio.origen}} → {{envio.destino}} · {{envio.estado === 'EN_TRANSITO' ? 'En tránsito' : 'Recibida en tienda' }}
-              @if (access.can('RECEPCIONES_CONFIRMAR') && envio.estado === 'EN_TRANSITO' &&
-                (s.solicitante.toLowerCase() === access.username().toLowerCase() || access.access()?.rolCodigo === 'ADMIN')) {
-                <button type="button" (click)="recibir(envio.motocicletaId)" [disabled]="ocupado()">Confirmar recepción</button>
-              }</p>
-          }
-        </section>
-      }
-      @if (access.can('UNIDADES_ASIGNAR')) {
-        <section class="panel"><div class="panel-heading"><span class="eyebrow">PASO 3 · ASIGNACIÓN</span><h2>Unidades solicitadas</h2><p>Asigna un chasis disponible por cada unidad pedida antes de confirmar.</p></div>
-          @for (linea of s.lineas; track linea.id) {
-            <article><h3>{{linea.marca}} {{linea.modelo}} · {{linea.color}} · {{linea.cantidad}}</h3>
-              <button type="button" (click)="verUnidades(linea.id)">Ver asignadas</button>
-              @for (unidad of unidades()[linea.id]; track unidad.asociacionId) {
-                <p>{{unidad.chasis}}
-                  @if (s.estado === 'EN_PREPARACION') {
-                    <button type="button" (click)="retirar(linea.id,unidad.asociacionId)">Retirar</button>
-                  }
-                </p>
-              }
-              @if (s.estado === 'EN_PREPARACION') {
-                <label>Buscar chasis <input [(ngModel)]="chasis"></label>
-                <button type="button" (click)="buscar()">Buscar libres</button>
-                @for (moto of candidatas(); track moto.motocicletaId) {
-                  <button type="button" (click)="asignar(linea.id,moto.motocicletaId)">Asignar {{moto.chasis}} · {{moto.modelo}} · {{moto.color}}</button>
-                }
-              }
-            </article>
-          }
+      @if (recorrido(); as r) {
+        <section class="im-card"><div class="moto-head"><div><span class="eyebrow">RECORRIDO</span><h2>{{r.moto.marca}} {{r.moto.modelo}} · {{r.moto.color}}</h2><p class="muted">Chasis {{r.moto.chasis}}</p></div>
+            @if (puedeMover(r)) { <button type="button" class="im-btn" (click)="abrirMovimiento()">Registrar movimiento</button> }</div>
+          <div class="status-grid">
+            <div><span>Estado</span><strong>@if (r.vendida) { <span class="im-badge bad">Vendida</span> } @else if (r.enCamino) { <span class="im-badge warn">En camino</span> } @else { <span class="im-badge ok">En sede</span> }</strong></div>
+            <div><span>{{r.enCamino ? 'Ruta' : 'Ubicación actual'}}</span><strong>{{r.enCamino ? r.enCamino.origen + ' → ' + r.enCamino.destino : (r.ubicacionActual || 'Sin ubicación registrada')}}</strong></div>
+            <div><span>Movimientos registrados</span><strong>{{r.eventos.length}}</strong></div>
+          </div>
+          <ol class="im-timeline">
+            @for (paso of pasosRecientes(); track $index) {
+              <li [class.ok]="paso.tipo === 'RECEPCION' || paso.tipo === 'VENTA'" [class.warn]="paso.tipo === 'SALIDA' || paso.tipo === 'ASIGNACION'" [class.bad]="paso.tipo === 'RETIRO' || paso.titulo.startsWith('Bloqueada')">
+                <strong>{{paso.titulo}}</strong><span class="when">{{paso.fecha | date:'dd/MM/yyyy HH:mm'}} · {{paso.responsable}}</span>
+                @if (paso.origen || paso.destino) { <p>{{paso.origen ? paso.origen + ' → ' : 'Destino: '}}{{paso.destino}}</p> }
+                @if (paso.detalle) { <p>{{paso.detalle}}</p> }
+              </li>
+            } @empty { <li><strong>Sin movimientos registrados</strong></li> }
+          </ol>
         </section>
       }
     }
-    @if (error()) { <p role="alert">{{error()}}</p> }
-    @if (mensaje()) { <p role="status">{{mensaje()}}</p> }
-  `,
-  styles: [`:host{display:block;max-width:1120px;margin:auto;color:#102a49}.page-heading{margin:8px 0 26px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;color:#173c64}h1{font-size:clamp(28px,3vw,38px);margin:8px 0}h2{font-size:21px;margin:5px 0}h3{font-size:16px;margin:20px 0 10px}p{color:#627893;line-height:1.55}.page-heading p{max-width:760px;margin:0}.panel{background:#fff;border:1px solid #dfe7ef;border-radius:16px;padding:26px;margin:20px 0;box-shadow:0 10px 30px #1836560a}.panel-heading{padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid #e6edf3}.panel-heading p{margin:4px 0 0}.badge{display:inline-block;vertical-align:middle;padding:6px 10px;border-radius:999px;background:#eaf1f8;color:#173c64;font-size:11px;font-weight:800}article{border:1px solid #e5edf4;background:#f8fafc;border-radius:12px;padding:16px;margin:14px 0}article h3{margin:0 0 12px}article p{padding:8px 12px;background:#fff;border-radius:8px}label{display:grid;gap:7px;margin:10px 0 16px;font-size:13px;font-weight:700;max-width:720px}input,select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #d4dfe9;border-radius:9px;background:#fff;color:#102a49;font:inherit}input:focus,select:focus{outline:2px solid #93b9db;outline-offset:1px}button{border:0;border-radius:9px;background:#183d66;color:white;font:inherit;font-weight:700;padding:11px 15px;cursor:pointer;margin:4px 8px 4px 0}button:hover:not(:disabled){background:#245684}button:disabled{opacity:.55;cursor:not-allowed}[role=alert],[role=status]{padding:12px 16px;border-radius:9px}[role=alert]{color:#9e332c;background:#fff0ee}[role=status]{color:#176744;background:#eaf8ee}@media(max-width:560px){.panel{padding:18px}button{width:100%;margin:5px 0}}`]
+
+    @if (vistaActual() === 'solicitudes') {
+      <section class="im-card"><h2 class="card-title">Elegir solicitud</h2>
+        <div class="im-toolbar"><select aria-label="Solicitud" class="grow" [(ngModel)]="solicitudId"><option [ngValue]="0">Selecciona una solicitud</option>
+          @for (item of solicitudes(); track item.id) { <option [ngValue]="item.id">#{{item.id}} · {{item.solicitante}} · {{nombreEstado(item.estado)}} · {{item.lineas[0]?.marca}} {{item.lineas[0]?.modelo}}</option> }
+          </select>
+          <button type="button" class="im-btn" (click)="consultar()" [disabled]="solicitudId < 1 || ocupado()">Ver seguimiento</button>
+          @if (hayMas()) { <button type="button" class="im-btn light" (click)="cargarSolicitudes()" [disabled]="ocupado()">Cargar más</button> }</div>
+      </section>
+      @if (solicitud(); as s) {
+        <section class="im-card"><div class="moto-head"><div><span class="eyebrow">SOLICITUD #{{s.id}}</span><h2>{{s.destinoNombre || 'Solicitud'}} <span class="im-badge">{{nombreEstado(s.estado)}}</span></h2><p class="muted">Solicitada por {{s.solicitante}}</p></div>
+          <div class="actions">
+            @if (access.can('SOLICITUDES_AVANZAR')) {
+              @if (s.estado === 'PENDIENTE') { <button type="button" class="im-btn" (click)="avanzar('EN_PREPARACION')">Iniciar preparación</button> }
+              @if (s.estado === 'EN_PREPARACION') { <button type="button" class="im-btn" (click)="avanzar('ATENDIDA')">Confirmar preparación</button> }
+              @if (s.estado === 'PENDIENTE' || s.estado === 'EN_PREPARACION') { <button type="button" class="im-btn light" (click)="avanzar('RECHAZADA')">Rechazar</button> }
+            }
+            @if (access.can('SOLICITUDES_ANULAR') && s.estado === 'PENDIENTE') { <button type="button" class="im-btn danger" (click)="anular()">Anular solicitud</button> }
+          </div></div>
+          <h3>Historial de estados</h3>
+          <ol class="im-timeline">
+            @for (evento of eventos(); track evento.id) {
+              <li [class.ok]="evento.estado === 'ATENDIDA'" [class.bad]="evento.estado === 'RECHAZADA' || evento.estado === 'ANULADA'" [class.warn]="evento.estado === 'EN_PREPARACION'">
+                <strong>{{nombreEstado(evento.estado)}}</strong><span class="when">{{evento.fecha | date:'dd/MM/yyyy HH:mm'}} · {{evento.registrador}}</span>
+                @if (evento.motivo) { <p>{{evento.motivo}}</p> }</li>
+            }
+          </ol>
+        </section>
+        @if (s.estado === 'ATENDIDA' || envios().length) {
+          <section class="im-card"><span class="eyebrow">ENTREGA FÍSICA</span><h2>Salida y recepción</h2>
+            <p class="muted">La ubicación confirmada cambia únicamente cuando la tienda confirma que recibió las motos.</p>
+            @if (access.can('TRASLADOS_REGISTRAR') && s.estado === 'ATENDIDA' && !envios().length) {
+              <button type="button" class="im-btn" (click)="despachar()" [disabled]="ocupado()">Registrar salida de almacén</button>
+            }
+            @if (!envios().length) { <p class="muted">La preparación está confirmada; aún no se registra la salida física.</p> }
+            @if (envios().length) {
+              <div class="im-table-wrap"><table class="im-table"><thead><tr><th>Chasis</th><th>Ruta</th><th>Estado</th><th class="num"></th></tr></thead><tbody>
+                @for (envio of envios(); track envio.motocicletaId) {
+                  <tr><td><strong>{{envio.chasis}}</strong></td><td>{{envio.origen}} → {{envio.destino}}</td>
+                    <td><span class="im-badge" [class.warn]="envio.estado === 'EN_TRANSITO'" [class.ok]="envio.estado !== 'EN_TRANSITO'">{{envio.estado === 'EN_TRANSITO' ? 'En camino' : 'Recibida en tienda'}}</span></td>
+                    <td><div class="actions">@if (access.can('RECEPCIONES_CONFIRMAR') && envio.estado === 'EN_TRANSITO' &&
+                      (s.solicitante.toLowerCase() === access.username().toLowerCase() || access.access()?.rolCodigo === 'ADMIN')) {
+                      <button type="button" class="im-btn small" (click)="recibir(envio.motocicletaId)" [disabled]="ocupado()">Confirmar recepción</button> }</div></td></tr>
+                }
+              </tbody></table></div>
+            }
+          </section>
+        }
+        @if (access.can('UNIDADES_ASIGNAR')) {
+          <section class="im-card"><span class="eyebrow">ASIGNACIÓN</span><h2>Unidades solicitadas</h2><p class="muted">Asigna un chasis disponible por cada unidad pedida antes de confirmar.</p>
+            @for (linea of s.lineas; track linea.id) {
+              <article class="linea"><div class="moto-head"><h3>{{linea.marca}} {{linea.modelo}} · {{linea.color}} · {{linea.cantidad}} unidad(es)</h3>
+                <button type="button" class="im-btn small light" (click)="verUnidades(linea.id)">Ver asignadas</button></div>
+                @for (unidad of unidades()[linea.id]; track unidad.asociacionId) {
+                  <p class="unidad">{{unidad.chasis}}
+                    @if (s.estado === 'EN_PREPARACION') { <button type="button" class="im-btn small light" (click)="retirar(linea.id,unidad.asociacionId)">Retirar</button> }</p>
+                }
+                @if (s.estado === 'EN_PREPARACION') {
+                  <div class="im-toolbar"><div class="im-search"><input aria-label="Buscar chasis libre" placeholder="Buscar chasis libre" [(ngModel)]="chasisLibre"></div>
+                    <button type="button" class="im-btn small" (click)="buscar()">Buscar libres</button></div>
+                  @for (moto of candidatas(); track moto.motocicletaId) {
+                    <button type="button" class="im-btn small light candidata" (click)="asignar(linea.id,moto.motocicletaId)">Asignar {{moto.chasis}} · {{moto.modelo}} · {{moto.color}}</button>
+                  }
+                }
+              </article>
+            }
+          </section>
+        }
+      }
+    }
+
+    @if (motivoAbierto(); as m) {
+      <div class="im-overlay" (click)="cerrarMotivo()"><section class="im-dialog" role="dialog" aria-modal="true" aria-labelledby="motivo-titulo" (click)="$event.stopPropagation()">
+        <div class="im-dialog-header"><div><span class="eyebrow">MOTIVO OBLIGATORIO</span><h2 id="motivo-titulo">{{m.titulo}}</h2></div><button type="button" class="im-dialog-close" (click)="cerrarMotivo()">Cerrar</button></div>
+        <form class="im-form" (ngSubmit)="confirmarMotivo()">
+          <label>Motivo<textarea name="motivo" maxlength="1000" required [(ngModel)]="motivo" placeholder="Explica brevemente por qué"></textarea></label>
+          @if (error()) { <p class="im-alert error" role="alert">{{error()}}</p> }
+          <div class="im-dialog-actions"><button type="button" class="im-btn light" (click)="cerrarMotivo()">Cancelar</button><button type="submit" class="im-btn danger" [disabled]="ocupado() || !motivo.trim()">Confirmar</button></div>
+        </form>
+      </section></div>
+    }
+
+    @if (movimientoAbierto() && recorrido(); as r) {
+      <div class="im-overlay" (click)="movimientoAbierto.set(false)"><section class="im-dialog" role="dialog" aria-modal="true" aria-labelledby="mov-titulo" (click)="$event.stopPropagation()">
+        <div class="im-dialog-header"><div><span class="eyebrow">MOVIMIENTO FÍSICO</span><h2 id="mov-titulo">{{r.ubicacionActual ? 'Registrar traslado' : 'Registrar primera ubicación'}}</h2><small>{{r.moto.marca}} {{r.moto.modelo}} · {{r.moto.chasis}}</small></div><button type="button" class="im-dialog-close" (click)="movimientoAbierto.set(false)">Cerrar</button></div>
+        <form class="im-form" (ngSubmit)="guardarMovimiento()">
+          @if (r.ubicacionActual) { <p class="hint">Ubicación actual: <strong>{{r.ubicacionActual}}</strong></p> }
+          <label>Sede que recibe la motocicleta<select name="destino" [(ngModel)]="destinoId"><option [ngValue]="0">Selecciona una sede</option>
+            @for (sede of sedes(); track sede.id) { <option [ngValue]="sede.id">{{sede.nombre}} ({{sede.tipo}})</option> }</select></label>
+          @if (error()) { <p class="im-alert error" role="alert">{{error()}}</p> }
+          <div class="im-dialog-actions"><button type="button" class="im-btn light" (click)="movimientoAbierto.set(false)">Cancelar</button><button type="submit" class="im-btn" [disabled]="ocupado() || !destinoId">Guardar movimiento</button></div>
+        </form>
+      </section></div>
+    }
+  </div>`,
+  styles: [`.card-title{font-size:18px;margin:0 0 14px}h2{font-size:21px;margin:5px 0}h3{font-size:15px;margin:18px 0 10px}.muted{color:#7d8fa3;margin:4px 0 0}.moto-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}.actions{display:flex;gap:8px;flex-wrap:wrap}.status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 22px}.status-grid div{background:#f6f9fc;border:1px solid #e5edf4;border-radius:11px;padding:12px 14px;display:grid;gap:6px}.status-grid span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7d8fa3;font-weight:700}.status-grid strong{color:#102a49}.grow{flex:1 1 280px}.linea{border:1px solid #e5edf4;background:#f8fafc;border-radius:12px;padding:14px 16px;margin:12px 0}.linea h3{margin:0}.unidad{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:8px;margin:6px 0}.candidata{margin:4px 6px 4px 0}@media(max-width:700px){.status-grid{grid-template-columns:1fr}}`]
 })
 export class SeguimientoPage {
   private readonly http = inject(HttpClient);
   readonly access = inject(AuthService);
+  readonly vista = signal<'recorrido' | 'solicitudes' | null>(null);
+  readonly vistaActual = computed(() => this.vista() ??
+    (this.access.can('UBICACIONES_CONSULTAR') ? 'recorrido' : 'solicitudes'));
   readonly solicitud = signal<Solicitud | null>(null);
   readonly solicitudes = signal<Solicitud[]>([]);
   readonly hayMas = signal(true);
@@ -98,12 +180,76 @@ export class SeguimientoPage {
   readonly error = signal('');
   readonly mensaje = signal('');
   readonly ocupado = signal(false);
+  readonly motivoAbierto = signal<Motivo | null>(null);
+  readonly coincidencias = signal<Moto[]>([]);
+  readonly buscando = signal(false);
+  readonly recorrido = signal<Recorrido | null>(null);
+  readonly pasosRecientes = computed(() => [...(this.recorrido()?.eventos ?? [])].reverse());
+  readonly sedes = signal<Sede[]>([]);
+  readonly movimientoAbierto = signal(false);
   solicitudId = 0;
   chasis = '';
+  chasisLibre = '';
+  motivo = '';
+  destinoId = 0;
   private paginaSolicitudes = 0;
+  private temporizador?: ReturnType<typeof setTimeout>;
+  private consultaMoto = 0;
 
-  constructor() { this.cargarSolicitudes(); }
+  constructor() {
+    if (!this.access.access() || this.access.can('SOLICITUDES_CONSULTAR')) this.cargarSolicitudes();
+  }
 
+  @HostListener('document:keydown.escape')
+  cerrarConEscape(): void { this.cerrarMotivo(); this.movimientoAbierto.set(false); }
+
+  nombreEstado(estado: string): string { return ESTADOS[estado] ?? estado; }
+
+  // ---------- Recorrido de una motocicleta ----------
+  alEscribirChasis(): void {
+    clearTimeout(this.temporizador);
+    this.temporizador = setTimeout(() => this.buscarMotocicletas(), 350);
+  }
+  buscarMotocicletas(): void {
+    const chasis = this.chasis.trim();
+    this.coincidencias.set([]); this.error.set('');
+    if (chasis.length < 4 || (chasis.length === 4 && !/^\d{4}$/.test(chasis))) return;
+    const consulta = ++this.consultaMoto;
+    this.buscando.set(true);
+    this.http.get<{items:Moto[]}>('/api/v1/motocicletas', {params:{chasis, pagina:0, tamano:10}}).subscribe({
+      next: page => { if (consulta !== this.consultaMoto) return; this.buscando.set(false); this.coincidencias.set(page.items);
+        if (!page.items.length) this.error.set('No se encontraron motocicletas con ese chasis.'); },
+      error: err => { if (consulta !== this.consultaMoto) return; this.buscando.set(false); this.error.set(apiError(err)); }
+    });
+  }
+  seleccionar(moto: Moto): void { this.coincidencias.set([]); this.mensaje.set(''); this.cargarRecorrido(moto.id); }
+  cargarRecorrido(id: number): void {
+    this.error.set('');
+    this.http.get<Recorrido>(`/api/v1/motocicletas/${id}/recorrido`).subscribe({
+      next: r => this.recorrido.set(r), error: err => this.error.set(apiError(err))
+    });
+  }
+  puedeMover(r: Recorrido): boolean {
+    if (r.vendida || r.enCamino) return false;
+    return r.ubicacionActual ? this.access.can('TRASLADOS_REGISTRAR') : this.access.can('UBICACIONES_REGISTRAR');
+  }
+  abrirMovimiento(): void {
+    this.destinoId = 0; this.error.set(''); this.mensaje.set(''); this.movimientoAbierto.set(true);
+    if (!this.sedes().length)
+      this.http.get<Sede[]>('/api/v1/ubicaciones').subscribe({ next: s => this.sedes.set(s), error: err => this.error.set(apiError(err)) });
+  }
+  guardarMovimiento(): void {
+    const r = this.recorrido();
+    if (!r || !this.destinoId || this.ocupado()) return;
+    this.ocupado.set(true); this.error.set('');
+    const ruta = r.ubicacionActual ? 'traslados' : 'ubicacion';
+    this.http.post(`/api/v1/motocicletas/${r.moto.id}/${ruta}`, {destinoId: this.destinoId}).subscribe({
+      next: () => { this.ocupado.set(false); this.movimientoAbierto.set(false); this.mensaje.set('Movimiento registrado.'); this.cargarRecorrido(r.moto.id); },
+      error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
+    });
+  }
+
+  // ---------- Preparación de solicitudes ----------
   cargarSolicitudes(): void {
     this.ocupado.set(true);
     this.http.get<Solicitud[]>('/api/v1/solicitudes', {params:{pagina:this.paginaSolicitudes,tamano:20}}).subscribe({
@@ -112,7 +258,6 @@ export class SeguimientoPage {
       error: err => { this.error.set(apiError(err)); this.ocupado.set(false); }
     });
   }
-
   consultar(): void {
     this.ocupado.set(true); this.error.set(''); this.solicitud.set(null); this.envios.set([]);
     this.http.get<Solicitud>(`/api/v1/solicitudes/${this.solicitudId}`).subscribe({
@@ -134,7 +279,7 @@ export class SeguimientoPage {
     if (this.ocupado()) return;
     this.ocupado.set(true); this.error.set('');
     this.http.post<Envio[]>(`/api/v1/solicitudes/${this.solicitudId}/envios/despacho`,{}).subscribe({
-      next: lista => { this.envios.set(lista); this.ocupado.set(false); this.mensaje.set('Salida registrada. Las motos figuran en tránsito.'); },
+      next: lista => { this.envios.set(lista); this.ocupado.set(false); this.mensaje.set('Salida registrada. Las motos figuran en camino.'); },
       error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
     });
   }
@@ -148,17 +293,30 @@ export class SeguimientoPage {
     });
   }
   avanzar(estado: string): void {
-    const motivo = estado === 'RECHAZADA' ? window.prompt('Motivo del rechazo:') : null;
-    if (estado === 'RECHAZADA' && !motivo?.trim()) return;
-    this.http.post(`/api/v1/solicitudes/${this.solicitudId}/seguimiento`,{estado,motivo}).subscribe({
-      next: () => { this.mensaje.set('Estado actualizado.'); this.consultar(); }, error: err => this.error.set(apiError(err))
-    });
+    if (estado === 'RECHAZADA') { this.pedirMotivo({accion:'RECHAZADA', titulo:'Rechazar solicitud'}); return; }
+    this.enviarEstado(estado, null);
   }
-  anular(): void {
-    const motivo = window.prompt('Motivo de la anulación:');
-    if (!motivo?.trim()) return;
-    this.http.post(`/api/v1/solicitudes/${this.solicitudId}/anulacion`,{motivo}).subscribe({
-      next: () => { this.mensaje.set('Solicitud anulada.'); this.consultar(); }, error: err => this.error.set(apiError(err))
+  anular(): void { this.pedirMotivo({accion:'ANULAR', titulo:'Anular solicitud'}); }
+  retirar(linea: number, asociacion: number): void {
+    this.pedirMotivo({accion:'RETIRAR', titulo:'Retirar unidad de la solicitud', linea, asociacion});
+  }
+  cerrarMotivo(): void { if (!this.ocupado()) { this.motivoAbierto.set(null); this.error.set(''); } }
+  confirmarMotivo(): void {
+    const m = this.motivoAbierto();
+    const motivo = this.motivo;
+    if (!m || !motivo.trim() || this.ocupado()) return;
+    if (m.accion === 'RECHAZADA') { this.enviarEstado('RECHAZADA', motivo); return; }
+    this.ocupado.set(true); this.error.set('');
+    if (m.accion === 'ANULAR') {
+      this.http.post(`/api/v1/solicitudes/${this.solicitudId}/anulacion`,{motivo}).subscribe({
+        next: () => { this.terminarMotivo('Solicitud anulada.'); this.consultar(); },
+        error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
+      });
+      return;
+    }
+    this.http.request('DELETE',`/api/v1/solicitudes/${this.solicitudId}/lineas/${m.linea}/unidades/${m.asociacion}`,{body:{motivo}}).subscribe({
+      next: () => { this.terminarMotivo('Unidad retirada.'); this.verUnidades(m.linea!); },
+      error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
     });
   }
   verUnidades(linea: number): void {
@@ -167,7 +325,7 @@ export class SeguimientoPage {
     });
   }
   buscar(): void {
-    this.http.get<Candidata[]>('/api/v1/motocicletas/elegibles',{params:{chasis:this.chasis}}).subscribe({
+    this.http.get<Candidata[]>('/api/v1/motocicletas/elegibles',{params:{chasis:this.chasisLibre}}).subscribe({
       next: lista => this.candidatas.set(lista), error: err => this.error.set(apiError(err))
     });
   }
@@ -177,12 +335,14 @@ export class SeguimientoPage {
       error: err => this.error.set(apiError(err))
     });
   }
-  retirar(linea: number,asociacion: number): void {
-    const motivo = window.prompt('Motivo del retiro:');
-    if (!motivo?.trim()) return;
-    this.http.request('DELETE',`/api/v1/solicitudes/${this.solicitudId}/lineas/${linea}/unidades/${asociacion}`,{body:{motivo}}).subscribe({
-      next: () => { this.verUnidades(linea); this.mensaje.set('Unidad retirada.'); },
-      error: err => this.error.set(apiError(err))
+
+  private pedirMotivo(m: Motivo): void { this.motivo = ''; this.error.set(''); this.mensaje.set(''); this.motivoAbierto.set(m); }
+  private terminarMotivo(texto: string): void { this.ocupado.set(false); this.motivoAbierto.set(null); this.mensaje.set(texto); }
+  private enviarEstado(estado: string, motivo: string | null): void {
+    this.ocupado.set(true); this.error.set('');
+    this.http.post(`/api/v1/solicitudes/${this.solicitudId}/seguimiento`,{estado,motivo}).subscribe({
+      next: () => { this.terminarMotivo('Estado actualizado.'); this.consultar(); },
+      error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
     });
   }
 }

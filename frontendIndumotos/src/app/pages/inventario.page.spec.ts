@@ -79,7 +79,7 @@ describe('InventarioPage', () => {
     TestBed.inject(AuthService).access.set({usuarioId:1,nombreUsuario:'admin',rolCodigo:'ADMIN',
       permisos:[{codigo:'INVENTARIO_CONSULTAR',permitido:true},{codigo:'DISPONIBILIDAD_CONSULTAR',permitido:true}]});
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Disponibilidad y diferencias');
+    expect(fixture.nativeElement.textContent).toContain('Bloqueos y diferencias de datos');
     page.vista.set('control');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-control-datos-page')).not.toBeNull();
