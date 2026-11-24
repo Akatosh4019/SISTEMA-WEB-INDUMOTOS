@@ -4,32 +4,31 @@ import { TestBed } from '@angular/core/testing';
 import { PermisosPage } from './permisos.page';
 
 describe('PermisosPage', () => {
-  it('lista cuentas por páginas y abre permisos bloqueados hasta habilitar edición', async () => {
+  it('muestra roles y guarda los permisos del rol editado', () => {
     TestBed.configureTestingModule({imports: [PermisosPage], providers: [provideHttpClient(), provideHttpClientTesting()]});
     const fixture = TestBed.createComponent(PermisosPage);
     const http = TestBed.inject(HttpTestingController);
+    const rol = {id:2,codigo:'ALMACEN',nombre:'Almacenero',descripcion:'Recepción',estado:'ACTIVO',trabajadores:3,permisos:1};
+    const permisos = [{codigo:'LLEGADAS_REGISTRAR',nombre:'Registrar llegadas',descripcion:'',asignado:true},
+      {codigo:'INVENTARIO_CONSULTAR',nombre:'Consultar inventario',descripcion:'',asignado:false}];
+    http.expectOne('/api/v1/roles').flush([rol]);
     fixture.detectChanges();
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const primera = http.expectOne(req => req.url === '/api/v1/usuarios' && req.params.get('pagina') === '0' && req.params.get('tamano') === '10');
-    primera.flush({items: [{id: 4, nombreCompleto: 'Ana Lima', nombreUsuario: 'ana', rolCodigo: 'ALMACEN', estado: 'ACTIVO'}], pagina: 0, totalElementos: 11});
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(1);
-    fixture.componentInstance.irPagina(1);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    http.expectOne(req => req.url === '/api/v1/usuarios' && req.params.get('pagina') === '1' && req.params.get('tamano') === '10')
-      .flush({items: [{id: 5, nombreCompleto: 'Beto Cruz', nombreUsuario: 'beto', rolCodigo: 'COMERCIAL', estado: 'ACTIVO'}], pagina: 1, totalElementos: 11});
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Beto Cruz');
-    fixture.componentInstance.consultar(fixture.componentInstance.cuentas()!.items[0]);
-    http.expectOne('/api/v1/usuarios/5/permisos').flush({usuarioId: 5, nombreUsuario: 'beto', rolCodigo: 'COMERCIAL', permisos: [{codigo: 'SOLICITUDES_CREAR', porRol: true, excepcion: null, permitido: true}]});
+    expect(fixture.nativeElement.textContent).toContain('Almacenero');
+    expect(fixture.nativeElement.textContent).not.toContain('Cuentas del sistema');
+    fixture.componentInstance.abrir(rol);
+    http.expectOne('/api/v1/roles/ALMACEN').flush({rol,permisos});
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.role-form')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.permission-actions')).toBeNull();
-    fixture.nativeElement.querySelector('.edit-toggle input').click();
+    expect(fixture.nativeElement.querySelector('.role-actions button:last-child').textContent).toContain('Cerrar');
+    fixture.componentInstance.alternarEdicion();
+    fixture.componentInstance.cambiarPermiso('INVENTARIO_CONSULTAR');
+    fixture.componentInstance.guardar();
+    const cambio = http.expectOne('/api/v1/roles/ALMACEN/permisos');
+    expect(cambio.request.body.codigos).toContain('INVENTARIO_CONSULTAR');
+    cambio.flush({rol:{...rol,permisos:2},permisos:permisos.map(p => ({...p,asignado:true}))});
+    http.expectOne('/api/v1/roles').flush([{...rol,permisos:2}]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.role-form')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.permission-actions')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Permisos del rol actualizados');
     http.verify();
   });
 });
