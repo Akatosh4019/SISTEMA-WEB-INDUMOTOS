@@ -16,7 +16,7 @@ El menú muestra las opciones permitidas a cada rol; la API valida cada acción.
 
 ## Abrir la web en Docker
 
-Primero inicia la API desde la raíz del repositorio backend con `docker compose up -d --build api`. Después, desde este repositorio:
+Primero inicia la API desde la raíz del repositorio backend con `docker compose up -d --build api`. El backend carga datos de demostración al iniciar con el perfil `demo`: 20 motos de prueba, catálogo y dos guías ficticias con imágenes. Consulta su [explicación de los datos](https://github.com/Akatosh4019/BACK-END-INDUMOTOS/blob/feature/roberto-indumotos/src/main/resources/db/demo/README.md). Después, desde este repositorio:
 
 ```powershell
 cd frontendIndumotos
