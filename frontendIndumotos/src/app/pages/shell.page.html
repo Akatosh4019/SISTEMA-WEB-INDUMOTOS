@@ -11,7 +11,8 @@
       @if (access.can('CATALOGO_GESTIONAR')) { <a routerLink="/app/catalogo" routerLinkActive="active"><span class="nav-icon">▤</span> Catálogo de motocicletas</a> }
       @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/solicitudes" routerLinkActive="active"><span class="nav-icon">☷</span> Solicitudes</a> }
       @if (access.can('UBICACIONES_CONSULTAR')) { <a routerLink="/app/ubicaciones" routerLinkActive="active"><span class="nav-icon">⌖</span> Ubicaciones</a> }
-      @if (access.can('SOLICITUDES_CONSULTAR')) { <a routerLink="/app/seguimiento" routerLinkActive="active"><span class="nav-icon">↗</span> Seguimiento</a> }
+      @if (access.can('SOLICITUDES_CONSULTAR') || access.can('UBICACIONES_CONSULTAR')) { <a routerLink="/app/seguimiento" routerLinkActive="active"><span class="nav-icon">↗</span> Seguimiento</a> }
+      @if (access.can('REPORTES_CONSULTAR')) { <a routerLink="/app/reportes" routerLinkActive="active"><span class="nav-icon">▥</span> Reportes</a> }
       @if (access.can('USUARIOS_CREAR') || access.can('USUARIOS_CONSULTAR')) { <a routerLink="/app/usuarios" routerLinkActive="active"><span class="nav-icon">✚</span> Cuentas</a> }
       @if (access.can('PERMISOS_ASIGNAR')) { <a routerLink="/app/permisos" routerLinkActive="active"><span class="nav-icon">♙</span> Roles y permisos</a> }
     </nav>

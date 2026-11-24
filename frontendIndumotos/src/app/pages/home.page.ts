@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { nombreRol } from '../core/roles';
 import { AuthService } from '../core/auth.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { AuthService } from '../core/auth.service';
       @if (auth.can('SOLICITUDES_CREAR')) { <a class="action-card" routerLink="/app/solicitudes"><span class="card-symbol muted">☷</span><span class="card-kicker">COMERCIAL</span><strong>Solicitar motocicletas</strong><span class="card-copy">Elige modelos, cantidades y la sede que los recibirá.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('SOLICITUDES_AVANZAR')) { <a class="action-card" routerLink="/app/seguimiento"><span class="card-symbol muted">↗</span><span class="card-kicker">PREPARACIÓN</span><strong>Atender solicitudes</strong><span class="card-copy">Asigna los chasis y confirma cuando esté todo preparado.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('INVENTARIO_CONSULTAR') || auth.can('DISPONIBILIDAD_CONSULTAR')) { <a class="action-card" routerLink="/app/inventario"><span class="card-symbol muted">⌕</span><span class="card-kicker">CONSULTA</span><strong>Inventario de motocicletas</strong><span class="card-copy">Consulta fichas, disponibilidad y diferencias según tu rol.</span><span class="card-arrow">Abrir módulo →</span></a> }
+      @if (auth.can('REPORTES_CONSULTAR')) { <a class="action-card" routerLink="/app/reportes"><span class="card-symbol muted">▥</span><span class="card-kicker">REPORTES</span><strong>Ventas y stock</strong><span class="card-copy">Modelos más y menos vendidos por semana, mes o año, y stock por modelo.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('USUARIOS_CREAR')) { <a class="action-card" routerLink="/app/usuarios"><span class="card-symbol muted">♙</span><span class="card-kicker">ADMINISTRACIÓN</span><strong>Crear cuenta</strong><span class="card-copy">Registra una cuenta individual para un trabajador autorizado.</span><span class="card-arrow">Abrir módulo →</span></a> }
       @if (auth.can('PERMISOS_ASIGNAR')) { <a class="action-card" routerLink="/app/permisos"><span class="card-symbol muted">◇</span><span class="card-kicker">ACCESO</span><strong>Roles y permisos</strong><span class="card-copy">Consulta y ajusta el acceso de una cuenta.</span><span class="card-arrow">Abrir módulo →</span></a> }
     </div>`,
@@ -31,11 +33,5 @@ export class HomePage {
       : role === 'ENSAMBLAJE' ? 'Consulta las solicitudes asignadas y registra su preparación.'
       : 'Consulta el inventario y administra las operaciones y accesos del equipo.';
   });
-  readonly roleName = computed(() => {
-    const role = this.auth.access()?.rolCodigo;
-    return role === 'ADMIN' ? 'Administrador' : role === 'ALMACEN' ? 'Almacén'
-      : role === 'INVENTARIOS' ? 'Inventarios' : role === 'COMERCIAL' ? 'Comercial'
-      : role === 'FACTURACION' ? 'Facturación'
-      : role === 'ENSAMBLAJE' ? 'Ensamblaje' : role?.replaceAll('_', ' ') || 'Usuario';
-  });
+  readonly roleName = computed(() => nombreRol(this.auth.access()?.rolCodigo));
 }

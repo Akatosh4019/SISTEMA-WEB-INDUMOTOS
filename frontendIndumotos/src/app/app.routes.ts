@@ -18,7 +18,8 @@ export const routes: Routes = [
       { path: 'control-datos', redirectTo: 'inventario', pathMatch: 'full' },
       { path: 'solicitudes', canActivate: [permissionGuard], data: { permission: 'SOLICITUDES_CONSULTAR' }, loadComponent: () => import('./pages/solicitudes.page').then(m => m.SolicitudesPage) },
       { path: 'ubicaciones', canActivate: [permissionGuard], data: { permission: 'UBICACIONES_CONSULTAR' }, loadComponent: () => import('./pages/ubicaciones.page').then(m => m.UbicacionesPage) },
-      { path: 'seguimiento', canActivate: [permissionGuard], data: { permission: 'SOLICITUDES_CONSULTAR' }, loadComponent: () => import('./pages/seguimiento.page').then(m => m.SeguimientoPage) },
+      { path: 'seguimiento', canActivate: [permissionGuard], data: { permissions: ['SOLICITUDES_CONSULTAR', 'UBICACIONES_CONSULTAR'] }, loadComponent: () => import('./pages/seguimiento.page').then(m => m.SeguimientoPage) },
+      { path: 'reportes', canActivate: [permissionGuard], data: { permission: 'REPORTES_CONSULTAR' }, loadComponent: () => import('./pages/reportes.page').then(m => m.ReportesPage) },
       { path: 'usuarios', canActivate: [permissionGuard], data: { permissions: ['USUARIOS_CREAR', 'USUARIOS_CONSULTAR'] }, loadComponent: () => import('./pages/usuarios.page').then(m => m.UsuariosPage) },
       { path: 'permisos', canActivate: [permissionGuard], loadComponent: () => import('./pages/permisos.page').then(m => m.PermisosPage) }
     ]
