@@ -57,7 +57,7 @@
       <h3>Motocicletas vinculadas</h3><p class="detail-hint">Recibidas sin ficha: {{detalle.diferenciaInformativa}}. Es un dato informativo; no confirma conformidad.</p>
       @for (ficha of detalle.fichas; track ficha.id) { <a class="ficha-link" routerLink="/app/inventario" [queryParams]="{id:ficha.id}" (click)="cerrarDetalle()"><span><strong>{{ficha.marca}} {{ficha.modelo}}</strong><small>{{ficha.color}} · Chasis {{ficha.chasisCompleto}}</small></span><span>Abrir ficha →</span></a> }
       @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
-      @if (auth.can('FICHAS_REGISTRAR') && llegada.estadoRegistro !== 'CONFIRMADA') { <a class="new-ficha-link" routerLink="/app/fichas" [queryParams]="{llegadaId:llegada.id}" (click)="cerrarDetalle()">Continuar registro de motocicletas →</a> }
+      @if (auth.can('FICHAS_REGISTRAR') && llegada.estadoRegistro !== 'CONFIRMADA') { <a class="new-ficha-link" routerLink="/app/inventario" [queryParams]="{registro:1,llegadaId:llegada.id}" (click)="cerrarDetalle()">Continuar registro de motocicletas →</a> }
     } @else if (searchBusy()) { <p class="loading">Cargando detalle…</p> }
   </section></div> }
 </div>

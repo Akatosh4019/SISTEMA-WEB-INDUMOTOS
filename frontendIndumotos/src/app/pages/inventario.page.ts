@@ -6,6 +6,7 @@ import { apiError } from '../core/api-error';
 import { AuthService } from '../core/auth.service';
 import { FichaDialogComponent } from './ficha-dialog.component';
 import { ControlDatosPage } from './control-datos.page';
+import { FichasPage } from './fichas.page';
 
 interface ResumenMotocicleta {
   id: number;
@@ -27,7 +28,7 @@ type Filtros = { chasis: string; marca: string; modelo: string; color: string };
 
 @Component({
   selector: 'app-inventario-page',
-  imports: [FormsModule, RouterLink, FichaDialogComponent, ControlDatosPage],
+  imports: [FormsModule, RouterLink, FichaDialogComponent, ControlDatosPage, FichasPage],
   templateUrl: './inventario.page.html',
   styleUrl: './inventario.page.css'
 })
@@ -40,7 +41,7 @@ export class InventarioPage implements OnInit {
   readonly page = signal<PaginaMotocicletas | null>(null);
   readonly fichaAbierta = signal<number | null>(null);
   readonly filtrosAbiertos = signal(false);
-  readonly vista = signal<'listado' | 'control'>('listado');
+  readonly vista = signal<'listado' | 'control' | 'registro'>('listado');
   filtros: Filtros = { chasis: '', marca: '', modelo: '', color: '' };
   private aplicados: Filtros = { ...this.filtros };
   private temporizador?: ReturnType<typeof setTimeout>;
@@ -52,6 +53,8 @@ export class InventarioPage implements OnInit {
     this.route.queryParamMap.subscribe(params => {
       const id = Number(params.get('id'));
       if (Number.isSafeInteger(id) && id > 0) this.fichaAbierta.set(id);
+      if (params.has('registro') || params.has('llegadaId')) this.vista.set('registro');
+      else if (this.auth.can('INVENTARIO_CONSULTAR')) this.vista.set('listado');
     });
   }
 

@@ -1,14 +1,17 @@
-<div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div>
-<h1>Inventario</h1>
-<p class="lead">Consulta las fichas, revisa la disponibilidad y atiende diferencias según los permisos de tu rol.</p>
-@if (auth.can('INVENTARIO_CONSULTAR') && auth.can('DISPONIBILIDAD_CONSULTAR')) {
+@if (vista()!=='registro') {
+  <div class="eyebrow">INVENTARIO DE MOTOCICLETAS</div>
+  <h1>Inventario</h1>
+  <p class="lead">Consulta las fichas, revisa la disponibilidad y atiende diferencias según los permisos de tu rol.</p>
+}
+@if (auth.can('INVENTARIO_CONSULTAR') || auth.can('DISPONIBILIDAD_CONSULTAR') || auth.can('FICHAS_REGISTRAR')) {
   <nav class="inventory-tabs" aria-label="Vistas del inventario">
-    <button type="button" [class.active]="vista()==='listado'" [attr.aria-current]="vista()==='listado' ? 'page' : null" (click)="vista.set('listado')">Listado de motos</button>
-    <button type="button" [class.active]="vista()==='control'" [attr.aria-current]="vista()==='control' ? 'page' : null" (click)="vista.set('control')">Disponibilidad y diferencias</button>
+    @if (auth.can('INVENTARIO_CONSULTAR')) { <a routerLink="/app/inventario" [class.active]="vista()==='listado'" [attr.aria-current]="vista()==='listado' ? 'page' : null">Listado de motos</a> }
+    @if (auth.can('FICHAS_REGISTRAR')) { <a routerLink="/app/inventario" [queryParams]="{registro:1}" [class.active]="vista()==='registro'" [attr.aria-current]="vista()==='registro' ? 'page' : null">Registrar por guía</a> }
+    @if (auth.can('DISPONIBILIDAD_CONSULTAR')) { <button type="button" [class.active]="vista()==='control'" [attr.aria-current]="vista()==='control' ? 'page' : null" (click)="vista.set('control')">Disponibilidad y diferencias</button> }
   </nav>
 }
 @if (vista()==='listado' && auth.can('INVENTARIO_CONSULTAR')) {
-@if (auth.can('FICHAS_REGISTRAR')) { <a class="new-record" routerLink="/app/fichas" [queryParams]="{nuevo: 1}">+ Agregar motocicleta</a> }
+@if (auth.can('FICHAS_REGISTRAR')) { <a class="new-record" routerLink="/app/inventario" [queryParams]="{registro: 1}">+ Registrar motocicletas de una guía</a> }
 
 <section class="panel" aria-labelledby="filtros-titulo">
   <div class="panel-heading"><span class="panel-icon">⌕</span><div><h2 id="filtros-titulo">Buscar motocicleta</h2><p>Busca por chasis o abre los filtros para combinar marca, modelo y color.</p></div></div>
@@ -45,3 +48,4 @@
 @if (fichaAbierta(); as id) { <app-ficha-dialog [id]="id" (cerrar)="fichaAbierta.set(null)" /> }
 }
 @if (vista()==='control' && auth.can('DISPONIBILIDAD_CONSULTAR')) { <app-control-datos-page /> }
+@if (vista()==='registro' && auth.can('FICHAS_REGISTRAR')) { <app-fichas-page /> }
