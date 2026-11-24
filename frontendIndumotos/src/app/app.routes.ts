@@ -9,6 +9,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./pages/shell.page').then(m => m.ShellPage),
     children: [
+      { path: 'inventario/:id/historial', canActivate: [permissionGuard], data: { permission: 'INVENTARIO_CONSULTAR' }, loadComponent: () => import('./pages/historial-moto.page').then(m => m.HistorialMotoPage) },
       { path: '', loadComponent: () => import('./pages/home.page').then(m => m.HomePage) },
       { path: 'llegadas', canActivate: [permissionGuard], data: { permissions: ['LLEGADAS_REGISTRAR', 'INVENTARIO_CONSULTAR'] }, loadComponent: () => import('./pages/llegadas.page').then(m => m.LlegadasPage) },
       { path: 'fichas', canActivate: [permissionGuard], data: { permissions: ['FICHAS_REGISTRAR', 'INVENTARIO_CONSULTAR'] }, loadComponent: () => import('./pages/fichas.page').then(m => m.FichasPage) },

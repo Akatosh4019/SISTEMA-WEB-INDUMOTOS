@@ -22,11 +22,11 @@
   <section class="panel results" aria-labelledby="resultados-titulo">
     <div class="results-heading"><div><div class="eyebrow">RESULTADOS</div><h2 id="resultados-titulo">Motocicletas encontradas</h2></div><span class="count">{{ resultado.totalElementos }} {{ resultado.totalElementos === 1 ? 'unidad' : 'unidades' }}</span></div>
     @for (moto of resultado.items; track moto.id) {
-      <button type="button" class="result-row" (click)="fichaAbierta.set(moto.id)">
+      <div class="result-with-history"><button type="button" class="result-row" (click)="fichaAbierta.set(moto.id)">
         <span class="item-id">#{{ moto.id }}</span>
         <span class="item-main"><strong>{{ moto.marca }} {{ moto.modelo }}</strong><small>Color: {{ moto.color }} · Chasis: {{ moto.chasisVista }}</small></span>
         <span class="open">Abrir ficha →</span>
-      </button>
+      </button><a class="history-link" [routerLink]="['/app/inventario',moto.id,'historial']" [attr.aria-label]="'Ver historial de ' + moto.marca + ' ' + moto.modelo + ' ' + moto.color + ' ' + moto.chasisVista">Ver historial →</a></div>
     } @empty {
       <div class="empty"><strong>No hay coincidencias</strong><span>Prueba otro chasis o cambia los filtros. Los últimos cuatro dígitos pueden corresponder a varias motos.</span></div>
     }
