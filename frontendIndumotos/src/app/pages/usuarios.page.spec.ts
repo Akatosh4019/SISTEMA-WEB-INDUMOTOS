@@ -36,6 +36,8 @@ describe('UsuariosPage', () => {
     await new Promise(resolve=>setTimeout(resolve,300));
     http.expectOne(req=>req.url==='/api/v1/usuarios').flush({items:[],pagina:0,tamano:10,totalElementos:0});
     const page=fixture.componentInstance;
+    expect(fixture.nativeElement.querySelector('#nuevoTitulo')).toBeNull();
+    page.abrirNuevo();
     page.form={nombreCompleto:'Ana Lima',nombreUsuario:'ana',rolCodigo:'COMERCIAL',clave:'ClaveTemporal123',tiendaId:null};
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('#tiendaNueva')).not.toBeNull();

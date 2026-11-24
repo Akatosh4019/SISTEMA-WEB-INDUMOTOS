@@ -24,9 +24,11 @@ export interface DetalleCuenta {
   selector: 'app-usuarios-page',
   imports: [FormsModule, DatePipe],
   template: `<div class="form-page">
-    <div class="eyebrow">ADMINISTRACIÓN DE ACCESOS</div><h1>Cuentas del equipo</h1>
-    <p class="lead">Crea una cuenta individual para cada trabajador, consulta su estado y permisos vigentes, y desactívala o reactívala sin perder su historial.</p>
-    @if (puedeCrear()) { <div class="grid"><section class="panel"><h2>Datos del trabajador</h2><p class="hint">La contraseña se enviará al servidor para guardarla de forma segura.</p>
+    <div class="eyebrow">PERSONAL</div><h1>Trabajadores</h1>
+    <p class="lead">Consulta al personal y sus cuentas de acceso desde un solo lugar. Abre cada ficha para ver o editar sus datos.</p>
+    @if (puedeCrear()) { <button type="button" class="new-worker" (click)="abrirNuevo()">＋ Nuevo trabajador</button> }
+    @if (created(); as usuario) { <p class="message success" role="status">Trabajador {{usuario.nombreUsuario}} registrado.</p> }
+    @if (nuevoAbierto()) { <div class="account-overlay" (click)="cerrarNuevo()"><section class="panel account-detail" role="dialog" aria-modal="true" aria-labelledby="nuevoTitulo" (click)="$event.stopPropagation()"><div class="accounts-head"><div><span class="eyebrow">PERSONAL</span><h2 id="nuevoTitulo">Nuevo trabajador</h2><p class="hint">Registra sus datos laborales y su cuenta de acceso.</p></div><button type="button" class="clear-search" (click)="cerrarNuevo()" aria-label="Cerrar formulario">✕</button></div>
       <form (ngSubmit)="guardar()" #f="ngForm">
         <label for="nombreCompleto">Nombre completo</label><input id="nombreCompleto" name="nombreCompleto" required maxlength="180" autocomplete="name" [(ngModel)]="form.nombreCompleto" />
         <label for="nombreUsuario">Nombre de usuario</label><input id="nombreUsuario" name="nombreUsuario" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._-]+" autocomplete="off" [(ngModel)]="form.nombreUsuario" />
@@ -34,23 +36,15 @@ export interface DetalleCuenta {
         <div><label for="clave">Contraseña inicial</label><div class="password-field"><input id="clave" name="clave" [type]="verClave() ? 'text' : 'password'" required minlength="12" maxlength="100" autocomplete="new-password" [(ngModel)]="form.clave" /><button type="button" class="password-toggle" (click)="verClave.set(!verClave())" [attr.aria-label]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="verClave()" [title]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'">@if (verClave()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a12.6 12.6 0 0 1-3.2 4.3M6.2 6.2A12.4 12.4 0 0 0 2 12c1 2.5 5 7 10 7a9.6 9.6 0 0 0 4.3-1"/></svg> } @else { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c1-2.5 5-7 10-7s9 4.5 10 7c-1 2.5-5 7-10 7S3 14.5 2 12z"/><circle cx="12" cy="12" r="3"/></svg> }</button></div></div></div>
         @if (form.rolCodigo === 'COMERCIAL' || form.rolCodigo === 'FACTURACION') { <label for="tiendaNueva">Sede de trabajo</label><select id="tiendaNueva" name="tiendaId" [(ngModel)]="form.tiendaId" required><option [ngValue]="null">Selecciona una tienda</option>@for (tienda of tiendas(); track tienda.id) { <option [ngValue]="tienda.id">{{tienda.nombre}}</option> }</select><p class="hint">La cuenta quedará vinculada a esta tienda.</p> }
         @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
-        <button type="submit" [disabled]="busy() || !f.valid">{{busy() ? 'Creando…' : 'Crear cuenta'}}</button>
+        <div class="state-actions"><button type="button" class="secondary" (click)="cerrarNuevo()" [disabled]="busy()">Cancelar</button><button type="submit" [disabled]="busy() || !f.valid">{{busy() ? 'Guardando…' : 'Guardar trabajador'}}</button></div>
       </form>
-      @if (created(); as usuario) { <p class="message success" role="status">Cuenta {{usuario.nombreUsuario}} creada con ID #{{usuario.id}}.</p> }
-    </section><section class="panel"><h2>Roles iniciales</h2><p class="hint">El servidor comprobará el rol y los permisos de quien crea la cuenta.</p>
-      <div class="detail"><div class="detail-row"><span>ADMIN</span><strong>Administrar cuentas y accesos</strong></div>
-      <div class="detail-row"><span>ALMACEN</span><strong>Registrar llegadas y preparar solicitudes</strong></div>
-      <div class="detail-row"><span>INVENTARIOS</span><strong>Registrar fichas y gestionar catálogo</strong></div>
-      <div class="detail-row"><span>COMERCIAL</span><strong>Crear solicitudes para sedes</strong></div>
-      <div class="detail-row"><span>FACTURACION</span><strong>Consultar disponibilidad y reportar diferencias de datos</strong></div>
-      <div class="detail-row"><span>ENSAMBLAJE</span><strong>Consultar y preparar solicitudes</strong></div></div>
     </section></div> }
-    <section class="panel accounts-panel"><div class="accounts-head"><div><h2>Cuentas creadas</h2><p class="hint">Consulta las cuentas del equipo. Se muestran hasta 10 por página.</p></div>
+    <section class="panel accounts-panel"><div class="accounts-head"><div><h2>Personal registrado</h2><p class="hint">Cada trabajador tiene una cuenta de acceso. Se muestran hasta 10 por página.</p></div>
       <div class="account-search"><label for="buscarCuenta">Buscar cuenta</label><div class="search-controls"><input id="buscarCuenta" name="buscarCuenta" type="text" [(ngModel)]="busqueda" (ngModelChange)="buscar()" placeholder="Nombre o usuario" maxlength="180" /><button type="button" class="clear-search" (click)="limpiarBusqueda()" [disabled]="!busqueda" aria-label="Limpiar búsqueda" title="Limpiar búsqueda">✕</button></div></div></div>
       @if (errorLista()) { <p class="message error" role="alert">{{errorLista()}}</p> }
       @if (cuentas(); as resultado) {
         <div class="table-wrap"><table><thead><tr><th>Trabajador</th><th>Usuario</th><th>Rol</th><th>Estado</th>@if (puedeConsultar()) { <th><span class="sr-only">Acciones</span></th> }</tr></thead><tbody>
-          @for (cuenta of resultado.items; track cuenta.id) { <tr><td><strong>{{cuenta.nombreCompleto}}</strong></td><td>{{cuenta.nombreUsuario}}</td><td>{{nombreRol(cuenta.rolCodigo)}}</td><td><span class="account-state" [class.inactive]="cuenta.estado !== 'ACTIVO'">{{cuenta.estado}}</span></td>@if (puedeConsultar()) { <td class="row-action"><button type="button" class="link-button" (click)="verDetalle(cuenta.id)" [attr.aria-label]="'Ver cuenta ' + cuenta.nombreUsuario">Ver detalle</button></td> }</tr> }
+          @for (cuenta of resultado.items; track cuenta.id) { <tr><td data-label="Trabajador"><strong>♙ {{cuenta.nombreCompleto}}</strong></td><td data-label="Usuario">&#64;{{cuenta.nombreUsuario}}</td><td data-label="Rol">{{nombreRol(cuenta.rolCodigo)}}</td><td data-label="Estado"><span class="account-state" [class.inactive]="cuenta.estado !== 'ACTIVO'">{{cuenta.estado}}</span></td>@if (puedeConsultar()) { <td class="row-action"><button type="button" class="link-button" (click)="verDetalle(cuenta.id)" [attr.aria-label]="'Ver trabajador ' + cuenta.nombreUsuario">Ver ficha →</button></td> }</tr> }
           @empty { <tr><td [attr.colspan]="puedeConsultar() ? 5 : 4" class="no-results">No se encontraron cuentas.</td></tr> }
         </tbody></table></div>
         <div class="accounts-footer"><span>{{resultado.totalElementos}} {{resultado.totalElementos === 1 ? 'cuenta' : 'cuentas'}} · Página {{resultado.pagina + 1}} de {{totalPaginas(resultado) || 1}}</span>
@@ -130,6 +124,7 @@ export class UsuariosPage implements OnInit {
   readonly confirmando = signal(false);
   readonly cambiando = signal(false);
   readonly verClave = signal(false);
+  readonly nuevoAbierto = signal(false);
   readonly tiendas = signal<Tienda[]>([]);
   readonly asignandoTienda = signal(false);
   tiendaDetalle = 0;
@@ -157,6 +152,8 @@ export class UsuariosPage implements OnInit {
   puedeConsultar(): boolean { return this.auth.can('USUARIOS_CONSULTAR'); }
   puedeCambiarEstado(): boolean { return this.auth.can('USUARIOS_DESACTIVAR'); }
   buscar(): void { this.irPagina(0); }
+  abrirNuevo(): void { this.error.set(''); this.created.set(null); this.nuevoAbierto.set(true); }
+  cerrarNuevo(): void { if (!this.busy()) { this.nuevoAbierto.set(false); this.error.set(''); this.form.clave = ''; } }
 
   verDetalle(id: number): void {
     this.seleccionId.set(id); this.detalle.set(null); this.historial.set([]); this.detalleCargando.set(true);
@@ -167,7 +164,7 @@ export class UsuariosPage implements OnInit {
       error: err => { if (this.seleccionId() !== id) return; this.detalleCargando.set(false); this.errorDetalle.set(apiError(err)); }
     });
   }
-  @HostListener('document:keydown.escape') cerrarDetalle(): void { this.seleccionId.set(null); this.detalle.set(null); this.historial.set([]); this.confirmando.set(false); }
+  @HostListener('document:keydown.escape') cerrarDetalle(): void { this.cerrarNuevo(); this.seleccionId.set(null); this.detalle.set(null); this.historial.set([]); this.confirmando.set(false); }
   pedirConfirmacion(): void {
     this.errorEstado.set('');
     if (!this.motivo.trim()) { this.errorEstado.set('Escribe el motivo del cambio.'); return; }
@@ -227,7 +224,7 @@ export class UsuariosPage implements OnInit {
     this.busy.set(true);
     const tiendaId = this.form.rolCodigo === 'COMERCIAL' || this.form.rolCodigo === 'FACTURACION' ? this.form.tiendaId : null;
     this.http.post<UsuarioCreado>('/api/v1/usuarios', {...this.form, tiendaId}).subscribe({
-      next: value => { this.created.set(value); this.form.clave = ''; this.busy.set(false); this.busqueda = ''; this.irPagina(0); },
+      next: value => { this.created.set(value); this.form.clave = ''; this.busy.set(false); this.nuevoAbierto.set(false); this.busqueda = ''; this.irPagina(0); },
       error: err => { this.error.set(apiError(err)); this.busy.set(false); }
     });
   }
