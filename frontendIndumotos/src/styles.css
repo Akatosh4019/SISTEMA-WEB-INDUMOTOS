@@ -36,3 +36,4 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
 .content:has(app-llegadas-page){max-width:none;width:100%;min-width:0}.arrivals-page,.arrivals-page .panel,.arrivals-page .table-wrap{min-width:0;width:100%}
 .arrivals-page .toolbar-intro{min-width:0;overflow:hidden}.arrivals-page .toolbar-intro p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.arrivals-page .clear-filters{align-self:end;min-height:42px;width:100%;border:1px solid #cbd8e3;border-radius:8px;background:#edf3f8;color:#193d61;padding:9px 12px;font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}.arrivals-page .clear-filters:hover,.arrivals-page .clear-filters:focus-visible{background:#dce9f4;border-color:#193d61;outline:0}

@@ -71,9 +71,9 @@ describe('LlegadasPage', () => {
     const page = fixture.componentInstance;
     expect(page.paginaLlegadas()?.totalPaginas).toBe(3);
     page.numeroGuia = 'GR-'; page.fechaFiltro = '2026-11-27'; page.receptorFiltro = 'admin';
-    page.cantidadFiltro = 2; page.estadoFiltro = 'CONFIRMADA'; page.listar(0);
+    page.estadoFiltro = 'CONFIRMADA'; page.listar(0);
     http.expectOne(req => req.params.get('numeroGuia') === 'GR-' && req.params.get('pagina') === '0'
-      && req.params.get('fecha') === '2026-11-27' && req.params.get('cantidad') === '2'
+      && req.params.get('fecha') === '2026-11-27' && !req.params.has('cantidad')
       && req.params.get('receptor') === 'admin' && req.params.get('estado') === 'CONFIRMADA')
       .flush({items:[],pagina:0,tamano:10,totalElementos:11,totalPaginas:2});
     page.listar(1);
@@ -162,6 +162,8 @@ describe('LlegadasPage', () => {
     fixture.detectChanges();
     expect(barra.querySelector('.toolbar-intro')).toBeNull();
     expect(barra.querySelector('#arrival-filters')).not.toBeNull();
+    expect(barra.querySelector('.filter-grid .clear-filters')).not.toBeNull();
+    expect(barra.querySelectorAll('.filter-grid label')).toHaveLength(4);
     expect(tabla.parentElement).toBe(barra.parentElement);
     (barra.querySelector('.filter-toggle') as HTMLButtonElement).click();
     fixture.detectChanges();

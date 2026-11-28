@@ -87,7 +87,6 @@ export class LlegadasPage implements OnInit, OnDestroy {
     { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
   numeroGuia = '';
   fechaFiltro = '';
-  cantidadFiltro: number | null = null;
   receptorFiltro = '';
   estadoFiltro = '';
 
@@ -366,7 +365,6 @@ export class LlegadasPage implements OnInit, OnDestroy {
     clearTimeout(this.temporizador);
     this.numeroGuia = '';
     this.fechaFiltro = '';
-    this.cantidadFiltro = null;
     this.receptorFiltro = '';
     this.estadoFiltro = '';
     this.listar(0);
@@ -380,7 +378,6 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.http.get<PaginaLlegadas>('/api/v1/llegadas/pagina',
       {params:{numeroGuia:this.numeroGuia.trim(),pagina,estado:this.estadoFiltro,
         ...(this.fechaFiltro ? {fecha:this.fechaFiltro} : {}),
-        ...(this.cantidadFiltro != null ? {cantidad:this.cantidadFiltro} : {}),
         receptor:this.receptorFiltro.trim()}}).subscribe({
       next: resultado => { if (consulta !== this.consultaListado) return;
         this.paginaLlegadas.set(resultado); this.searchBusy.set(false); },
