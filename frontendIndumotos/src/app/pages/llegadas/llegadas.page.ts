@@ -4,6 +4,8 @@ import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { LucideCamera, LucideCheck, LucideChevronDown, LucideEye, LucideFileImage,
+  LucideFilter, LucidePencil, LucidePlus, LucideRotateCcw, LucideTrash2, LucideX } from '@lucide/angular';
 
 interface Llegada {
   id: number;
@@ -42,7 +44,9 @@ interface RetiroHistorico { llegadaId: number; numeroGuia: string; usuario: stri
 
 @Component({
   selector: 'app-llegadas-page',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LucideCamera, LucideCheck,
+    LucideChevronDown, LucideEye, LucideFileImage, LucideFilter, LucidePencil,
+    LucidePlus, LucideRotateCcw, LucideTrash2, LucideX],
   templateUrl: './llegadas.page.html',
   styleUrl: './llegadas.page.css'
 })

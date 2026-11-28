@@ -40,3 +40,7 @@ Desde `frontendIndumotos`, ejecuta `npm ci`, `npm run build` y `npm test -- --wa
 La web renueva la sesión automáticamente cuando el JWT tiene menos de dos minutos de vigencia. Las peticiones pendientes esperan el JWT nuevo; si la renovación falla, vuelve a la pantalla de acceso. La cookie de renovación pertenece al backend y Angular no la lee.
 
 Pulsa tu nombre en la parte inferior del menú lateral. La ventana muestra nombre completo, usuario, rol, sede, estado y fecha de creación. El enlace discreto **Editar datos** permite cambiar nombre de usuario o contraseña tras confirmar la contraseña actual. El sistema cierra la sesión al guardar para que ingreses con las credenciales nuevas.
+
+## Iconos de la web
+
+El módulo Llegadas usa `@lucide/angular`: importa solo los iconos que muestra. Los botones y campos siguen siendo elementos HTML nativos con texto o nombre accesible; Lucide se usa únicamente para la parte visual. Al añadir iconos en otros módulos, sigue este patrón para mantener consistencia sin incorporar una biblioteca de controles completa.

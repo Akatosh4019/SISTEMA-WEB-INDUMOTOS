@@ -143,3 +143,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .edit-confirm-dialog .dialog-actions{margin-top:24px}
 @media(max-width:850px){.registered-guide-dialog .guide-summary,.registered-guide-dialog .guide-images{padding:12px}}
 @media(max-width:600px){.new-arrival-dialog .im-dialog-header h2,.registered-guide-dialog .im-dialog-header h2{font-size:23px}.registered-guide-dialog .guide-correction{flex-wrap:wrap}.inline-photo-editor .pending-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.guide-preview-dialog,.photo-replace-dialog{width:100%;max-height:100dvh;border-radius:18px 18px 0 0}.guide-preview-dialog>img{max-height:calc(100dvh - 145px)}}
+
+.arrivals-page .icon-label{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.arrivals-page .icon-label svg{flex:none}
+.arrivals-page .filter-chevron{margin-left:auto;transition:transform .18s ease}
+.arrivals-page .filter-chevron.open{transform:rotate(180deg)}
+.arrivals-page .status-pill{display:inline-flex;align-items:center;gap:5px}
+.arrivals-page .pending-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.arrivals-page .im-dialog-close{display:grid;place-items:center;min-width:38px;min-height:38px}
