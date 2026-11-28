@@ -72,6 +72,11 @@ export class LlegadasPage implements OnInit, OnDestroy {
   readonly correccionError = signal('');
   readonly correccionBusy = signal(false);
   readonly retiroAbierto = signal(false);
+  readonly fotosEdicionAbierta = signal(false);
+  readonly fotosEditando = signal(false);
+  readonly fotosEdicionError = signal('');
+  fotosPendientes: File[] = [];
+  fotosPendientesUrls: string[] = [];
   motivoRetiro = '';
   private consultaListado = 0;
   private consultaDetalle = 0;
@@ -98,7 +103,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
       }
     });
   }
-  ngOnDestroy(): void { clearTimeout(this.temporizador); this.limpiarFotos(); }
+  ngOnDestroy(): void { clearTimeout(this.temporizador); this.limpiarFotos(); this.descartarFotosPendientes(); }
 
   abrirNueva(): void { this.resetearNueva(); this.nuevaAbierta.set(true); }
   cerrarNueva(): void { if (!this.busy()) { this.nuevaAbierta.set(false); this.resetearNueva(); } }
@@ -184,6 +189,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
   }
 
   abrir(llegada: Llegada): void {
+    this.cerrarEdicionFotos();
     this.limpiarFotos();
     this.detalleAbierto.set(true);
     this.fotosError.set('');
@@ -202,6 +208,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
   }
 
   cerrarDetalle(): void {
+    this.cerrarEdicionFotos();
     ++this.consultaDetalle; this.detalleAbierto.set(false); this.detail.set(null);
     this.fotosCargando.set(false); this.limpiarFotos();
   }
@@ -282,23 +289,71 @@ export class LlegadasPage implements OnInit, OnDestroy {
     });
   }
 
-  reemplazarFotos(evento: Event): void {
+  abrirEdicionFotos(): void {
+    this.descartarFotosPendientes();
+    this.fotosEditando.set(false);
+    this.fotosEdicionError.set('');
+    this.fotosEdicionAbierta.set(true);
+  }
+
+  cerrarEdicionFotos(): void {
+    if (this.correccionBusy()) return;
+    this.fotosEdicionAbierta.set(false);
+    this.fotosEditando.set(false);
+    this.fotosEdicionError.set('');
+    this.descartarFotosPendientes();
+  }
+
+  alternarEdicionFotos(): void {
+    if (this.correccionBusy()) return;
+    if (this.fotosEditando()) this.descartarFotosPendientes();
+    this.fotosEdicionError.set('');
+    this.fotosEditando.set(!this.fotosEditando());
+  }
+
+  seleccionarFotosCorreccion(evento: Event): void {
     const input = evento.target as HTMLInputElement;
-    const fotos = Array.from(input.files ?? []);
+    const nuevas = Array.from(input.files ?? []);
     input.value = '';
+    if (!this.fotosEditando() || !nuevas.length) return;
+    if (this.fotosPendientes.length + nuevas.length > 3 || nuevas.some(f =>
+      !['image/jpeg','image/png'].includes(f.type) || f.size < 1 || f.size > 5 * 1024 * 1024)) {
+      this.fotosEdicionError.set('Selecciona hasta tres fotos JPG o PNG, de 5 MB como máximo cada una.');
+      return;
+    }
+    this.fotosPendientes.push(...nuevas);
+    this.fotosPendientesUrls.push(...nuevas.map(foto =>
+      typeof URL.createObjectURL === 'function' ? URL.createObjectURL(foto) : ''));
+    this.fotosEdicionError.set('');
+  }
+
+  quitarFotoCorreccion(indice: number): void {
+    if (!this.fotosEditando() || this.correccionBusy()) return;
+    const url = this.fotosPendientesUrls[indice];
+    if (url) URL.revokeObjectURL(url);
+    this.fotosPendientes.splice(indice, 1);
+    this.fotosPendientesUrls.splice(indice, 1);
+  }
+
+  private descartarFotosPendientes(): void {
+    this.fotosPendientesUrls.forEach(url => { if (url) URL.revokeObjectURL(url); });
+    this.fotosPendientes = [];
+    this.fotosPendientesUrls = [];
+  }
+
+  guardarCorreccionFotos(): void {
     const id = this.detail()?.llegada.id;
-    if (!id || !fotos.length) return;
-    if (fotos.length > 3 || fotos.some(f => !['image/jpeg','image/png'].includes(f.type)
-      || f.size < 1 || f.size > 5 * 1024 * 1024)) {
-      this.correccionError.set('Selecciona de una a tres fotos JPG o PNG, de hasta 5 MB cada una.'); return;
+    if (!this.fotosEdicionAbierta() || !this.fotosEditando() || !id || this.correccionBusy()) return;
+    if (!this.fotosPendientes.length) {
+      this.fotosEdicionError.set('Selecciona al menos una foto nueva antes de guardar.'); return;
     }
     const datos = new FormData();
-    fotos.forEach(foto => datos.append('imagenes', foto, foto.name));
-    this.correccionBusy.set(true); this.correccionError.set('');
+    this.fotosPendientes.forEach(foto => datos.append('imagenes', foto, foto.name));
+    this.correccionBusy.set(true); this.fotosEdicionError.set('');
     this.http.put(`/api/v1/llegadas/${id}/guias`, datos).subscribe({
-      next: () => { this.correccionBusy.set(false); this.limpiarFotos();
+      next: () => { this.correccionBusy.set(false); this.cerrarEdicionFotos(); this.limpiarFotos();
         this.cargarFotos(id, this.consultaDetalle); this.cargarHistorial(id); },
-      error: error => { this.correccionBusy.set(false); this.correccionError.set(this.message(error)); }
+      error: error => { this.correccionBusy.set(false); this.fotosEdicionError.set(this.message(error)); }
     });
   }
 

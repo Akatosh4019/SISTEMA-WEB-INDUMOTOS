@@ -110,4 +110,40 @@ describe('LlegadasPage', () => {
     expect(page.papelera().length).toBe(0);
     http.verify();
   });
+
+  it('solo reemplaza fotos después de habilitar edición y guardar cambios', () => {
+    TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
+      provideRouter([]),{provide:AuthService,useValue:{can:() => true}}]});
+    const fixture = TestBed.createComponent(LlegadasPage);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http.expectOne(req => req.url === '/api/v1/llegadas/pagina').flush({items:[],pagina:0,tamano:10,totalElementos:0,totalPaginas:0});
+    const page = fixture.componentInstance;
+    page.detail.set({llegada:{id:6,numeroGuia:'TG01-38359',fechaLlegada:'2026-11-27T10:00:00Z',
+      receptorUsuario:'almacen',cantidadDeclarada:2,cantidadRecibida:2,observacion:null,estadoRegistro:'PENDIENTE'},
+      fichas:[],cantidadFichas:0,diferenciaInformativa:2,confirmadoPor:null,confirmadoEn:null});
+    page.abrirEdicionFotos();
+    const foto = new File(['foto'], 'guia-corregida.jpg', {type:'image/jpeg'});
+    page.seleccionarFotosCorreccion({target:{files:[foto],value:'seleccionada'}} as unknown as Event);
+    expect(page.fotosPendientes).toEqual([]);
+    http.expectNone('/api/v1/llegadas/6/guias');
+    page.alternarEdicionFotos();
+    page.seleccionarFotosCorreccion({target:{files:[foto],value:'seleccionada'}} as unknown as Event);
+    expect(page.fotosPendientes).toHaveLength(1);
+    page.cerrarEdicionFotos();
+    expect(page.fotosPendientes).toEqual([]);
+    http.expectNone('/api/v1/llegadas/6/guias');
+    page.abrirEdicionFotos();
+    page.alternarEdicionFotos();
+    page.seleccionarFotosCorreccion({target:{files:[foto],value:'seleccionada'}} as unknown as Event);
+    page.guardarCorreccionFotos();
+    const request = http.expectOne('/api/v1/llegadas/6/guias');
+    expect(request.request.method).toBe('PUT');
+    expect((request.request.body as FormData).getAll('imagenes')).toHaveLength(1);
+    request.flush(null);
+    http.expectOne('/api/v1/llegadas/6/guias').flush([]);
+    http.expectOne('/api/v1/llegadas/6/historial').flush([]);
+    expect(page.fotosEdicionAbierta()).toBe(false);
+    http.verify();
+  });
 });
