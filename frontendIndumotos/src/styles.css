@@ -128,6 +128,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .registered-guide-dialog .guide-correction p{max-width:36ch}
 .registered-guide-dialog .guide-correction button{white-space:nowrap}
 .inline-photo-editor{margin-top:10px;padding:14px;border:1px solid #cbdbe9;border-radius:11px;background:#fff}
+.photo-replace-dialog{width:min(700px,92vw);max-height:calc(100dvh - 40px)}
+.photo-replace-dialog .inline-photo-editor{margin-top:0;background:#f8fbfd}
+.photo-replace-dialog .im-dialog-header h2{font-size:clamp(21px,1.3vw,30px)}
+.photo-replace-dialog .pending-photo-grid{max-height:240px;overflow-y:auto}
+.registered-guide-dialog .guide-correction button:disabled{opacity:.65;cursor:default}
 .inline-photo-editor input[type=file]{width:100%;padding:10px;border:1px dashed #9eb8cc;border-radius:8px;background:#f7fafc}
 .inline-photo-editor .pending-photo-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
 .inline-photo-editor .pending-photo img{height:110px}
@@ -137,4 +142,4 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .edit-confirm-dialog p{color:#64768a;font-size:14px;line-height:1.55}
 .edit-confirm-dialog .dialog-actions{margin-top:24px}
 @media(max-width:850px){.registered-guide-dialog .guide-summary,.registered-guide-dialog .guide-images{padding:12px}}
-@media(max-width:600px){.new-arrival-dialog .im-dialog-header h2,.registered-guide-dialog .im-dialog-header h2{font-size:23px}.registered-guide-dialog .guide-correction{flex-wrap:wrap}.inline-photo-editor .pending-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.guide-preview-dialog{width:100%;max-height:100dvh;border-radius:18px 18px 0 0}.guide-preview-dialog>img{max-height:calc(100dvh - 145px)}}
+@media(max-width:600px){.new-arrival-dialog .im-dialog-header h2,.registered-guide-dialog .im-dialog-header h2{font-size:23px}.registered-guide-dialog .guide-correction{flex-wrap:wrap}.inline-photo-editor .pending-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.guide-preview-dialog,.photo-replace-dialog{width:100%;max-height:100dvh;border-radius:18px 18px 0 0}.guide-preview-dialog>img{max-height:calc(100dvh - 145px)}}

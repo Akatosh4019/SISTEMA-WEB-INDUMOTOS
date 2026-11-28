@@ -129,6 +129,10 @@ describe('LlegadasPage', () => {
     page.detail.set({llegada:{id:6,numeroGuia:'TG01-38359',fechaLlegada:'2026-11-27T10:00:00Z',
       receptorUsuario:'almacen',cantidadDeclarada:2,cantidadRecibida:2,observacion:null,estadoRegistro:'PENDIENTE'},
       fichas:[],cantidadFichas:0,diferenciaInformativa:2,confirmadoPor:null,confirmadoEn:null});
+    page.detalleAbierto.set(true);
+    fixture.detectChanges();
+    const detalleVisible = fixture.nativeElement.querySelector('.registered-guide-dialog') as HTMLElement;
+    expect(detalleVisible.querySelector('.inline-photo-editor')).toBeNull();
     page.abrirEdicionFotos();
     expect(page.confirmacionFotosAbierta()).toBe(true);
     const foto = new File(['foto'], 'guia-corregida.jpg', {type:'image/jpeg'});
@@ -136,6 +140,9 @@ describe('LlegadasPage', () => {
     expect(page.fotosPendientes).toEqual([]);
     http.expectNone('/api/v1/llegadas/6/guias');
     page.confirmarEdicionFotos();
+    fixture.detectChanges();
+    expect(detalleVisible.querySelector('.inline-photo-editor')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.photo-replace-dialog .inline-photo-editor')).not.toBeNull();
     page.seleccionarFotosCorreccion({target:{files:[foto],value:'seleccionada'}} as unknown as Event);
     expect(page.fotosPendientes).toHaveLength(1);
     page.cerrarEdicionFotos();
