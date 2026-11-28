@@ -10,9 +10,9 @@
 .perfil-fondo{overflow-y:auto;overscroll-behavior:contain}
 .perfil-modal{min-width:0;max-height:calc(100dvh - 36px)}
 .perfil-encabezado>div,.perfil-identidad>div,.perfil-tabla td{min-width:0;overflow-wrap:anywhere}
-.perfil-cerrar{flex:none;min-width:44px;min-height:44px;font-size:17px}
-.perfil-editar,.perfil-opciones button,.perfil-acciones button{min-height:44px}
-.perfil-edicion input{min-height:44px}
+.perfil-cerrar{flex:none;min-width:44px;min-height:var(--im-button-height);font-size:17px}
+.perfil-editar,.perfil-opciones button,.perfil-acciones button{min-height:var(--im-button-height)}
+.perfil-edicion input{min-height:var(--im-button-height)}
 @media(max-width:600px){
   .perfil-fondo{align-items:end;padding:0}
   .perfil-modal{width:100%;max-height:100dvh;border-radius:18px 18px 0 0;padding:22px max(18px,env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
