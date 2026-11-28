@@ -34,7 +34,7 @@
       <button class="menu-toggle" type="button" [attr.aria-expanded]="menuOpen()" aria-controls="indumotos-menu" aria-label="Abrir menú" (click)="menuOpen.set(!menuOpen())">☰</button>
       <div class="topbar-title">Indumotos <span>/ Gestión de motocicletas</span></div>
     </header>
-    <main class="content">@if (logoutError()) { <p role="alert">{{logoutError()}}</p> }<router-outlet /></main>
+    <main class="content" [class.content-llegadas]="isLlegadas">@if (logoutError()) { <p role="alert">{{logoutError()}}</p> }<router-outlet /></main>
   </div>
   @if (profileOpen()) { <app-perfil-modal (cerrar)="profileOpen.set(false)" /> }
 </div>

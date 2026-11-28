@@ -26,6 +26,7 @@ export class ShellPage {
   readonly initials = computed(() => this.username().slice(0, 2).toUpperCase());
   readonly logoutError = signal('');
   readonly logoutBusy = signal(false);
+  get isLlegadas(): boolean { return this.router.url.startsWith('/app/llegadas'); }
 
   constructor() {
     this.auth.loadAccess().subscribe({ error: () => { /* El interceptor gestiona 401. */ } });
