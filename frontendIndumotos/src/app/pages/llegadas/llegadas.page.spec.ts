@@ -146,4 +146,26 @@ describe('LlegadasPage', () => {
     expect(page.fotosEdicionAbierta()).toBe(false);
     http.verify();
   });
+
+  it('despliega filtros dentro de la barra y oculta el texto introductorio', () => {
+    TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
+      provideRouter([]),{provide:AuthService,useValue:{can:(permiso:string) => permiso === 'INVENTARIO_CONSULTAR'}}]});
+    const fixture = TestBed.createComponent(LlegadasPage);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http.expectOne(req => req.url === '/api/v1/llegadas/pagina').flush({items:[],pagina:0,tamano:10,totalElementos:0,totalPaginas:0});
+    fixture.detectChanges();
+    const barra = fixture.nativeElement.querySelector('.arrival-toolbar') as HTMLElement;
+    const tabla = fixture.nativeElement.querySelector('.table-wrap') as HTMLElement;
+    expect(barra.querySelector('.toolbar-intro')).not.toBeNull();
+    (barra.querySelector('.filter-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(barra.querySelector('.toolbar-intro')).toBeNull();
+    expect(barra.querySelector('#arrival-filters')).not.toBeNull();
+    expect(tabla.parentElement).toBe(barra.parentElement);
+    (barra.querySelector('.filter-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(barra.querySelector('.toolbar-intro')).not.toBeNull();
+    http.verify();
+  });
 });

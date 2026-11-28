@@ -7,15 +7,16 @@
 
   @if (auth.can('INVENTARIO_CONSULTAR')) {
     <section class="panel"><div class="panel-heading"><div class="panel-icon">▰</div><div><h2>Guías de llegada</h2><p>La guía pasa a confirmada cuando Inventario finaliza el registro de todas las motos recibidas.</p></div></div>
-      <div class="arrival-toolbar"><div><span class="eyebrow">REGISTRO DE RECEPCIÓN</span><p>Guías ordenadas desde la más reciente. Abre una para consultar las fotos y quién terminó su registro.</p></div>
-        <button type="button" class="filter-toggle" [attr.aria-expanded]="filtrosAbiertos()" aria-controls="arrival-filters" (click)="filtrosAbiertos.set(!filtrosAbiertos())">⚑ Filtrar guías <span>{{filtrosAbiertos() ? '⌃' : '⌄'}}</span></button></div>
-      @if (filtrosAbiertos()) { <div id="arrival-filters" class="arrival-filters"><div class="filter-grid">
+      <div class="arrival-toolbar" [class.filters-open]="filtrosAbiertos()">
+        @if (!filtrosAbiertos()) { <div class="toolbar-intro"><span class="eyebrow">REGISTRO DE RECEPCIÓN</span><p>Guías ordenadas desde la más reciente. Abre una para consultar las fotos y quién terminó su registro.</p></div> }
+        <button type="button" class="filter-toggle" [attr.aria-expanded]="filtrosAbiertos()" aria-controls="arrival-filters" (click)="filtrosAbiertos.set(!filtrosAbiertos())">⚑ Filtrar guías <span>{{filtrosAbiertos() ? '⌃' : '⌄'}}</span></button>
+      @if (filtrosAbiertos()) { <div id="arrival-filters" class="arrival-filters" role="region" aria-label="Filtros de guías"><div class="filter-grid">
         <label>Número de guía<input type="search" maxlength="120" [(ngModel)]="numeroGuia" (ngModelChange)="alCambiarFiltro()" placeholder="Ej. TG01-38337" /></label>
         <label>Fecha de registro<input type="date" [(ngModel)]="fechaFiltro" (ngModelChange)="alCambiarFiltro()" /></label>
         <label>Motos recibidas<input type="number" min="1" step="1" [(ngModel)]="cantidadFiltro" (ngModelChange)="alCambiarFiltro()" placeholder="Cantidad exacta" /></label>
         <label>Registró<input type="search" maxlength="120" [(ngModel)]="receptorFiltro" (ngModelChange)="alCambiarFiltro()" placeholder="Nombre de usuario" /></label>
         <label>Estado<select [(ngModel)]="estadoFiltro" (ngModelChange)="alCambiarFiltro()"><option value="">Todas</option><option value="PENDIENTE">Pendiente</option><option value="CONFIRMADA">Confirmada</option></select></label>
-      </div><button type="button" class="clear-filters" (click)="limpiarFiltros()">Limpiar filtros</button></div> }
+      </div><button type="button" class="clear-filters" (click)="limpiarFiltros()">Limpiar filtros</button></div> }</div>
       @if (searchError()) { <p class="message error" role="alert">{{searchError()}}</p> }
       @if (paginaLlegadas(); as pagina) {
         <div class="table-wrap"><table><thead><tr><th>Número de guía</th><th>Registro</th><th>Recibidas</th><th>Registró</th><th>Confirmación</th><th><span class="sr-only">Acción</span></th></tr></thead><tbody>
