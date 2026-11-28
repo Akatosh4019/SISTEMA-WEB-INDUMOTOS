@@ -102,7 +102,7 @@
   </section></div> }
 
   @if (retiroAbierto()) { <div class="im-overlay correction-overlay" (click)="cerrarRetiro()"><section class="im-dialog arrival-dialog" role="dialog" aria-modal="true" aria-labelledby="retirar-guia-titulo" (click)="$event.stopPropagation()">
-    <header class="im-dialog-header"><div><span class="eyebrow">CORRECCIÓN DE REGISTRO</span><h2 id="retirar-guia-titulo">Retirar guía</h2><p>La guía dejará de aparecer en llegadas y podrá restaurarse durante 30 días.</p></div><button type="button" class="im-dialog-close" aria-label="Cerrar" (click)="cerrarRetiro()">✕</button></header>
+    <header class="im-dialog-header"><div><span class="eyebrow">CORRECCIÓN DE REGISTRO</span><h2 id="retirar-guia-titulo">Retirar guía {{retiroNumeroGuia}}</h2><p>La guía dejará de aparecer en llegadas y podrá restaurarse durante 30 días.</p></div><button type="button" class="im-dialog-close" aria-label="Cerrar" (click)="cerrarRetiro()">✕</button></header>
     <label for="motivo-retiro">Motivo de retiro</label><textarea id="motivo-retiro" rows="3" maxlength="500" [(ngModel)]="motivoRetiro" placeholder="Por ejemplo: registro duplicado o foto que no corresponde a la guía"></textarea>
     @if (correccionError()) { <p class="message error" role="alert">{{correccionError()}}</p> }
     <div class="dialog-actions"><button type="button" class="secondary-button" (click)="cerrarRetiro()">Cancelar</button><button type="button" class="primary-button" [disabled]="correccionBusy() || motivoRetiro.trim().length < 10" (click)="retirar()">{{correccionBusy() ? 'Guardando…' : 'Retirar a papelera'}}</button></div>

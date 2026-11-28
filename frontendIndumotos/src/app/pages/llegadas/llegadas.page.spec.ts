@@ -170,4 +170,42 @@ describe('LlegadasPage', () => {
     expect(barra.querySelector('.toolbar-intro')).not.toBeNull();
     http.verify();
   });
+
+  it('cierra el detalle antes de pedir el motivo y retira la guía seleccionada', () => {
+    TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
+      provideRouter([]),{provide:AuthService,useValue:{can:() => true}}]});
+    const fixture = TestBed.createComponent(LlegadasPage);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http.expectOne(req => req.url === '/api/v1/llegadas/pagina').flush({items:[],pagina:0,tamano:10,totalElementos:1,totalPaginas:1});
+    const page = fixture.componentInstance;
+    const detalle = {llegada:{id:6,numeroGuia:'TG01-38359',fechaLlegada:'2026-11-27T10:00:00Z',
+      receptorUsuario:'almacen',cantidadDeclarada:2,cantidadRecibida:2,observacion:null,estadoRegistro:'PENDIENTE' as const},
+      fichas:[],cantidadFichas:0,diferenciaInformativa:2,confirmadoPor:null,confirmadoEn:null};
+    page.detail.set(detalle);
+    page.detalleAbierto.set(true);
+    page.abrirRetiro();
+    fixture.detectChanges();
+    expect(page.detalleAbierto()).toBe(false);
+    expect(page.detail()).toBeNull();
+    expect(page.retiroAbierto()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(fixture.nativeElement.querySelector('#retirar-guia-titulo')?.textContent).toContain('TG01-38359');
+    page.cerrarRetiro();
+    expect(page.retiroGuiaId).toBeNull();
+    http.expectNone('/api/v1/llegadas/6');
+    page.detail.set(detalle);
+    page.detalleAbierto.set(true);
+    page.abrirRetiro();
+    page.motivoRetiro = 'La foto no corresponde a esta guía';
+    page.retirar();
+    const request = http.expectOne('/api/v1/llegadas/6');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.body).toEqual({motivo:'La foto no corresponde a esta guía'});
+    request.flush(null);
+    http.expectOne(req => req.url === '/api/v1/llegadas/pagina').flush({items:[],pagina:0,tamano:10,totalElementos:0,totalPaginas:0});
+    expect(page.retiroAbierto()).toBe(false);
+    expect(page.retiroGuiaId).toBeNull();
+    http.verify();
+  });
 });

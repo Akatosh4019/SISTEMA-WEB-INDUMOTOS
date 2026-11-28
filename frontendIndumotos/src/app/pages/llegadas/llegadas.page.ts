@@ -78,6 +78,8 @@ export class LlegadasPage implements OnInit, OnDestroy {
   fotosPendientes: File[] = [];
   fotosPendientesUrls: string[] = [];
   motivoRetiro = '';
+  retiroGuiaId: number | null = null;
+  retiroNumeroGuia = '';
   private consultaListado = 0;
   private consultaDetalle = 0;
   private temporizador?: ReturnType<typeof setTimeout>;
@@ -264,18 +266,33 @@ export class LlegadasPage implements OnInit, OnDestroy {
     });
   }
 
-  abrirRetiro(): void { this.motivoRetiro = ''; this.correccionError.set(''); this.retiroAbierto.set(true); }
-  cerrarRetiro(): void { if (!this.correccionBusy()) this.retiroAbierto.set(false); }
+  abrirRetiro(): void {
+    const guia = this.detail()?.llegada;
+    if (!guia) return;
+    this.retiroGuiaId = guia.id;
+    this.retiroNumeroGuia = guia.numeroGuia;
+    this.cerrarDetalle();
+    this.motivoRetiro = '';
+    this.correccionError.set('');
+    this.retiroAbierto.set(true);
+  }
+  cerrarRetiro(): void {
+    if (this.correccionBusy()) return;
+    this.retiroAbierto.set(false);
+    this.retiroGuiaId = null;
+    this.retiroNumeroGuia = '';
+    this.motivoRetiro = '';
+    this.correccionError.set('');
+  }
 
   retirar(): void {
-    const id = this.detail()?.llegada.id;
+    const id = this.retiroGuiaId;
     if (!id || this.motivoRetiro.trim().length < 10) {
       this.correccionError.set('Explica el motivo con al menos 10 caracteres.'); return;
     }
     this.correccionBusy.set(true); this.correccionError.set('');
     this.http.delete(`/api/v1/llegadas/${id}`, {body:{motivo:this.motivoRetiro.trim()}}).subscribe({
-      next: () => { this.correccionBusy.set(false); this.retiroAbierto.set(false);
-        this.cerrarDetalle(); this.listar(0); },
+      next: () => { this.correccionBusy.set(false); this.cerrarRetiro(); this.listar(0); },
       error: error => { this.correccionBusy.set(false); this.correccionError.set(this.message(error)); }
     });
   }
