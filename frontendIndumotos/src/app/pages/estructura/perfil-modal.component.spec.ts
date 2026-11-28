@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../../core/auth.service';
 import { PerfilModalComponent } from './perfil-modal.component';
 
 describe('PerfilModalComponent', () => {

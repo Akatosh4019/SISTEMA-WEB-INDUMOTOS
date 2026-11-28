@@ -1,6 +1,6 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../../core/auth.service';
 import { PerfilModalComponent } from './perfil-modal.component';
 
 @Component({

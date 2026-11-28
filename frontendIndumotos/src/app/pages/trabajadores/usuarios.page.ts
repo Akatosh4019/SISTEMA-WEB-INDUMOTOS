@@ -5,8 +5,8 @@ import { EMPTY, Subject, catchError, debounceTime, switchMap, tap } from 'rxjs';
 import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
-import { apiError } from '../core/api-error';
-import { AuthService } from '../core/auth.service';
+import { apiError } from '../../core/api-error';
+import { AuthService } from '../../core/auth.service';
 
 interface UsuarioCreado { id: number; nombreCompleto: string; nombreUsuario: string; rolCodigo: string; }
 interface Tienda { id: number; nombre: string; tipo: string; }

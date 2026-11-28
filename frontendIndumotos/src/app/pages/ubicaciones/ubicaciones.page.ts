@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { apiError } from '../core/api-error';
-import { AuthService } from '../core/auth.service';
+import { apiError } from '../../core/api-error';
+import { AuthService } from '../../core/auth.service';
 
 interface Sede { id: number; codigo: string; nombre: string; tipo: string }
 interface Movimiento { id: number; destinoId: number; destinoNombre: string; tipo: string; registrador: string; fecha: string }

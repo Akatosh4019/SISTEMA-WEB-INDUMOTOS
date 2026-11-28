@@ -4,8 +4,8 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime } from 'rxjs';
-import { AuthService } from '../core/auth.service';
-import { apiError } from '../core/api-error';
+import { AuthService } from '../../core/auth.service';
+import { apiError } from '../../core/api-error';
 
 interface Moto {id:number;chasis:string;marca:string;modelo:string;color:string;ubicacion:string|null;estado:string;motivo:string;actualizadoEn:string|null;registradoPor:string|null;puedeOfrecerse:boolean;}
 interface Evento {estado:string;motivo:string;registrador:string;fecha:string;}

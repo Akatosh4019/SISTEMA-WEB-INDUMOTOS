@@ -3,8 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Component, HostListener, OnInit, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../core/auth.service';
-import { apiError } from '../core/api-error';
+import { AuthService } from '../../core/auth.service';
+import { apiError } from '../../core/api-error';
 
 interface Perfil {
   nombreCompleto: string;

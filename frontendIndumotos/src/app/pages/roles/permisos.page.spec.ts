@@ -19,7 +19,7 @@ describe('PermisosPage', () => {
     http.expectOne('/api/v1/roles/ALMACEN').flush({rol,permisos});
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.role-actions button:last-child').textContent).toContain('Cerrar');
+    expect(fixture.nativeElement.querySelector('.role-actions button:first-child').textContent).toContain('Cerrar');
     fixture.componentInstance.alternarEdicion();
     fixture.componentInstance.cambiarPermiso('INVENTARIO_CONSULTAR');
     fixture.componentInstance.guardar();

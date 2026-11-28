@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../../core/auth.service';
 
 interface Llegada {
   id: number;
@@ -30,6 +30,8 @@ interface DetalleLlegada {
   fichas: FichaVinculada[];
   cantidadFichas: number;
   diferenciaInformativa: number;
+  confirmadoPor: string | null;
+  confirmadoEn: string | null;
 }
 interface PaginaLlegadas { items: Llegada[]; pagina: number; tamano: number; totalElementos: number; totalPaginas: number }
 interface GuiaImagen { id: number; orden: number; nombreArchivo: string; tipoMime: string; tamano: number }
@@ -58,7 +60,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
   readonly fotosCargando = signal(false);
   readonly fotosError = signal('');
   readonly paginaLlegadas = signal<PaginaLlegadas | null>(null);
-  readonly estadoActivo = signal<'PENDIENTE' | 'CONFIRMADA'>('PENDIENTE');
+  readonly filtrosAbiertos = signal(false);
   private consultaListado = 0;
   private consultaDetalle = 0;
   private temporizador?: ReturnType<typeof setTimeout>;
@@ -66,6 +68,10 @@ export class LlegadasPage implements OnInit, OnDestroy {
   form: { numeroGuia: string; cantidadDeclarada: number | null; cantidadRecibida: number | null; observacion: string } =
     { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
   numeroGuia = '';
+  fechaFiltro = '';
+  cantidadFiltro: number | null = null;
+  receptorFiltro = '';
+  estadoFiltro = '';
 
   ngOnInit(): void {
     if (!this.auth.can('INVENTARIO_CONSULTAR')) return;
@@ -139,7 +145,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.imagenes.forEach(imagen => datos.append('imagenes', imagen, imagen.name));
     this.http.post<Llegada>('/api/v1/llegadas/con-guia', datos).subscribe({
       next: llegada => { this.result.set(llegada); this.busy.set(false); this.nuevaAbierta.set(false);
-        this.resetearNueva(); this.estadoActivo.set('PENDIENTE');
+        this.resetearNueva();
         if (this.auth.can('INVENTARIO_CONSULTAR')) this.listar(0);
         if (this.auth.can('INVENTARIO_CONSULTAR')) this.abrir(llegada); },
       error: (error: unknown) => {
@@ -147,8 +153,11 @@ export class LlegadasPage implements OnInit, OnDestroy {
           const details = error.error as { errores?: Record<string, string> } | null;
           const fields = details?.errores ?? {};
           this.fieldErrors.set({ numeroGuia: fields['numeroGuia'],
-            cantidadDeclarada: fields['cantidadDeclarada'], cantidadRecibida: fields['cantidadRecibida'] });
-          this.error.set(Object.keys(fields).length ? 'Corrige los campos marcados.' : this.message(error));
+            cantidadDeclarada: fields['cantidadDeclarada'], cantidadRecibida: fields['cantidadRecibida'],
+            imagenes: fields['imagenes'] });
+          const mensajeServidor = typeof error.error?.error === 'string' ? error.error.error : null;
+          this.error.set(Object.keys(fields).length ? 'Corrige los campos marcados.'
+            : mensajeServidor ?? this.message(error));
         } else this.error.set(this.message(error));
         this.busy.set(false);
       }
@@ -199,21 +208,19 @@ export class LlegadasPage implements OnInit, OnDestroy {
 
   private limpiarFotos(): void { this.fotos().forEach(foto => URL.revokeObjectURL(foto.url)); this.fotos.set([]); }
 
-  buscarGuia(): void {
+  alCambiarFiltro(): void {
     clearTimeout(this.temporizador);
-    this.listar(0);
+    this.temporizador = setTimeout(() => this.listar(0), 250);
   }
 
-  cambiarEstado(estado: 'PENDIENTE' | 'CONFIRMADA'): void {
-    if (this.estadoActivo() === estado) return;
-    this.estadoActivo.set(estado);
-    this.paginaLlegadas.set(null);
-    this.listar(0);
-  }
-
-  alCambiarGuia(): void {
+  limpiarFiltros(): void {
     clearTimeout(this.temporizador);
-    this.temporizador = setTimeout(() => this.listar(0), 300);
+    this.numeroGuia = '';
+    this.fechaFiltro = '';
+    this.cantidadFiltro = null;
+    this.receptorFiltro = '';
+    this.estadoFiltro = '';
+    this.listar(0);
   }
 
   listar(pagina: number): void {
@@ -222,7 +229,10 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.searchError.set('');
     this.searchBusy.set(true);
     this.http.get<PaginaLlegadas>('/api/v1/llegadas/pagina',
-      {params:{numeroGuia:this.numeroGuia.trim(),pagina,estado:this.estadoActivo()}}).subscribe({
+      {params:{numeroGuia:this.numeroGuia.trim(),pagina,estado:this.estadoFiltro,
+        ...(this.fechaFiltro ? {fecha:this.fechaFiltro} : {}),
+        ...(this.cantidadFiltro != null ? {cantidad:this.cantidadFiltro} : {}),
+        receptor:this.receptorFiltro.trim()}}).subscribe({
       next: resultado => { if (consulta !== this.consultaListado) return;
         this.paginaLlegadas.set(resultado); this.searchBusy.set(false); },
       error: error => { if (consulta !== this.consultaListado) return;

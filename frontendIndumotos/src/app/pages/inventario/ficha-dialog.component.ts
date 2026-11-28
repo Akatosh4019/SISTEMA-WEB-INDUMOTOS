@@ -3,8 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Component, EventEmitter, Input, OnChanges, Output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { apiError } from '../core/api-error';
-import { AuthService } from '../core/auth.service';
+import { apiError } from '../../core/api-error';
+import { AuthService } from '../../core/auth.service';
 
 interface Ficha { id: number; llegadaId: number; marca: string; modelo: string; color: string;
   chasisCompleto: string; numeroMotor: string; dua: string; itemDua: string; creadorUsuario: string; creadoEn: string }

@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { UsuariosPage } from './usuarios.page';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../../core/auth.service';
 
 describe('UsuariosPage', () => {
   it('muestra todas las cuentas por páginas y actualiza el filtro al escribir', async () => {

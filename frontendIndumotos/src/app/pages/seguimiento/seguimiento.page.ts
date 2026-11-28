@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { apiError } from '../core/api-error';
-import { AuthService } from '../core/auth.service';
+import { apiError } from '../../core/api-error';
+import { AuthService } from '../../core/auth.service';
 
 interface Linea { id: number; marca: string; modelo: string; color: string; cantidad: number }
 interface Solicitud { id: number; estado: string; lineas: Linea[]; solicitante: string }
@@ -11,6 +11,7 @@ interface Unidad { asociacionId: number; chasis: string }
 interface Candidata { motocicletaId: number; chasis: string; modelo: string; color: string }
 interface Envio { motocicletaId: number; chasis: string; origen: string; destino: string;
   estado: string; despachadoEn: string; recibidoEn: string | null }
+interface MotivoDialogo { accion: 'RECHAZAR' | 'ANULAR' | 'RETIRAR'; linea?: number; asociacion?: number }
 
 @Component({
   selector: 'app-seguimiento', imports: [FormsModule],
@@ -29,7 +30,7 @@ interface Envio { motocicletaId: number; chasis: string; origen: string; destino
           @if (s.estado === 'PENDIENTE') { <button type="button" (click)="avanzar('EN_PREPARACION')">Iniciar preparación</button> }
           @if (s.estado === 'EN_PREPARACION') { <button type="button" (click)="avanzar('ATENDIDA')">Confirmar preparación</button> }
           @if (s.estado === 'PENDIENTE' || s.estado === 'EN_PREPARACION') {
-            <button type="button" (click)="avanzar('RECHAZADA')">Rechazar</button>
+            <button type="button" (click)="abrirMotivo('RECHAZAR')">Rechazar</button>
           }
         }
         @if (access.can('SOLICITUDES_ANULAR') && s.estado === 'PENDIENTE') {
@@ -82,8 +83,25 @@ interface Envio { motocicletaId: number; chasis: string; origen: string; destino
     }
     @if (error()) { <p role="alert">{{error()}}</p> }
     @if (mensaje()) { <p role="status">{{mensaje()}}</p> }
+    @if (dialogo(); as actual) {
+      <div class="dialog-backdrop" (click)="cerrarMotivo()">
+        <section class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-motivo" (click)="$event.stopPropagation()">
+          <span class="eyebrow">CONFIRMACIÓN</span>
+          <h2 id="titulo-motivo">{{actual.accion === 'ANULAR' ? 'Anular solicitud' : actual.accion === 'RECHAZAR' ? 'Rechazar solicitud' : 'Retirar motocicleta'}}</h2>
+          <p>Explica el motivo para conservarlo en el historial.</p>
+          <label for="motivo-operacion">Motivo
+            <textarea id="motivo-operacion" [(ngModel)]="motivo" maxlength="1000" rows="4" autofocus></textarea>
+          </label>
+          @if (motivoError()) { <p role="alert">{{motivoError()}}</p> }
+          <div class="dialog-actions">
+            <button type="button" class="secondary" (click)="cerrarMotivo()" [disabled]="ocupado()">Cancelar</button>
+            <button type="button" (click)="confirmarMotivo()" [disabled]="ocupado() || !motivo.trim()">Confirmar</button>
+          </div>
+        </section>
+      </div>
+    }
   `,
-  styles: [`:host{display:block;max-width:1120px;margin:auto;color:#102a49}.page-heading{margin:8px 0 26px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;color:#173c64}h1{font-size:clamp(28px,3vw,38px);margin:8px 0}h2{font-size:21px;margin:5px 0}h3{font-size:16px;margin:20px 0 10px}p{color:#627893;line-height:1.55}.page-heading p{max-width:760px;margin:0}.panel{background:#fff;border:1px solid #dfe7ef;border-radius:16px;padding:26px;margin:20px 0;box-shadow:0 10px 30px #1836560a}.panel-heading{padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid #e6edf3}.panel-heading p{margin:4px 0 0}.badge{display:inline-block;vertical-align:middle;padding:6px 10px;border-radius:999px;background:#eaf1f8;color:#173c64;font-size:11px;font-weight:800}article{border:1px solid #e5edf4;background:#f8fafc;border-radius:12px;padding:16px;margin:14px 0}article h3{margin:0 0 12px}article p{padding:8px 12px;background:#fff;border-radius:8px}label{display:grid;gap:7px;margin:10px 0 16px;font-size:13px;font-weight:700;max-width:720px}input,select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #d4dfe9;border-radius:9px;background:#fff;color:#102a49;font:inherit}input:focus,select:focus{outline:2px solid #93b9db;outline-offset:1px}button{border:0;border-radius:9px;background:#183d66;color:white;font:inherit;font-weight:700;padding:11px 15px;cursor:pointer;margin:4px 8px 4px 0}button:hover:not(:disabled){background:#245684}button:disabled{opacity:.55;cursor:not-allowed}[role=alert],[role=status]{padding:12px 16px;border-radius:9px}[role=alert]{color:#9e332c;background:#fff0ee}[role=status]{color:#176744;background:#eaf8ee}@media(max-width:560px){.panel{padding:18px}button{width:100%;margin:5px 0}}`]
+  styles: [`:host{display:block;max-width:1120px;margin:auto;color:#102a49}.page-heading{margin:8px 0 26px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;color:#173c64}h1{font-size:clamp(28px,3vw,38px);margin:8px 0}h2{font-size:21px;margin:5px 0}h3{font-size:16px;margin:20px 0 10px}p{color:#627893;line-height:1.55}.page-heading p{max-width:760px;margin:0}.panel{background:#fff;border:1px solid #dfe7ef;border-radius:16px;padding:26px;margin:20px 0;box-shadow:0 10px 30px #1836560a}.panel-heading{padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid #e6edf3}.panel-heading p{margin:4px 0 0}.badge{display:inline-block;vertical-align:middle;padding:6px 10px;border-radius:999px;background:#eaf1f8;color:#173c64;font-size:11px;font-weight:800}article{border:1px solid #e5edf4;background:#f8fafc;border-radius:12px;padding:16px;margin:14px 0}article h3{margin:0 0 12px}article p{padding:8px 12px;background:#fff;border-radius:8px}label{display:grid;gap:7px;margin:10px 0 16px;font-size:13px;font-weight:700;max-width:720px}input,select,textarea{box-sizing:border-box;width:100%;padding:12px;border:1px solid #d4dfe9;border-radius:9px;background:#fff;color:#102a49;font:inherit}input:focus,select:focus,textarea:focus{outline:2px solid #93b9db;outline-offset:1px}button{border:0;border-radius:9px;background:#183d66;color:white;font:inherit;font-weight:700;padding:11px 15px;cursor:pointer;margin:4px 8px 4px 0}button:hover:not(:disabled){background:#245684}button:disabled{opacity:.55;cursor:not-allowed}[role=alert],[role=status]{padding:12px 16px;border-radius:9px}[role=alert]{color:#9e332c;background:#fff0ee}[role=status]{color:#176744;background:#eaf8ee}.dialog-backdrop{position:fixed;inset:0;background:#07182dc9;display:grid;place-items:center;padding:20px;z-index:1000}.dialog-panel{width:min(100%,560px);max-height:calc(100vh - 40px);overflow:auto;background:#fff;border-radius:18px;padding:28px;box-shadow:0 24px 70px #07182d66}.dialog-panel h2{margin:8px 0}.dialog-panel label{max-width:none}.dialog-panel textarea{resize:vertical}.dialog-actions{display:flex;justify-content:flex-end;gap:8px}.dialog-actions button{margin:0}.dialog-actions .secondary{background:#eaf0f5;color:#173c64}@media(max-width:560px){.panel{padding:18px}button{width:100%;margin:5px 0}.dialog-panel{padding:20px}.dialog-actions{flex-direction:column-reverse}}`]
 })
 export class SeguimientoPage {
   private readonly http = inject(HttpClient);
@@ -98,6 +116,9 @@ export class SeguimientoPage {
   readonly error = signal('');
   readonly mensaje = signal('');
   readonly ocupado = signal(false);
+  readonly dialogo = signal<MotivoDialogo | null>(null);
+  readonly motivoError = signal('');
+  motivo = '';
   solicitudId = 0;
   chasis = '';
   private paginaSolicitudes = 0;
@@ -148,18 +169,13 @@ export class SeguimientoPage {
     });
   }
   avanzar(estado: string): void {
-    const motivo = estado === 'RECHAZADA' ? window.prompt('Motivo del rechazo:') : null;
-    if (estado === 'RECHAZADA' && !motivo?.trim()) return;
-    this.http.post(`/api/v1/solicitudes/${this.solicitudId}/seguimiento`,{estado,motivo}).subscribe({
+    if (estado === 'RECHAZADA') { this.abrirMotivo('RECHAZAR'); return; }
+    this.http.post(`/api/v1/solicitudes/${this.solicitudId}/seguimiento`,{estado,motivo:null}).subscribe({
       next: () => { this.mensaje.set('Estado actualizado.'); this.consultar(); }, error: err => this.error.set(apiError(err))
     });
   }
   anular(): void {
-    const motivo = window.prompt('Motivo de la anulación:');
-    if (!motivo?.trim()) return;
-    this.http.post(`/api/v1/solicitudes/${this.solicitudId}/anulacion`,{motivo}).subscribe({
-      next: () => { this.mensaje.set('Solicitud anulada.'); this.consultar(); }, error: err => this.error.set(apiError(err))
-    });
+    this.abrirMotivo('ANULAR');
   }
   verUnidades(linea: number): void {
     this.http.get<Unidad[]>(`/api/v1/solicitudes/${this.solicitudId}/lineas/${linea}/unidades`).subscribe({
@@ -178,11 +194,48 @@ export class SeguimientoPage {
     });
   }
   retirar(linea: number,asociacion: number): void {
-    const motivo = window.prompt('Motivo del retiro:');
-    if (!motivo?.trim()) return;
-    this.http.request('DELETE',`/api/v1/solicitudes/${this.solicitudId}/lineas/${linea}/unidades/${asociacion}`,{body:{motivo}}).subscribe({
-      next: () => { this.verUnidades(linea); this.mensaje.set('Unidad retirada.'); },
-      error: err => this.error.set(apiError(err))
+    this.abrirMotivo('RETIRAR', linea, asociacion);
+  }
+  abrirMotivo(accion: MotivoDialogo['accion'], linea?: number, asociacion?: number): void {
+    this.motivo = '';
+    this.motivoError.set('');
+    this.error.set('');
+    this.dialogo.set({accion, linea, asociacion});
+  }
+  cerrarMotivo(): void {
+    if (this.ocupado()) return;
+    this.dialogo.set(null);
+    this.motivo = '';
+    this.motivoError.set('');
+  }
+  confirmarMotivo(): void {
+    const actual = this.dialogo();
+    const motivo = this.motivo.trim();
+    if (!actual || this.ocupado()) return;
+    if (!motivo || motivo.length > 1000) {
+      this.motivoError.set('Escribe un motivo de hasta 1000 caracteres.');
+      return;
+    }
+    this.ocupado.set(true);
+    this.error.set('');
+    const operacion = actual.accion === 'ANULAR'
+      ? this.http.post(`/api/v1/solicitudes/${this.solicitudId}/anulacion`, {motivo})
+      : actual.accion === 'RECHAZAR'
+        ? this.http.post(`/api/v1/solicitudes/${this.solicitudId}/seguimiento`, {estado:'RECHAZADA',motivo})
+        : this.http.request('DELETE',`/api/v1/solicitudes/${this.solicitudId}/lineas/${actual.linea}/unidades/${actual.asociacion}`, {body:{motivo}});
+    operacion.subscribe({
+      next: () => {
+        this.ocupado.set(false);
+        this.cerrarMotivo();
+        if (actual.accion === 'RETIRAR') {
+          this.verUnidades(actual.linea!);
+          this.mensaje.set('Unidad retirada.');
+        } else {
+          this.mensaje.set(actual.accion === 'ANULAR' ? 'Solicitud anulada.' : 'Estado actualizado.');
+          this.consultar();
+        }
+      },
+      error: err => { this.ocupado.set(false); this.error.set(apiError(err)); }
     });
   }
 }

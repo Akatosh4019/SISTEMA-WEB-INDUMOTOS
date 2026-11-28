@@ -3,8 +3,8 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { apiError } from '../core/api-error';
-import { AuthService } from '../core/auth.service';
+import { apiError } from '../../core/api-error';
+import { AuthService } from '../../core/auth.service';
 
 interface Ficha {
   id: number; llegadaId: number; marca: string; modelo: string; color: string;

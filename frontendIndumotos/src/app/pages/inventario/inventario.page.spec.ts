@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { InventarioPage } from './inventario.page';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../../core/auth.service';
 
 describe('InventarioPage', () => {
   let http: HttpTestingController;

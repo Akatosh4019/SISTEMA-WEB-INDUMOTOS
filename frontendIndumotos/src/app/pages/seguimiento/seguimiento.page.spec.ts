@@ -42,11 +42,13 @@ describe('SeguimientoPage', () => {
     http.expectOne('/api/v1/solicitudes/12/seguimiento').flush([{id:1,estado:'PENDIENTE',fecha:'hoy',registrador:'comercial',motivo:null}]);
     http.expectOne('/api/v1/solicitudes/12/envios').flush([]);
     expect(page.eventos().map(e => e.estado)).toEqual(['PENDIENTE']);
-    const prompt=vi.spyOn(window,'prompt').mockReturnValue('  Solicitud duplicada  ');
     page.anular();
+    expect(page.dialogo()?.accion).toBe('ANULAR');
+    page.motivo='  Solicitud duplicada  ';
+    page.confirmarMotivo();
     const anulacion=http.expectOne('/api/v1/solicitudes/12/anulacion');
     expect(anulacion.request.method).toBe('POST');
-    expect(anulacion.request.body).toEqual({motivo:'  Solicitud duplicada  '});
+    expect(anulacion.request.body).toEqual({motivo:'Solicitud duplicada'});
     anulacion.flush({id:2,estado:'ANULADA',registrador:'comercial',motivo:'Solicitud duplicada'});
     http.expectOne('/api/v1/solicitudes/12').flush({id:12,estado:'ANULADA',solicitante:'comercial',lineas:[]});
     http.expectOne('/api/v1/solicitudes/12/seguimiento').flush([
@@ -56,7 +58,20 @@ describe('SeguimientoPage', () => {
     http.expectOne('/api/v1/solicitudes/12/envios').flush([]);
     expect(page.solicitud()?.estado).toBe('ANULADA');
     expect(page.eventos().length).toBe(2);
-    prompt.mockRestore();
+    expect(page.dialogo()).toBeNull();
+    http.verify();
+  });
+
+  it('cancela la anulación sin enviar una petición', () => {
+    TestBed.configureTestingModule({imports:[SeguimientoPage],providers:[provideHttpClient(),provideHttpClientTesting()]});
+    const page=TestBed.createComponent(SeguimientoPage).componentInstance;
+    const http=TestBed.inject(HttpTestingController);
+    http.expectOne('/api/v1/solicitudes?pagina=0&tamano=20').flush([]);
+    page.anular();
+    page.motivo='No se enviará';
+    page.cerrarMotivo();
+    expect(page.dialogo()).toBeNull();
+    expect(page.motivo).toBe('');
     http.verify();
   });
 });

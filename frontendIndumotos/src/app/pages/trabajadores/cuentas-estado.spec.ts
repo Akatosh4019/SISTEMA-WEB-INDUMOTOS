@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { AuthService } from '../core/auth.service';
-import { ControlDatosPage } from './control-datos.page';
+import { AuthService } from '../../core/auth.service';
+import { ControlDatosPage } from '../inventario/control-datos.page';
 import { DetalleCuenta, UsuariosPage } from './usuarios.page';
 
 const detalle = (estado: string): DetalleCuenta => ({

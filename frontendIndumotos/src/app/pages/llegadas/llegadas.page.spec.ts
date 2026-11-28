@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { AuthService } from '../core/auth.service';
+import { AuthService } from '../../core/auth.service';
 import { LlegadasPage } from './llegadas.page';
 
 describe('LlegadasPage', () => {
@@ -59,28 +59,31 @@ describe('LlegadasPage', () => {
     request.flush({id:5,numeroGuia:'TG01-38359'});
     http.verify();
   });
-  it('lista todas las guías en páginas de diez y conserva el filtro', () => {
+  it('lista todas las guías en páginas de diez y combina filtros', () => {
     TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
       provideRouter([]),{provide:AuthService,useValue:{can:(permiso:string) => permiso === 'INVENTARIO_CONSULTAR'}}]});
     const fixture = TestBed.createComponent(LlegadasPage);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     http.expectOne(req => req.url === '/api/v1/llegadas/pagina' && req.params.get('pagina') === '0'
-      && req.params.get('numeroGuia') === '' && req.params.get('estado') === 'PENDIENTE')
+      && req.params.get('numeroGuia') === '' && req.params.get('estado') === '')
       .flush({items:[],pagina:0,tamano:10,totalElementos:21,totalPaginas:3});
     const page = fixture.componentInstance;
     expect(page.paginaLlegadas()?.totalPaginas).toBe(3);
-    page.numeroGuia = 'GR-'; page.buscarGuia();
-    http.expectOne(req => req.params.get('numeroGuia') === 'GR-' && req.params.get('pagina') === '0')
+    page.numeroGuia = 'GR-'; page.fechaFiltro = '2026-11-27'; page.receptorFiltro = 'admin';
+    page.cantidadFiltro = 2; page.estadoFiltro = 'CONFIRMADA'; page.listar(0);
+    http.expectOne(req => req.params.get('numeroGuia') === 'GR-' && req.params.get('pagina') === '0'
+      && req.params.get('fecha') === '2026-11-27' && req.params.get('cantidad') === '2'
+      && req.params.get('receptor') === 'admin' && req.params.get('estado') === 'CONFIRMADA')
       .flush({items:[],pagina:0,tamano:10,totalElementos:11,totalPaginas:2});
     page.listar(1);
     http.expectOne(req => req.params.get('numeroGuia') === 'GR-' && req.params.get('pagina') === '1')
       .flush({items:[],pagina:1,tamano:10,totalElementos:11,totalPaginas:2});
     expect(page.paginaLlegadas()?.pagina).toBe(1);
-    page.cambiarEstado('CONFIRMADA');
-    http.expectOne(req => req.params.get('estado') === 'CONFIRMADA' && req.params.get('pagina') === '0')
+    page.limpiarFiltros();
+    http.expectOne(req => req.params.get('estado') === '' && req.params.get('numeroGuia') === '' && req.params.get('pagina') === '0')
       .flush({items:[],pagina:0,tamano:10,totalElementos:2,totalPaginas:1});
-    expect(page.estadoActivo()).toBe('CONFIRMADA');
+    expect(page.estadoFiltro).toBe('');
     expect(page.paginaLlegadas()?.totalElementos).toBe(2);
     http.verify();
   });
