@@ -87,4 +87,27 @@ describe('LlegadasPage', () => {
     expect(page.paginaLlegadas()?.totalElementos).toBe(2);
     http.verify();
   });
+
+  it('restaura una guía desde papelera y actualiza el listado', () => {
+    TestBed.configureTestingModule({imports:[LlegadasPage],providers:[provideHttpClient(),provideHttpClientTesting(),
+      provideRouter([]),{provide:AuthService,useValue:{can:() => true}}]});
+    const fixture = TestBed.createComponent(LlegadasPage);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http.expectOne(req => req.url === '/api/v1/llegadas/pagina').flush({items:[],pagina:0,tamano:10,totalElementos:0,totalPaginas:0});
+    const page = fixture.componentInstance;
+    page.abrirPapelera();
+    http.expectOne('/api/v1/llegadas/papelera').flush([{id:9,numeroGuia:'TG01-38359',
+      eliminadoEn:'2026-11-27T10:00:00Z',eliminadoPor:'almacen',motivo:'Registro duplicado',
+      venceEn:'2026-12-27T10:00:00Z'}]);
+    http.expectOne(req => req.url === '/api/v1/llegadas/retiros' && req.params.get('pagina') === '0').flush([]);
+    expect(page.papelera().length).toBe(1);
+    page.restaurar(page.papelera()[0]);
+    http.expectOne('/api/v1/llegadas/9/restaurar').flush(null);
+    http.expectOne('/api/v1/llegadas/papelera').flush([]);
+    http.expectOne(req => req.url === '/api/v1/llegadas/retiros').flush([]);
+    http.expectOne(req => req.url === '/api/v1/llegadas/pagina').flush({items:[],pagina:0,tamano:10,totalElementos:1,totalPaginas:1});
+    expect(page.papelera().length).toBe(0);
+    http.verify();
+  });
 });

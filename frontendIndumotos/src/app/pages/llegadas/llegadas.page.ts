@@ -36,6 +36,9 @@ interface DetalleLlegada {
 interface PaginaLlegadas { items: Llegada[]; pagina: number; tamano: number; totalElementos: number; totalPaginas: number }
 interface GuiaImagen { id: number; orden: number; nombreArchivo: string; tipoMime: string; tamano: number }
 interface FotoVisible extends GuiaImagen { url: string }
+interface GuiaPapelera { id: number; numeroGuia: string; eliminadoEn: string; eliminadoPor: string | null; motivo: string; venceEn: string }
+interface EventoGuia { accion: string; usuario: string | null; ocurridoEn: string; motivo: string | null }
+interface RetiroHistorico { llegadaId: number; numeroGuia: string; usuario: string | null; ocurridoEn: string; motivo: string }
 
 @Component({
   selector: 'app-llegadas-page',
@@ -61,10 +64,20 @@ export class LlegadasPage implements OnInit, OnDestroy {
   readonly fotosError = signal('');
   readonly paginaLlegadas = signal<PaginaLlegadas | null>(null);
   readonly filtrosAbiertos = signal(false);
+  readonly papeleraAbierta = signal(false);
+  readonly papelera = signal<GuiaPapelera[]>([]);
+  readonly retiros = signal<RetiroHistorico[]>([]);
+  readonly paginaRetiros = signal(0);
+  readonly historial = signal<EventoGuia[]>([]);
+  readonly correccionError = signal('');
+  readonly correccionBusy = signal(false);
+  readonly retiroAbierto = signal(false);
+  motivoRetiro = '';
   private consultaListado = 0;
   private consultaDetalle = 0;
   private temporizador?: ReturnType<typeof setTimeout>;
   imagenes: File[] = [];
+  vistasPrevias: string[] = [];
   form: { numeroGuia: string; cantidadDeclarada: number | null; cantidadRecibida: number | null; observacion: string } =
     { numeroGuia: '', cantidadDeclarada: 1, cantidadRecibida: 1, observacion: '' };
   numeroGuia = '';
@@ -91,6 +104,8 @@ export class LlegadasPage implements OnInit, OnDestroy {
   cerrarNueva(): void { if (!this.busy()) { this.nuevaAbierta.set(false); this.resetearNueva(); } }
 
   private resetearNueva(): void {
+    this.vistasPrevias.forEach(url => { if (url) URL.revokeObjectURL(url); });
+    this.vistasPrevias = [];
     this.form = {numeroGuia:'', cantidadDeclarada:1, cantidadRecibida:1, observacion:''};
     this.imagenes = [];
     this.error.set('');
@@ -107,10 +122,14 @@ export class LlegadasPage implements OnInit, OnDestroy {
       return;
     }
     this.imagenes = [...this.imagenes, ...nuevas];
+    this.vistasPrevias = [...this.vistasPrevias, ...nuevas.map(foto =>
+      typeof URL.createObjectURL === 'function' ? URL.createObjectURL(foto) : '')];
     this.fieldErrors.update(actual => ({...actual, imagenes:this.errorImagenes()}));
   }
 
   quitarImagen(indice: number): void {
+    if (this.vistasPrevias[indice]) URL.revokeObjectURL(this.vistasPrevias[indice]);
+    this.vistasPrevias = this.vistasPrevias.filter((_, posicion) => posicion !== indice);
     this.imagenes = this.imagenes.filter((_, posicion) => posicion !== indice);
     this.fieldErrors.update(actual => ({...actual, imagenes:undefined}));
   }
@@ -169,11 +188,14 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.detalleAbierto.set(true);
     this.fotosError.set('');
     this.detail.set(null);
+    this.correccionError.set('');
+    this.historial.set([]);
     const consulta = ++this.consultaDetalle;
     this.searchBusy.set(true);
     this.http.get<DetalleLlegada>(`/api/v1/llegadas/${llegada.id}/detalle`).subscribe({
       next: detalle => { if (consulta !== this.consultaDetalle) return;
-        this.detail.set(detalle); this.searchBusy.set(false); this.cargarFotos(llegada.id, consulta); },
+        this.detail.set(detalle); this.searchBusy.set(false); this.cargarFotos(llegada.id, consulta);
+        this.cargarHistorial(llegada.id); },
       error: (error: unknown) => { if (consulta !== this.consultaDetalle) return;
         this.fotosError.set(this.message(error)); this.searchBusy.set(false); }
     });
@@ -207,6 +229,78 @@ export class LlegadasPage implements OnInit, OnDestroy {
   }
 
   private limpiarFotos(): void { this.fotos().forEach(foto => URL.revokeObjectURL(foto.url)); this.fotos.set([]); }
+
+  private cargarHistorial(id: number): void {
+    this.http.get<EventoGuia[]>(`/api/v1/llegadas/${id}/historial`).subscribe({
+      next: eventos => this.historial.set(eventos), error: () => this.historial.set([])
+    });
+  }
+
+  abrirPapelera(): void {
+    this.papeleraAbierta.set(true);
+    this.correccionError.set('');
+    this.cargarPapelera();
+    this.cargarRetiros(0);
+  }
+
+  private cargarPapelera(): void {
+    this.http.get<GuiaPapelera[]>('/api/v1/llegadas/papelera').subscribe({
+      next: guias => this.papelera.set(guias),
+      error: error => this.correccionError.set(this.message(error))
+    });
+  }
+
+  cargarRetiros(pagina: number): void {
+    if (pagina < 0) return;
+    this.http.get<RetiroHistorico[]>('/api/v1/llegadas/retiros', {params:{pagina}}).subscribe({
+      next: eventos => { this.retiros.set(eventos); this.paginaRetiros.set(pagina); },
+      error: error => this.correccionError.set(this.message(error))
+    });
+  }
+
+  abrirRetiro(): void { this.motivoRetiro = ''; this.correccionError.set(''); this.retiroAbierto.set(true); }
+  cerrarRetiro(): void { if (!this.correccionBusy()) this.retiroAbierto.set(false); }
+
+  retirar(): void {
+    const id = this.detail()?.llegada.id;
+    if (!id || this.motivoRetiro.trim().length < 10) {
+      this.correccionError.set('Explica el motivo con al menos 10 caracteres.'); return;
+    }
+    this.correccionBusy.set(true); this.correccionError.set('');
+    this.http.delete(`/api/v1/llegadas/${id}`, {body:{motivo:this.motivoRetiro.trim()}}).subscribe({
+      next: () => { this.correccionBusy.set(false); this.retiroAbierto.set(false);
+        this.cerrarDetalle(); this.listar(0); },
+      error: error => { this.correccionBusy.set(false); this.correccionError.set(this.message(error)); }
+    });
+  }
+
+  restaurar(guia: GuiaPapelera): void {
+    this.correccionBusy.set(true); this.correccionError.set('');
+    this.http.post(`/api/v1/llegadas/${guia.id}/restaurar`, {}).subscribe({
+      next: () => { this.correccionBusy.set(false); this.cargarPapelera(); this.cargarRetiros(0); this.listar(0); },
+      error: error => { this.correccionBusy.set(false); this.correccionError.set(this.message(error)); }
+    });
+  }
+
+  reemplazarFotos(evento: Event): void {
+    const input = evento.target as HTMLInputElement;
+    const fotos = Array.from(input.files ?? []);
+    input.value = '';
+    const id = this.detail()?.llegada.id;
+    if (!id || !fotos.length) return;
+    if (fotos.length > 3 || fotos.some(f => !['image/jpeg','image/png'].includes(f.type)
+      || f.size < 1 || f.size > 5 * 1024 * 1024)) {
+      this.correccionError.set('Selecciona de una a tres fotos JPG o PNG, de hasta 5 MB cada una.'); return;
+    }
+    const datos = new FormData();
+    fotos.forEach(foto => datos.append('imagenes', foto, foto.name));
+    this.correccionBusy.set(true); this.correccionError.set('');
+    this.http.put(`/api/v1/llegadas/${id}/guias`, datos).subscribe({
+      next: () => { this.correccionBusy.set(false); this.limpiarFotos();
+        this.cargarFotos(id, this.consultaDetalle); this.cargarHistorial(id); },
+      error: error => { this.correccionBusy.set(false); this.correccionError.set(this.message(error)); }
+    });
+  }
 
   alCambiarFiltro(): void {
     clearTimeout(this.temporizador);
@@ -244,6 +338,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
     if (!(error instanceof HttpErrorResponse)) return 'No se pudo completar la operación.';
     if (error.status === 403) return 'Tu cuenta no tiene permiso para realizar esta acción.';
     if (error.status === 404) return 'No se encontró la llegada solicitada.';
+    if (error.status === 409) return typeof error.error?.error === 'string' ? error.error.error : 'La guía ya existe o no se puede modificar.';
     if (error.status === 413) return 'Las fotos superan el tamaño permitido.';
     if (error.status === 400) return typeof error.error?.error === 'string' ? error.error.error : 'Revisa los datos ingresados.';
     return 'No se pudo conectar con el servidor. Inténtalo de nuevo.';

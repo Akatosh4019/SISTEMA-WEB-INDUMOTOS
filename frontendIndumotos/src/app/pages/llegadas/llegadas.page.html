@@ -1,7 +1,7 @@
 <div class="arrivals-page">
   <div class="page-heading"><div><div class="eyebrow">RECEPCIÓN DE MOTOCICLETAS</div><h1>Llegadas</h1>
     <p class="lead">Consulta las guías recibidas y las motocicletas vinculadas. Registra una nueva llegada con las fotos de su guía de remisión.</p></div>
-    @if (auth.can('LLEGADAS_REGISTRAR')) { <button type="button" class="primary-button new-button" (click)="abrirNueva()">＋ Nueva llegada</button> }</div>
+    @if (auth.can('LLEGADAS_REGISTRAR')) { <div class="heading-actions"><button type="button" class="secondary-button" (click)="abrirPapelera()">Papelera · 30 días</button><button type="button" class="primary-button new-button" (click)="abrirNueva()">＋ Nueva llegada</button></div> }</div>
 
   @if (result() && !detalleAbierto()) { <p class="message success" role="status">Guía {{result()?.numeroGuia}} registrada como pendiente. Inventario podrá completar sus motocicletas.</p> }
 
@@ -40,12 +40,26 @@
         @if (fieldErrors().cantidadRecibida) { <small class="field-error">{{fieldErrors().cantidadRecibida}}</small> }</div></div>
       <label for="imagenes">Fotos de la guía <span class="required">*</span></label><div class="upload-box"><input id="imagenes" name="imagenes" type="file" accept="image/jpeg,image/png" multiple (change)="seleccionarImagenes($event)" [attr.aria-invalid]="fieldErrors().imagenes ? true : null" />
         <small>JPG o PNG · máximo 3 fotos · hasta 5 MB cada una · mínimo 600 px por lado. Adjunta todas las páginas con texto visible.</small>
-        @for (imagen of imagenes; track $index) { <div class="chosen-file"><span>▰ {{imagen.name}}</span><button type="button" class="remove-file" [attr.aria-label]="'Quitar foto ' + imagen.name" (click)="quitarImagen($index)">Quitar</button></div> }
+        @for (imagen of imagenes; track $index) { <div class="chosen-file"><img class="upload-preview" [src]="vistasPrevias[$index]" [alt]="'Vista previa de ' + imagen.name" /><span>{{imagen.name}}</span><button type="button" class="remove-file" [attr.aria-label]="'Quitar foto ' + imagen.name" (click)="quitarImagen($index)">Quitar</button></div> }
       </div>@if (fieldErrors().imagenes) { <small class="field-error">{{fieldErrors().imagenes}}</small> }
       <label for="observacion">Observación</label><textarea id="observacion" name="observacion" rows="3" maxlength="1000" [(ngModel)]="form.observacion" placeholder="Diferencias, daños u otra información de recepción"></textarea>
       @if (error()) { <p class="message error" role="alert">{{error()}}</p> }
       <div class="dialog-actions"><button type="button" class="secondary-button" (click)="cerrarNueva()" [disabled]="busy()">Cancelar</button><button type="submit" class="primary-button" [disabled]="busy()">{{busy() ? 'Guardando…' : 'Registrar llegada'}}</button></div>
     </form>
+  </section></div> }
+
+  @if (papeleraAbierta()) { <div class="im-overlay" (click)="papeleraAbierta.set(false)"><section class="im-dialog detail-dialog" role="dialog" aria-modal="true" aria-labelledby="papelera-titulo" (click)="$event.stopPropagation()">
+    <header class="im-dialog-header"><div><span class="eyebrow">CONTROL DE GUÍAS</span><h2 id="papelera-titulo">Papelera de llegadas</h2><p>Las fotos se conservan 30 días. El registro de quién retiró la guía y por qué permanece.</p></div><button type="button" class="im-dialog-close" aria-label="Cerrar papelera" (click)="papeleraAbierta.set(false)">✕</button></header>
+    @if (correccionError()) { <p class="message error" role="alert">{{correccionError()}}</p> }
+    <div class="table-wrap"><table><thead><tr><th>Guía</th><th>Retirada por</th><th>Motivo</th><th>Recuperable hasta</th><th>Acción</th></tr></thead><tbody>
+      @for (guia of papelera(); track guia.id) { <tr><td><strong>{{guia.numeroGuia}}</strong></td><td>{{guia.eliminadoPor || 'Registro anterior'}}</td><td>{{guia.motivo}}</td><td>{{guia.venceEn | date:'dd/MM/yyyy, HH:mm'}}</td><td><button type="button" class="view-button" [disabled]="correccionBusy()" (click)="restaurar(guia)">Restaurar</button></td></tr> }
+      @empty { <tr><td colspan="5" class="empty-row">No hay guías en la papelera.</td></tr> }
+    </tbody></table></div>
+    <h3>Registro permanente de retiros</h3><p class="detail-hint">Conserva el responsable, la fecha, el número de guía y el motivo, incluso después de que las fotos vencen.</p>
+    <div class="table-wrap"><table><thead><tr><th>Guía</th><th>Responsable</th><th>Fecha</th><th>Motivo</th></tr></thead><tbody>
+      @for (retiro of retiros(); track $index) { <tr><td>{{retiro.numeroGuia}}</td><td>{{retiro.usuario || 'Sistema'}}</td><td>{{retiro.ocurridoEn | date:'dd/MM/yyyy, HH:mm'}}</td><td>{{retiro.motivo}}</td></tr> }
+      @empty { <tr><td colspan="4" class="empty-row">Aún no hay retiros registrados.</td></tr> }
+    </tbody></table></div><div class="list-footer"><span>Página {{paginaRetiros() + 1}}</span><nav class="guide-pages"><button type="button" [disabled]="paginaRetiros() === 0" (click)="cargarRetiros(paginaRetiros() - 1)">Anterior</button><button type="button" [disabled]="retiros().length < 10" (click)="cargarRetiros(paginaRetiros() + 1)">Siguiente</button></nav></div>
   </section></div> }
 
   @if (detalleAbierto()) { <div class="im-overlay" (click)="cerrarDetalle()"><section class="im-dialog detail-dialog" role="dialog" aria-modal="true" aria-labelledby="detalle-llegada-titulo" (click)="$event.stopPropagation()">
@@ -59,10 +73,23 @@
       @if (fotosCargando()) { <p class="loading">Cargando fotos…</p> }
       <div class="photo-grid">@for (foto of fotos(); track foto.id) { <a [href]="foto.url" target="_blank" rel="noopener" [attr.aria-label]="'Abrir ' + foto.nombreArchivo"><img [src]="foto.url" [alt]="'Página ' + foto.orden + ' de la guía ' + llegada.numeroGuia" /><span>Página {{foto.orden}} · {{foto.nombreArchivo}}</span></a> }</div>
       @if (!fotosCargando() && !fotos().length && !fotosError()) { <p class="no-fichas">Este registro anterior no tiene foto digital de la guía.</p> }
+      @if (auth.can('LLEGADAS_REGISTRAR') && llegada.estadoRegistro === 'PENDIENTE' && detalle.cantidadFichas === 0) {
+        <div class="guide-correction"><div><strong>¿La foto no corresponde a esta guía?</strong><p>Reemplaza todas sus páginas antes de que Inventario comience a registrarla.</p></div><label class="secondary-button" for="reemplazar-fotos">Reemplazar fotos<input id="reemplazar-fotos" type="file" accept="image/jpeg,image/png" multiple (change)="reemplazarFotos($event)" [disabled]="correccionBusy()" /></label></div>
+      }
+      @if (correccionError()) { <p class="message error" role="alert">{{correccionError()}}</p> }
+      @if (historial().length) { <details class="guide-history"><summary>Historial de correcciones</summary>@for (evento of historial(); track $index) { <p><strong>{{evento.accion}}</strong> · {{evento.usuario || 'Sistema'}} · {{evento.ocurridoEn | date:'dd/MM/yyyy, HH:mm'}} @if (evento.motivo) { · {{evento.motivo}} }</p> }</details> }
       <h3>Motocicletas vinculadas</h3><p class="detail-hint">Recibidas sin ficha: {{detalle.diferenciaInformativa}}. Es un dato informativo; no confirma conformidad.</p>
       @for (ficha of detalle.fichas; track ficha.id) { <a class="ficha-link" routerLink="/app/inventario" [queryParams]="{id:ficha.id}" (click)="cerrarDetalle()"><span><strong>{{ficha.marca}} {{ficha.modelo}}</strong><small>{{ficha.color}} · Chasis {{ficha.chasisCompleto}}</small></span><span>Abrir ficha →</span></a> }
       @empty { <p class="no-fichas">Esta llegada aún no tiene fichas vinculadas.</p> }
       @if (auth.can('FICHAS_REGISTRAR') && llegada.estadoRegistro !== 'CONFIRMADA') { <a class="new-ficha-link" routerLink="/app/inventario" [queryParams]="{registro:1,llegadaId:llegada.id}" (click)="cerrarDetalle()">Continuar registro de motocicletas →</a> }
+      @if (auth.can('LLEGADAS_REGISTRAR') && llegada.estadoRegistro === 'PENDIENTE' && detalle.cantidadFichas === 0) { <button type="button" class="retire-button" (click)="abrirRetiro()">Retirar guía a papelera</button> }
     } @else if (searchBusy()) { <p class="loading">Cargando detalle…</p> }
+  </section></div> }
+
+  @if (retiroAbierto()) { <div class="im-overlay correction-overlay" (click)="cerrarRetiro()"><section class="im-dialog arrival-dialog" role="dialog" aria-modal="true" aria-labelledby="retirar-guia-titulo" (click)="$event.stopPropagation()">
+    <header class="im-dialog-header"><div><span class="eyebrow">CORRECCIÓN DE REGISTRO</span><h2 id="retirar-guia-titulo">Retirar guía</h2><p>La guía dejará de aparecer en llegadas y podrá restaurarse durante 30 días.</p></div><button type="button" class="im-dialog-close" aria-label="Cerrar" (click)="cerrarRetiro()">✕</button></header>
+    <label for="motivo-retiro">Motivo de retiro</label><textarea id="motivo-retiro" rows="3" maxlength="500" [(ngModel)]="motivoRetiro" placeholder="Por ejemplo: registro duplicado o foto que no corresponde a la guía"></textarea>
+    @if (correccionError()) { <p class="message error" role="alert">{{correccionError()}}</p> }
+    <div class="dialog-actions"><button type="button" class="secondary-button" (click)="cerrarRetiro()">Cancelar</button><button type="button" class="primary-button" [disabled]="correccionBusy() || motivoRetiro.trim().length < 10" (click)="retirar()">{{correccionBusy() ? 'Guardando…' : 'Retirar a papelera'}}</button></div>
   </section></div> }
 </div>
