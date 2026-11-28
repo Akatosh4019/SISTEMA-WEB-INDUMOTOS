@@ -37,3 +37,30 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .content:has(app-llegadas-page){max-width:none;width:100%;min-width:0}.arrivals-page,.arrivals-page .panel,.arrivals-page .table-wrap{min-width:0;width:100%}
 .arrivals-page .toolbar-intro{min-width:0;overflow:hidden}.arrivals-page .toolbar-intro p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .arrivals-page .clear-filters{align-self:end;min-height:42px;width:100%;border:1px solid #cbd8e3;border-radius:8px;background:#edf3f8;color:#193d61;padding:9px 12px;font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}.arrivals-page .clear-filters:hover,.arrivals-page .clear-filters:focus-visible{background:#dce9f4;border-color:#193d61;outline:0}
+
+/* Llegadas aprovecha el espacio de monitores amplios sin reducir la lectura. */
+@media(min-width:1500px){
+  .content:has(app-llegadas-page){padding:clamp(36px,2.4vw,60px) clamp(36px,3vw,76px)}
+  app-llegadas-page .arrivals-page h1{font-size:clamp(34px,2.2vw,56px)}
+  app-llegadas-page .arrivals-page .lead{font-size:clamp(15px,.95vw,24px);max-width:1100px}
+  app-llegadas-page .arrivals-page .panel{padding:clamp(26px,1.8vw,44px)}
+  app-llegadas-page .arrivals-page .panel h2{font-size:clamp(21px,1.35vw,34px)}
+  app-llegadas-page .arrivals-page .panel-heading p,
+  app-llegadas-page .arrivals-page .arrival-toolbar p{font-size:clamp(13px,.85vw,20px)}
+  app-llegadas-page .arrivals-page table{font-size:clamp(14px,.9vw,24px)}
+  app-llegadas-page .arrivals-page th{font-size:clamp(12px,.75vw,20px)}
+  app-llegadas-page .arrivals-page td{padding:clamp(15px,1vw,25px)}
+  app-llegadas-page .arrivals-page .primary-button,
+  app-llegadas-page .arrivals-page .secondary-button,
+  app-llegadas-page .arrivals-page .filter-toggle,
+  app-llegadas-page .arrivals-page .view-button{font-size:clamp(14px,.85vw,22px)}
+  app-llegadas-page .arrivals-page .filter-grid label,
+  app-llegadas-page .arrivals-page .eyebrow{font-size:clamp(12px,.7vw,18px)}
+  app-llegadas-page .arrivals-page .filter-grid input,
+  app-llegadas-page .arrivals-page .filter-grid select,
+  app-llegadas-page .arrivals-page .clear-filters{font-size:clamp(14px,.8vw,20px);height:clamp(42px,2.5vw,56px)}
+  app-llegadas-page .arrivals-page .status-pill,
+  app-llegadas-page .arrivals-page .list-footer{font-size:clamp(12px,.75vw,18px)}
+  app-llegadas-page .arrivals-page .detail-dialog{width:min(1100px,92vw)}
+  app-llegadas-page .arrivals-page .arrival-dialog{width:min(760px,92vw)}
+}
