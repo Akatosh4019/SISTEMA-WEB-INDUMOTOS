@@ -80,6 +80,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
   motivoRetiro = '';
   retiroGuiaId: number | null = null;
   retiroNumeroGuia = '';
+  private guiaEnRetiro: Llegada | null = null;
   private consultaListado = 0;
   private consultaDetalle = 0;
   private temporizador?: ReturnType<typeof setTimeout>;
@@ -271,6 +272,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
     if (!guia) return;
     this.retiroGuiaId = guia.id;
     this.retiroNumeroGuia = guia.numeroGuia;
+    this.guiaEnRetiro = guia;
     this.cerrarDetalle();
     this.motivoRetiro = '';
     this.correccionError.set('');
@@ -281,8 +283,15 @@ export class LlegadasPage implements OnInit, OnDestroy {
     this.retiroAbierto.set(false);
     this.retiroGuiaId = null;
     this.retiroNumeroGuia = '';
+    this.guiaEnRetiro = null;
     this.motivoRetiro = '';
     this.correccionError.set('');
+  }
+  cancelarRetiro(): void {
+    if (this.correccionBusy()) return;
+    const guia = this.guiaEnRetiro;
+    this.cerrarRetiro();
+    if (guia) this.abrir(guia);
   }
 
   retirar(): void {

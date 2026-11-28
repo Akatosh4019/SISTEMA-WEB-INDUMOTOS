@@ -105,6 +105,6 @@
     <header class="im-dialog-header"><div><span class="eyebrow">CORRECCIÓN DE REGISTRO</span><h2 id="retirar-guia-titulo">Retirar guía {{retiroNumeroGuia}}</h2><p>La guía dejará de aparecer en llegadas y podrá restaurarse durante 30 días.</p></div><button type="button" class="im-dialog-close" aria-label="Cerrar" (click)="cerrarRetiro()">✕</button></header>
     <label for="motivo-retiro">Motivo de retiro</label><textarea id="motivo-retiro" rows="3" maxlength="500" [(ngModel)]="motivoRetiro" placeholder="Por ejemplo: registro duplicado o foto que no corresponde a la guía"></textarea>
     @if (correccionError()) { <p class="message error" role="alert">{{correccionError()}}</p> }
-    <div class="dialog-actions"><button type="button" class="secondary-button" (click)="cerrarRetiro()">Cancelar</button><button type="button" class="primary-button" [disabled]="correccionBusy() || motivoRetiro.trim().length < 10" (click)="retirar()">{{correccionBusy() ? 'Guardando…' : 'Retirar a papelera'}}</button></div>
+    <div class="dialog-actions"><button type="button" class="secondary-button" [disabled]="correccionBusy()" (click)="cancelarRetiro()">Cancelar</button><button type="button" class="primary-button" [disabled]="correccionBusy() || motivoRetiro.trim().length < 10" (click)="retirar()">{{correccionBusy() ? 'Guardando…' : 'Retirar a papelera'}}</button></div>
   </section></div> }
 </div>
