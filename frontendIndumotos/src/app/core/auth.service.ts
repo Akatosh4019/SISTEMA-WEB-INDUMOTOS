@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, map, switchMap, tap } from 'rxjs';
+import { Observable, catchError, finalize, map, of, shareReplay, switchMap, tap } from 'rxjs';
 
 export interface AccessProfile {
   usuarioId: number;
@@ -19,6 +19,7 @@ interface LoginResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly tokenState = signal(sessionStorage.getItem('indumotos_token') ?? '');
+  private renovacion?: Observable<string>;
   readonly access = signal<AccessProfile | null>(null);
   readonly sessionNotice = signal('');
   readonly authenticated = computed(() => Boolean(this.tokenState()) &&
@@ -26,22 +27,32 @@ export class AuthService {
 
   token(): string {
     const expiresAt = Number(sessionStorage.getItem('indumotos_expires_at') ?? 0);
-    if (!this.tokenState() || Date.now() >= expiresAt) {
-      this.logout(this.tokenState() ? 'Tu sesión venció. Ingresa de nuevo.' : '');
-      return '';
-    }
-    return this.tokenState();
+    return Date.now() < expiresAt ? this.tokenState() : '';
+  }
+
+  ensureToken(): Observable<string> {
+    const expiresAt = Number(sessionStorage.getItem('indumotos_expires_at') ?? 0);
+    if (this.tokenState() && expiresAt - Date.now() > 120_000) return of(this.tokenState());
+    if (this.renovacion) return this.renovacion;
+    this.renovacion = this.http.post<LoginResponse>('/api/v1/auth/refresh', {},
+      {withCredentials:true, headers:{'X-Indumotos-Refresh':'1'}}).pipe(
+      tap(response => this.guardarToken(response)),
+      map(response => response.accessToken),
+      catchError(() => {
+        this.logout('Tu sesión venció. Ingresa de nuevo.');
+        return of('');
+      }),
+      finalize(() => { this.renovacion = undefined; }),
+      shareReplay(1)
+    );
+    return this.renovacion;
   }
 
   login(nombreUsuario: string, clave: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>('/api/v1/auth/login', { nombreUsuario, clave }).pipe(
       tap(response => {
-        this.sessionNotice.set('');
-        const expiresAt = Date.now() + response.expiresIn * 1000;
-        sessionStorage.setItem('indumotos_token', response.accessToken);
-        sessionStorage.setItem('indumotos_expires_at', String(expiresAt));
+        this.guardarToken(response);
         sessionStorage.setItem('indumotos_usuario', nombreUsuario.trim().toLowerCase());
-        this.tokenState.set(response.accessToken);
       }),
       switchMap(response => this.loadAccess().pipe(map(() => response)))
     );
@@ -72,5 +83,12 @@ export class AuthService {
     this.tokenState.set('');
     this.access.set(null);
     this.sessionNotice.set(notice);
+  }
+
+  private guardarToken(response: LoginResponse): void {
+    this.sessionNotice.set('');
+    sessionStorage.setItem('indumotos_token', response.accessToken);
+    sessionStorage.setItem('indumotos_expires_at', String(Date.now() + response.expiresIn * 1000));
+    this.tokenState.set(response.accessToken);
   }
 }

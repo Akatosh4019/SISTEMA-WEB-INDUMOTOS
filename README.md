@@ -1,6 +1,6 @@
 # Sistema web Indumotos
 
-Esta es la web Angular y el gateway del sistema Indumotos. El trabajo está en la rama `sprint-2` de Roberto Samuel Valencia Saavedra. La API y PostgreSQL están en [BACK-END-INDUMOTOS](https://github.com/Akatosh4019/BACK-END-INDUMOTOS/tree/sprint-2).
+Esta es la web Angular y el gateway del sistema Indumotos. Las actualizaciones de Roberto Samuel Valencia Saavedra están en la rama `feature/roberto-indumotos`. La API y PostgreSQL están en [BACK-END-INDUMOTOS](https://github.com/Akatosh4019/BACK-END-INDUMOTOS/tree/feature/roberto-indumotos).
 
 ## ¿Cómo se usa?
 
@@ -28,7 +28,7 @@ Abre [http://127.0.0.1:4200/login](http://127.0.0.1:4200/login). En Docker, Ngin
 
 ## Pruebas y documentación
 
-Desde `frontendIndumotos`, ejecuta `npm ci`, `npm run build` y `npm test -- --watch=false` con una versión de Node compatible con Angular 21. En la última ejecución observada, la web compiló y pasaron **25 pruebas**. Falta la revisión visual con cuentas de cada rol y datos autorizados.
+Desde `frontendIndumotos`, ejecuta `npm ci`, `npm run build` y `npm test -- --watch=false` con una versión de Node compatible con Angular 21. En la última ejecución observada, la web compiló y pasaron **32 pruebas**. Falta la revisión visual con cuentas de cada rol y datos autorizados.
 
 - [Guía completa de la web](docs/SISTEMA_WEB_IMPLEMENTADO.md): pantallas, flujos, Docker y pendientes.
 - [Guion de demostración en vivo](docs/GUIA_DEMO_EN_VIVO.md): recorrido por roles desde la guía hasta la recepción.
@@ -36,5 +36,7 @@ Desde `frontendIndumotos`, ejecuta `npm ci`, `npm run build` y `npm test -- --wa
 - `gatewayIndumotos/`: Spring Cloud Gateway.
 
 ## Perfil del usuario
+
+La web renueva la sesión automáticamente cuando el JWT tiene menos de dos minutos de vigencia. Las peticiones pendientes esperan el JWT nuevo; si la renovación falla, vuelve a la pantalla de acceso. La cookie de renovación pertenece al backend y Angular no la lee.
 
 Pulsa tu nombre en la parte inferior del menú lateral. La ventana muestra nombre completo, usuario, rol, sede, estado y fecha de creación. El enlace discreto **Editar datos** permite cambiar nombre de usuario o contraseña tras confirmar la contraseña actual. El sistema cierra la sesión al guardar para que ingreses con las credenciales nuevas.
