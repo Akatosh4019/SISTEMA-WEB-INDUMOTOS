@@ -2,34 +2,34 @@
 .list-head{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:18px}
 .list-head .hint{margin:4px 0 0}
 .table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;color:#718197;font-size:11px;letter-spacing:.07em;text-transform:uppercase;background:#f5f8fb;padding:12px 14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:#718197;font-size:12px;letter-spacing:.07em;text-transform:uppercase;background:#f5f8fb;padding:12px 14px}
 td{padding:13px 14px;border-bottom:1px solid #edf1f5;color:#405064}
 td strong{color:#1b293b}
 tbody tr:hover{background:#f9fbfd}
 .row-action{text-align:right}
 .access-page .view-button{padding:8px 15px;background:#eaf1f7;color:#193d61}
 .access-page .view-button:hover{background:#d9e7f2}
-.state{display:inline-block;border-radius:30px;background:#eaf8f0;color:#27764e;padding:5px 9px;font-size:11px;font-weight:700}
+.state{display:inline-block;border-radius:30px;background:#eaf8f0;color:#27764e;padding:5px 9px;font-size:12px;font-weight:700}
 .state.inactive{background:#fff0ec;color:#b7402b}
 .no-results{text-align:center;padding:25px}
 .edit-toggle{display:flex!important;align-items:center;gap:11px;background:#f8faf0;border:1px solid #e2e7b4;border-radius:10px;padding:13px!important;margin:0 0 18px!important;cursor:pointer}
 .edit-toggle input{width:18px!important;height:18px;margin:0!important;accent-color:#193d61}
 .edit-toggle span{display:grid;gap:3px}
 .edit-toggle small{color:#687481;font-weight:400}
-.permission-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:12px 0;border-bottom:1px solid #edf1f5;font-size:13px}
+.permission-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:12px 0;border-bottom:1px solid #edf1f5;font-size:14px}
 .permission-line strong,.permission-line small{overflow-wrap:anywhere}
 .permission-line small{display:block;color:#8795a5;margin-top:4px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:680px){.list-head{align-items:stretch;flex-direction:column}th:nth-child(4),td:nth-child(4){display:none}}
-.role-code{display:block;color:#8291a3;font-size:11px;margin-top:4px}
+.role-code{display:block;color:#8291a3;font-size:12px;margin-top:4px}
 .role-note{margin:16px 0 0}
 .role-dialog{width:min(760px,calc(100vw - 32px));max-height:min(84vh,900px);overflow:auto}
 .role-dialog .permission-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .role-dialog .permission-line{display:flex;gap:10px;padding:12px;border:1px solid #e3eaf0;border-radius:10px;cursor:pointer}
 .role-dialog .permission-line input{width:17px;height:17px;flex:none;accent-color:#193d61}
 .role-dialog .permission-line span{min-width:0;flex:1}
-.role-dialog .permission-line em{font-size:11px;font-style:normal;font-weight:700;color:#24704c}
+.role-dialog .permission-line em{font-size:12px;font-style:normal;font-weight:700;color:#24704c}
 .role-dialog .permission-line em.no{color:#8795a5}
 .role-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
 @media(max-width:680px){.role-dialog .permission-list{grid-template-columns:1fr}.role-dialog .permission-line em{display:none}}
