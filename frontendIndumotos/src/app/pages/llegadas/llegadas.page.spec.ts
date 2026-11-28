@@ -23,6 +23,7 @@ describe('LlegadasPage', () => {
     expect(input.value).toBe('');
     expect(page.imagenes.length).toBe(2);
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.new-arrival-dialog .selected-guides .chosen-file')).not.toBeNull();
     (fixture.nativeElement.querySelector('.remove-file') as HTMLButtonElement).click();
     expect(page.imagenes.map(foto => foto.name)).toEqual(['segunda.jpg']);
     fixture.detectChanges();
@@ -184,6 +185,9 @@ describe('LlegadasPage', () => {
       fichas:[],cantidadFichas:0,diferenciaInformativa:2,confirmadoPor:null,confirmadoEn:null};
     page.detail.set(detalle);
     page.detalleAbierto.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.registered-guide-dialog .guide-overview')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.registered-guide-dialog .linked-bikes')).not.toBeNull();
     page.abrirRetiro();
     fixture.detectChanges();
     expect(page.detalleAbierto()).toBe(false);

@@ -64,3 +64,38 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   app-llegadas-page .arrivals-page .detail-dialog{width:min(1100px,92vw)}
   app-llegadas-page .arrivals-page .arrival-dialog{width:min(760px,92vw)}
 }
+
+/* El formulario conserva su tamaño mientras se seleccionan páginas de la guía. */
+.new-arrival-dialog{height:min(750px,calc(100dvh - 40px));display:flex;flex-direction:column;overflow:hidden}
+.new-arrival-dialog .im-dialog-header{flex:none}
+.new-arrival-dialog form{min-height:0;overflow-y:auto;padding-right:5px}
+.new-arrival-dialog .upload-box{min-height:205px;grid-template-rows:auto auto minmax(100px,1fr)}
+.selected-guides{min-height:100px;max-height:100px;overflow-y:auto;display:grid;align-content:start;gap:5px;padding:6px;border:1px solid #e1e9f0;border-radius:8px;background:#fff}
+.selected-guides-empty{align-self:center;text-align:center;color:#8493a3;font-size:12px}
+.new-arrival-dialog .chosen-file{min-width:0;padding:4px 7px}
+.new-arrival-dialog .upload-preview{width:38px;height:42px}
+.new-arrival-dialog .dialog-actions{position:sticky;bottom:0;background:#fff;padding:10px 0 0;z-index:1}
+
+/* Los datos y las fotos comparten la altura disponible; solo listas largas se desplazan. */
+.registered-guide-dialog{width:min(1100px,92vw);max-height:calc(100dvh - 40px)}
+.registered-guide-dialog .im-dialog-header{margin-bottom:12px;padding-bottom:12px}
+.guide-overview{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+.guide-summary,.guide-images{min-width:0}
+.registered-guide-dialog .arrival-state{margin:0 0 10px}
+.registered-guide-dialog .detail-grid{gap:7px}
+.registered-guide-dialog .detail-grid>div{padding:9px 11px}
+.registered-guide-dialog h3{margin:6px 0 8px}
+.registered-guide-dialog .photo-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.registered-guide-dialog .photo-grid a{padding:5px}
+.registered-guide-dialog .photo-grid img{height:125px}
+.registered-guide-dialog .guide-correction{margin:11px 0 0;padding:11px}
+.guide-linked{margin-top:12px;padding-top:10px;border-top:1px solid #e4ebf1}
+.guide-linked .detail-hint{margin:0 0 5px}
+.linked-bikes{max-height:145px;overflow-y:auto;padding-right:6px}
+.guide-linked .ficha-link{padding:8px 0}
+.guide-linked .retire-button{margin-top:10px}
+
+@media(max-width:850px){.guide-overview{grid-template-columns:1fr}.registered-guide-dialog .photo-grid img{height:110px}}
+@media(max-width:600px){.new-arrival-dialog{height:100dvh;max-height:100dvh}.registered-guide-dialog{width:100%;max-height:100dvh}.registered-guide-dialog .detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.registered-guide-dialog .photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.registered-guide-dialog .detail-grid{grid-template-columns:1fr}.registered-guide-dialog .photo-grid{grid-template-columns:1fr 1fr}}
+@media(min-width:1600px){app-llegadas-page .arrivals-page .new-arrival-dialog{width:min(900px,70vw)}app-llegadas-page .arrivals-page .registered-guide-dialog{width:min(1400px,84vw)}.registered-guide-dialog .photo-grid img{height:clamp(125px,8vw,185px)}}
