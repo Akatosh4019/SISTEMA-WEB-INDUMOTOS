@@ -24,6 +24,12 @@ describe('LlegadasPage', () => {
     expect(page.imagenes.length).toBe(2);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.new-arrival-dialog .selected-guides .chosen-file')).not.toBeNull();
+    page.vistasPrevias[0] = 'blob:primera';
+    page.abrirVistaPrevia(0);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#vista-guia-titulo')?.textContent).toContain('Página 1 de 2');
+    page.cerrarVistaPrevia();
+    expect(page.imagenes).toHaveLength(2);
     (fixture.nativeElement.querySelector('.remove-file') as HTMLButtonElement).click();
     expect(page.imagenes.map(foto => foto.name)).toEqual(['segunda.jpg']);
     fixture.detectChanges();
@@ -124,18 +130,19 @@ describe('LlegadasPage', () => {
       receptorUsuario:'almacen',cantidadDeclarada:2,cantidadRecibida:2,observacion:null,estadoRegistro:'PENDIENTE'},
       fichas:[],cantidadFichas:0,diferenciaInformativa:2,confirmadoPor:null,confirmadoEn:null});
     page.abrirEdicionFotos();
+    expect(page.confirmacionFotosAbierta()).toBe(true);
     const foto = new File(['foto'], 'guia-corregida.jpg', {type:'image/jpeg'});
     page.seleccionarFotosCorreccion({target:{files:[foto],value:'seleccionada'}} as unknown as Event);
     expect(page.fotosPendientes).toEqual([]);
     http.expectNone('/api/v1/llegadas/6/guias');
-    page.alternarEdicionFotos();
+    page.confirmarEdicionFotos();
     page.seleccionarFotosCorreccion({target:{files:[foto],value:'seleccionada'}} as unknown as Event);
     expect(page.fotosPendientes).toHaveLength(1);
     page.cerrarEdicionFotos();
     expect(page.fotosPendientes).toEqual([]);
     http.expectNone('/api/v1/llegadas/6/guias');
     page.abrirEdicionFotos();
-    page.alternarEdicionFotos();
+    page.confirmarEdicionFotos();
     page.seleccionarFotosCorreccion({target:{files:[foto],value:'seleccionada'}} as unknown as Event);
     page.guardarCorreccionFotos();
     const request = http.expectOne('/api/v1/llegadas/6/guias');
@@ -144,7 +151,12 @@ describe('LlegadasPage', () => {
     request.flush(null);
     http.expectOne('/api/v1/llegadas/6/guias').flush([]);
     http.expectOne('/api/v1/llegadas/6/historial').flush([]);
-    expect(page.fotosEdicionAbierta()).toBe(false);
+    expect(page.fotosEditando()).toBe(false);
+    expect(page.confirmacionFotosAbierta()).toBe(false);
+    page.detail.set({llegada:{...page.detail()!.llegada,estadoRegistro:'CONFIRMADA'},
+      fichas:[],cantidadFichas:0,diferenciaInformativa:0,confirmadoPor:'inventarios',confirmadoEn:'2026-11-27T11:00:00Z'});
+    page.abrirEdicionFotos();
+    expect(page.confirmacionFotosAbierta()).toBe(false);
     http.verify();
   });
 

@@ -99,3 +99,42 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(max-width:600px){.new-arrival-dialog{height:100dvh;max-height:100dvh}.registered-guide-dialog{width:100%;max-height:100dvh}.registered-guide-dialog .detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.registered-guide-dialog .photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.registered-guide-dialog .detail-grid{grid-template-columns:1fr}.registered-guide-dialog .photo-grid{grid-template-columns:1fr 1fr}}
 @media(min-width:1600px){app-llegadas-page .arrivals-page .new-arrival-dialog{width:min(900px,70vw)}app-llegadas-page .arrivals-page .registered-guide-dialog{width:min(1400px,84vw)}.registered-guide-dialog .photo-grid img{height:clamp(125px,8vw,185px)}}
+
+.new-arrival-dialog,.registered-guide-dialog{border:1px solid #e2eaf1;box-shadow:0 30px 90px #071a3290}
+.new-arrival-dialog .im-dialog-header,.registered-guide-dialog .im-dialog-header{position:relative;padding-left:16px}
+.new-arrival-dialog .im-dialog-header:before,.registered-guide-dialog .im-dialog-header:before{content:"";position:absolute;left:0;top:3px;bottom:16px;width:4px;border-radius:4px;background:#d6de37}
+.new-arrival-dialog .im-dialog-header h2,.registered-guide-dialog .im-dialog-header h2{font-size:clamp(23px,1.4vw,34px);letter-spacing:-.035em}
+.new-arrival-dialog .upload-box{border:1px dashed #91abc2;background:linear-gradient(135deg,#f7fafc,#eef5fa);box-shadow:inset 0 1px 0 #fff}
+.new-arrival-dialog form>label{margin-top:5px;color:#304e68}
+.new-arrival-dialog .fields-row{padding:12px 13px 0;margin:2px 0 17px;border:1px solid #e4ebf1;border-radius:11px;background:#f8fafc}
+.new-arrival-dialog .fields-row input{background:#fff}
+.new-arrival-dialog form>input,.new-arrival-dialog textarea{border-color:#cddbe7}
+.new-arrival-dialog .selected-guides{border-color:#cbdbe9}
+.new-arrival-dialog .chosen-file{border:1px solid #e1eaf1;background:#fff}
+.new-arrival-dialog .chosen-file span{flex:1}
+.new-arrival-dialog .chosen-file span small{display:block;font-weight:400;color:#8090a2;margin-top:2px}
+.new-arrival-dialog .preview-file{display:grid;place-items:center;flex:none;padding:0;border:1px solid #d9e4ed;border-radius:7px;background:#f4f7fa;cursor:zoom-in}
+.new-arrival-dialog .preview-file:hover,.new-arrival-dialog .preview-file:focus-visible{outline:2px solid #193d61;outline-offset:2px}
+.new-arrival-dialog .dialog-actions{border-top:1px solid #e8eef3}
+.guide-preview-overlay{z-index:1200}
+.guide-preview-dialog{width:min(1000px,94vw);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;overflow:hidden}
+.guide-preview-dialog .im-dialog-header{flex:none}
+.guide-preview-dialog>img{display:block;min-height:0;max-height:calc(100dvh - 165px);width:100%;object-fit:contain;background:#edf2f6;border-radius:10px}
+.registered-guide-dialog .guide-summary,.registered-guide-dialog .guide-images{padding:14px;border:1px solid #e4ebf1;border-radius:13px;background:#fcfdfe}
+.registered-guide-dialog .guide-images{background:linear-gradient(150deg,#f9fbfd,#f2f7fb)}
+.registered-guide-dialog .guide-images>h3{font-size:16px;color:#193d61}
+.registered-guide-dialog .photo-grid a:hover,.registered-guide-dialog .photo-grid a:focus-visible{border-color:#8ba9c2;box-shadow:0 5px 18px #193d611c;outline:0}
+.registered-guide-dialog .guide-correction{align-items:center;background:#fff;border:1px solid #dfe8f0}
+.registered-guide-dialog .guide-correction p{max-width:36ch}
+.registered-guide-dialog .guide-correction button{white-space:nowrap}
+.inline-photo-editor{margin-top:10px;padding:14px;border:1px solid #cbdbe9;border-radius:11px;background:#fff}
+.inline-photo-editor input[type=file]{width:100%;padding:10px;border:1px dashed #9eb8cc;border-radius:8px;background:#f7fafc}
+.inline-photo-editor .pending-photo-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.inline-photo-editor .pending-photo img{height:110px}
+.inline-photo-editor .pending-photo span{font-size:11px}
+.edit-confirm-dialog{width:min(470px,94vw);padding:28px;border:1px solid #dfe8f0}
+.edit-confirm-dialog h2{margin:10px 0;font-size:24px;line-height:1.2}
+.edit-confirm-dialog p{color:#64768a;font-size:14px;line-height:1.55}
+.edit-confirm-dialog .dialog-actions{margin-top:24px}
+@media(max-width:850px){.registered-guide-dialog .guide-summary,.registered-guide-dialog .guide-images{padding:12px}}
+@media(max-width:600px){.new-arrival-dialog .im-dialog-header h2,.registered-guide-dialog .im-dialog-header h2{font-size:23px}.registered-guide-dialog .guide-correction{flex-wrap:wrap}.inline-photo-editor .pending-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.guide-preview-dialog{width:100%;max-height:100dvh;border-radius:18px 18px 0 0}.guide-preview-dialog>img{max-height:calc(100dvh - 145px)}}

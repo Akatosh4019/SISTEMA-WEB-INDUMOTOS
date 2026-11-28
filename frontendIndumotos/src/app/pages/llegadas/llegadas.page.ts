@@ -72,9 +72,10 @@ export class LlegadasPage implements OnInit, OnDestroy {
   readonly correccionError = signal('');
   readonly correccionBusy = signal(false);
   readonly retiroAbierto = signal(false);
-  readonly fotosEdicionAbierta = signal(false);
+  readonly confirmacionFotosAbierta = signal(false);
   readonly fotosEditando = signal(false);
   readonly fotosEdicionError = signal('');
+  readonly vistaPreviaIndice = signal<number | null>(null);
   fotosPendientes: File[] = [];
   fotosPendientesUrls: string[] = [];
   motivoRetiro = '';
@@ -111,6 +112,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
   cerrarNueva(): void { if (!this.busy()) { this.nuevaAbierta.set(false); this.resetearNueva(); } }
 
   private resetearNueva(): void {
+    this.vistaPreviaIndice.set(null);
     this.vistasPrevias.forEach(url => { if (url) URL.revokeObjectURL(url); });
     this.vistasPrevias = [];
     this.form = {numeroGuia:'', cantidadDeclarada:1, cantidadRecibida:1, observacion:''};
@@ -135,11 +137,18 @@ export class LlegadasPage implements OnInit, OnDestroy {
   }
 
   quitarImagen(indice: number): void {
+    const vista = this.vistaPreviaIndice();
+    if (vista !== null) this.vistaPreviaIndice.set(vista === indice ? null : vista > indice ? vista - 1 : vista);
     if (this.vistasPrevias[indice]) URL.revokeObjectURL(this.vistasPrevias[indice]);
     this.vistasPrevias = this.vistasPrevias.filter((_, posicion) => posicion !== indice);
     this.imagenes = this.imagenes.filter((_, posicion) => posicion !== indice);
     this.fieldErrors.update(actual => ({...actual, imagenes:undefined}));
   }
+
+  abrirVistaPrevia(indice: number): void {
+    if (this.vistasPrevias[indice]) this.vistaPreviaIndice.set(indice);
+  }
+  cerrarVistaPrevia(): void { this.vistaPreviaIndice.set(null); }
 
   private errorImagenes(): string | undefined {
     if (this.imagenes.length < 1 || this.imagenes.length > 3)
@@ -210,6 +219,7 @@ export class LlegadasPage implements OnInit, OnDestroy {
   }
 
   cerrarDetalle(): void {
+    if (this.correccionBusy()) return;
     this.cerrarEdicionFotos();
     ++this.consultaDetalle; this.detalleAbierto.set(false); this.detail.set(null);
     this.fotosCargando.set(false); this.limpiarFotos();
@@ -315,25 +325,29 @@ export class LlegadasPage implements OnInit, OnDestroy {
   }
 
   abrirEdicionFotos(): void {
+    const detalle = this.detail();
+    if (!this.auth.can('LLEGADAS_REGISTRAR') || detalle?.llegada.estadoRegistro !== 'PENDIENTE'
+      || detalle.cantidadFichas !== 0 || this.correccionBusy()) return;
     this.descartarFotosPendientes();
     this.fotosEditando.set(false);
     this.fotosEdicionError.set('');
-    this.fotosEdicionAbierta.set(true);
+    this.confirmacionFotosAbierta.set(true);
+  }
+
+  confirmarEdicionFotos(): void {
+    const detalle = this.detail();
+    if (!this.confirmacionFotosAbierta() || !this.auth.can('LLEGADAS_REGISTRAR')
+      || detalle?.llegada.estadoRegistro !== 'PENDIENTE' || detalle.cantidadFichas !== 0) return;
+    this.confirmacionFotosAbierta.set(false);
+    this.fotosEditando.set(true);
   }
 
   cerrarEdicionFotos(): void {
     if (this.correccionBusy()) return;
-    this.fotosEdicionAbierta.set(false);
+    this.confirmacionFotosAbierta.set(false);
     this.fotosEditando.set(false);
     this.fotosEdicionError.set('');
     this.descartarFotosPendientes();
-  }
-
-  alternarEdicionFotos(): void {
-    if (this.correccionBusy()) return;
-    if (this.fotosEditando()) this.descartarFotosPendientes();
-    this.fotosEdicionError.set('');
-    this.fotosEditando.set(!this.fotosEditando());
   }
 
   seleccionarFotosCorreccion(evento: Event): void {
@@ -367,8 +381,10 @@ export class LlegadasPage implements OnInit, OnDestroy {
   }
 
   guardarCorreccionFotos(): void {
-    const id = this.detail()?.llegada.id;
-    if (!this.fotosEdicionAbierta() || !this.fotosEditando() || !id || this.correccionBusy()) return;
+    const detalle = this.detail();
+    const id = detalle?.llegada.id;
+    if (!this.fotosEditando() || !id || detalle?.llegada.estadoRegistro !== 'PENDIENTE'
+      || detalle.cantidadFichas !== 0 || !this.auth.can('LLEGADAS_REGISTRAR') || this.correccionBusy()) return;
     if (!this.fotosPendientes.length) {
       this.fotosEdicionError.set('Selecciona al menos una foto nueva antes de guardar.'); return;
     }
